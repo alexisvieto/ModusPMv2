@@ -275,23 +275,18 @@ export function FatsatBoard({
           const st = STATUS_META[deriveStatus(items)];
           return (
             <section key={p.id} className="overflow-hidden rounded-xl border bg-card">
-              <header className="flex items-start justify-between gap-3 border-b bg-muted/30 px-4 py-3">
+              <header className="flex items-start justify-between gap-3 bg-primary px-4 py-3 text-primary-foreground">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="truncate font-semibold text-primary">
+                    <h3 className="truncate font-semibold">
                       {p.name ?? "Prueba en campo"}
                     </h3>
-                    <span
-                      className={cn(
-                        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
-                        st.className,
-                      )}
-                    >
+                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary-foreground/15 px-2 py-0.5 text-xs font-medium">
                       <span className={cn("size-1.5 rounded-full", st.dot)} />
                       {st.label}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="mt-0.5 text-xs text-primary-foreground/80">
                     {formatDate(p.protocol_date)} · {c.pass}/{c.total} aprobados
                     {c.fail > 0 ? ` · ${c.fail} fallidos` : ""}
                   </p>
@@ -307,14 +302,14 @@ export function FatsatBoard({
                       setFormOpen(true);
                     }}
                     title="Editar"
-                    className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    className="rounded-md p-1.5 text-primary-foreground/80 transition-colors hover:bg-primary-foreground/15 hover:text-primary-foreground"
                   >
                     <Pencil className="size-4" />
                   </button>
                   <button
                     onClick={() => deletePrueba(p.id)}
                     title="Eliminar"
-                    className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive"
+                    className="rounded-md p-1.5 text-primary-foreground/80 transition-colors hover:bg-primary-foreground/15 hover:text-primary-foreground"
                   >
                     <Trash2 className="size-4" />
                   </button>

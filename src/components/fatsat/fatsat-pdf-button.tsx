@@ -16,12 +16,12 @@ export default function FatsatPdfButton({
     <PDFDownloadLink
       document={<FatsatPdfDocument data={data} />}
       fileName={fileName}
-      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted"
+      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-primary-foreground/30 bg-primary-foreground/10 px-2.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-foreground/20"
     >
       {({ loading }) => (
         <>
-          <Download className="size-4" />
-          {loading ? "Generando…" : "Descargar PDF"}
+          <Download className="size-3.5" />
+          {loading ? "…" : "PDF"}
         </>
       )}
     </PDFDownloadLink>

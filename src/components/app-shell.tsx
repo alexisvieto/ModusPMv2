@@ -27,7 +27,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -202,7 +201,9 @@ export function AppShell({
                 <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-72">
-                <DropdownMenuLabel>Proyectos</DropdownMenuLabel>
+                <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">
+                  Proyectos
+                </div>
                 {projects.map((p) => (
                   <DropdownMenuItem
                     key={p.id}

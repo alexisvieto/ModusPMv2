@@ -8,7 +8,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -90,11 +89,11 @@ export function PunchAlerts({ projectId }: { projectId: string | null }) {
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel>
+        <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">
           {count > 0
             ? `${count} pendiente${count === 1 ? "" : "s"} por vencer`
             : "Sin pendientes por vencer"}
-        </DropdownMenuLabel>
+        </div>
         <DropdownMenuSeparator />
         {alerts.map((a) => {
           const pm = PRIORITY_META[a.priority];

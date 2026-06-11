@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { ReportBoard } from "@/components/reports/report-board";
+import { brandFromOrg, ORG_BRAND_COLUMNS } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function ReportesPage({
@@ -23,14 +24,20 @@ export default async function ReportesPage({
 
   if (!project) notFound();
 
-  const [{ data: reports }, { data: profiles }] = await Promise.all([
+  const [{ data: reports }, { data: profiles }, { data: org }] = await Promise.all([
     supabase
       .from("daily_reports")
       .select("*, daily_report_entries(description, quantity, unit)")
       .eq("project_id", projectId)
       .order("report_date", { ascending: false }),
     supabase.from("profiles").select("id, full_name"),
+    supabase
+      .from("organizations")
+      .select(ORG_BRAND_COLUMNS)
+      .eq("id", project.organization_id)
+      .maybeSingle(),
   ]);
+  const brand = brandFromOrg(org);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6 md:p-8">
@@ -47,6 +54,7 @@ export default async function ReportesPage({
         reports={reports ?? []}
         profiles={profiles ?? []}
         currentUserId={user?.id ?? null}
+        brand={brand}
       />
     </div>
   );

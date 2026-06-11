@@ -9,10 +9,12 @@ import {
 } from "@react-pdf/renderer";
 
 import { formatDate } from "@/lib/format";
+import { brandInitial, type Brand } from "@/lib/brand";
 
 type Entry = { description: string; quantity: number | null; unit: string | null };
 
 export type ReportPdfData = {
+  brand: Brand;
   project: { name: string; code: string | null; client_name: string | null };
   report: {
     report_date: string;
@@ -132,17 +134,19 @@ const s = StyleSheet.create({
 });
 
 export function ReportPdfDocument({ data }: { data: ReportPdfData }) {
-  const { project, report, entries, author } = data;
+  const { brand, project, report, entries, author } = data;
   return (
     <Document
       title={`Reporte diario ${report.report_date}`}
-      author="Modus PM"
+      author={brand.name}
     >
       <Page size="A4" style={s.page}>
-        <View style={s.header}>
+        <View style={[s.header, { borderBottomColor: brand.primary }]}>
           <View style={s.brand}>
-            <Text style={s.mark}>M</Text>
-            <Text style={s.brandName}>Modus PM</Text>
+            <Text style={[s.mark, { backgroundColor: brand.primary }]}>
+              {brandInitial(brand)}
+            </Text>
+            <Text style={s.brandName}>{brand.name}</Text>
           </View>
           <View style={s.headerRight}>
             <Text style={s.docTitle}>Reporte diario</Text>
@@ -205,17 +209,25 @@ export function ReportPdfDocument({ data }: { data: ReportPdfData }) {
         ) : null}
 
         {report.ai_summary ? (
-          <View style={s.aiBox}>
-            <Text style={s.aiLabel}>RESUMEN IA</Text>
+          <View
+            style={[
+              s.aiBox,
+              { borderColor: brand.primary, backgroundColor: "#FFFFFF" },
+            ]}
+          >
+            <Text style={[s.aiLabel, { color: brand.primary }]}>RESUMEN IA</Text>
             <Text style={{ lineHeight: 1.5 }}>{report.ai_summary}</Text>
           </View>
         ) : null}
 
         <View style={s.footer} fixed>
           <Text>
-            {author ? `Elaborado por ${author}` : "Modus PM"}
+            {brand.name}
+            {brand.website ? ` · ${brand.website}` : ""}
           </Text>
-          <Text>Generado con Modus PM</Text>
+          <Text>
+            {author ? `Elaborado por ${author}` : "Generado con Modus PM"}
+          </Text>
         </View>
       </Page>
     </Document>

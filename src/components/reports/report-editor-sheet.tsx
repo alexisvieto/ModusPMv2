@@ -20,6 +20,7 @@ import {
 import type { ReportPdfData } from "@/components/reports/report-pdf-document";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
+import type { Brand } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 const ReportPdfButton = dynamic(
@@ -59,6 +60,7 @@ export function ReportEditorSheet({
   authorName,
   open,
   onOpenChange,
+  brand,
 }: {
   report: Report | null;
   initialEntries: EntryRow[];
@@ -66,6 +68,7 @@ export function ReportEditorSheet({
   authorName: string | null;
   open: boolean;
   onOpenChange: (o: boolean) => void;
+  brand: Brand;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<Report | null>(report);
@@ -220,6 +223,7 @@ export function ReportEditorSheet({
 
   const pdfData: ReportPdfData | null = form
     ? {
+        brand,
         project,
         report: {
           report_date: form.report_date,

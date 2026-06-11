@@ -11,6 +11,7 @@ import { toISODate } from "@/lib/calendar";
 import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
+import type { Brand } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 type Report = Database["public"]["Tables"]["daily_reports"]["Row"];
@@ -47,11 +48,13 @@ export function ReportBoard({
   reports,
   profiles,
   currentUserId,
+  brand,
 }: {
   project: Project;
   reports: ReportWithEntries[];
   profiles: { id: string; full_name: string | null }[];
   currentUserId: string | null;
+  brand: Brand;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState<Report | null>(null);
@@ -218,6 +221,7 @@ export function ReportBoard({
         authorName={editing?.author_id ? (nameOf.get(editing.author_id) ?? null) : null}
         open={open}
         onOpenChange={setOpen}
+        brand={brand}
       />
     </>
   );

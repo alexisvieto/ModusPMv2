@@ -563,25 +563,52 @@ export type Database = {
       }
       organizations: {
         Row: {
+          address: string | null
+          brand_accent: string | null
+          brand_dark: string | null
+          brand_primary: string | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           id: string
+          legal_name: string | null
+          logo_url: string | null
           name: string
           slug: string
           updated_at: string
+          website: string | null
         }
         Insert: {
+          address?: string | null
+          brand_accent?: string | null
+          brand_dark?: string | null
+          brand_primary?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
+          legal_name?: string | null
+          logo_url?: string | null
           name: string
           slug: string
           updated_at?: string
+          website?: string | null
         }
         Update: {
+          address?: string | null
+          brand_accent?: string | null
+          brand_dark?: string | null
+          brand_primary?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
+          legal_name?: string | null
+          logo_url?: string | null
           name?: string
           slug?: string
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }

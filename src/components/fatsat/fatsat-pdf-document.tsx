@@ -9,6 +9,7 @@ import {
 } from "@react-pdf/renderer";
 
 import { formatDate } from "@/lib/format";
+import { brandInitial, type Brand } from "@/lib/brand";
 
 export type FatsatPdfItem = {
   description: string;
@@ -17,6 +18,7 @@ export type FatsatPdfItem = {
 };
 
 export type FatsatPdfData = {
+  brand: Brand;
   project: { name: string; code: string | null; client_name: string | null };
   prueba: {
     name: string | null;
@@ -167,14 +169,16 @@ function Sign({
 }
 
 export function FatsatPdfDocument({ data }: { data: FatsatPdfData }) {
-  const { project, prueba, items } = data;
+  const { brand, project, prueba, items } = data;
   return (
-    <Document title={`Prueba en campo ${prueba.name ?? ""}`} author="Modus PM">
+    <Document title={`Prueba en campo ${prueba.name ?? ""}`} author={brand.name}>
       <Page size="A4" style={s.page}>
-        <View style={s.header}>
+        <View style={[s.header, { borderBottomColor: brand.primary }]}>
           <View style={s.brand}>
-            <Text style={s.mark}>M</Text>
-            <Text style={s.brandName}>Modus PM</Text>
+            <Text style={[s.mark, { backgroundColor: brand.primary }]}>
+              {brandInitial(brand)}
+            </Text>
+            <Text style={s.brandName}>{brand.name}</Text>
           </View>
           <View style={s.headerRight}>
             <Text style={s.docTitle}>Acta de pruebas en campo</Text>
@@ -254,7 +258,10 @@ export function FatsatPdfDocument({ data }: { data: FatsatPdfData }) {
         </View>
 
         <View style={s.footer} fixed>
-          <Text>Acta de pruebas en campo</Text>
+          <Text>
+            {brand.name}
+            {brand.website ? ` · ${brand.website}` : ""}
+          </Text>
           <Text>Generado con Modus PM</Text>
         </View>
       </Page>

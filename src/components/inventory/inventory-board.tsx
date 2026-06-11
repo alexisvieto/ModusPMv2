@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { InventoryEditorSheet } from "@/components/inventory/inventory-editor-sheet";
 import { ScanSheet } from "@/components/inventory/scan-sheet";
-import { formatNumber } from "@/lib/format";
+import { formatDate, formatNumber } from "@/lib/format";
 import {
   CATEGORY_OPTIONS,
   INV_CATEGORY,
@@ -26,6 +26,7 @@ import {
 } from "@/lib/inventory";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
+import type { Brand } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 type Item = Database["public"]["Tables"]["inventory_items"]["Row"];
@@ -39,10 +40,12 @@ export function InventoryBoard({
   project,
   items,
   tasks,
+  brand,
 }: {
   project: Project;
   items: Item[];
   tasks: TaskOpt[];
+  brand: Brand;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState<Item | null>(null);
@@ -162,7 +165,22 @@ export function InventoryBoard({
       "Tarea (WBS)": it.task_id ? (taskById.get(it.task_id)?.wbs ?? "") : "",
       Notas: it.notes ?? "",
     }));
-    const ws = XLSX.utils.json_to_sheet(rows);
+    const ws = XLSX.utils.aoa_to_sheet([
+      [brand.name],
+      [`Inventario · ${project.name}`],
+      [
+        `Generado ${formatDate(new Date())}${
+          brand.website ? ` · ${brand.website}` : ""
+        }`,
+      ],
+      [],
+    ]);
+    XLSX.utils.sheet_add_json(ws, rows, { origin: "A5" });
+    ws["!merges"] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 10 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } },
+    ];
     ws["!cols"] = [
       { wch: 42 },
       { wch: 14 },

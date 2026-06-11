@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { InventoryBoard } from "@/components/inventory/inventory-board";
+import { brandFromOrg, ORG_BRAND_COLUMNS } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function InventarioPage({
@@ -19,7 +20,7 @@ export default async function InventarioPage({
 
   if (!project) notFound();
 
-  const [{ data: items }, { data: tasks }] = await Promise.all([
+  const [{ data: items }, { data: tasks }, { data: org }] = await Promise.all([
     supabase
       .from("inventory_items")
       .select("*")
@@ -30,7 +31,13 @@ export default async function InventarioPage({
       .select("id, wbs, name")
       .eq("project_id", projectId)
       .order("wbs", { ascending: true }),
+    supabase
+      .from("organizations")
+      .select(ORG_BRAND_COLUMNS)
+      .eq("id", project.organization_id)
+      .maybeSingle(),
   ]);
+  const brand = brandFromOrg(org);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
@@ -40,7 +47,12 @@ export default async function InventarioPage({
           Equipos y materiales del proyecto — recepción, estado y ubicación.
         </p>
       </div>
-      <InventoryBoard project={project} items={items ?? []} tasks={tasks ?? []} />
+      <InventoryBoard
+        project={project}
+        items={items ?? []}
+        tasks={tasks ?? []}
+        brand={brand}
+      />
     </div>
   );
 }

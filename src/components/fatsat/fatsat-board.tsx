@@ -21,6 +21,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
 import { FatsatEditorSheet } from "@/components/fatsat/fatsat-editor-sheet";
 import type { FatsatPdfData } from "@/components/fatsat/fatsat-pdf-document";
+import type { Brand } from "@/lib/brand";
 
 const FatsatPdfButton = dynamic(
   () => import("@/components/fatsat/fatsat-pdf-button"),
@@ -43,9 +44,11 @@ type Filter = "all" | FatsatResult;
 export function FatsatBoard({
   project,
   initialPruebas,
+  brand,
 }: {
   project: Project;
   initialPruebas: Prueba[];
+  brand: Brand;
 }) {
   const router = useRouter();
   const [pruebas, setPruebas] = useState<Prueba[]>(initialPruebas);
@@ -199,6 +202,7 @@ export function FatsatBoard({
 
   function pdfFor(p: Prueba): FatsatPdfData {
     return {
+      brand,
       project: {
         name: project.name,
         code: project.code,

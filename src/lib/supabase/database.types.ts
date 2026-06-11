@@ -734,6 +734,60 @@ export type Database = {
           },
         ]
       }
+      punch_items: {
+        Row: {
+          created_at: string
+          description: string
+          due_date: string | null
+          id: string
+          organization_id: string
+          priority: Database["public"]["Enums"]["punch_priority"]
+          project_id: string
+          resolved_at: string | null
+          responsible: string | null
+          status: Database["public"]["Enums"]["punch_status"]
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          organization_id: string
+          priority?: Database["public"]["Enums"]["punch_priority"]
+          project_id: string
+          resolved_at?: string | null
+          responsible?: string | null
+          status?: Database["public"]["Enums"]["punch_status"]
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          organization_id?: string
+          priority?: Database["public"]["Enums"]["punch_priority"]
+          project_id?: string
+          resolved_at?: string | null
+          responsible?: string | null
+          status?: Database["public"]["Enums"]["punch_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "punch_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "punch_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_dependencies: {
         Row: {
           created_at: string
@@ -932,6 +986,8 @@ export type Database = {
         | "on_hold"
         | "completed"
         | "cancelled"
+      punch_priority: "low" | "medium" | "high"
+      punch_status: "open" | "in_progress" | "done"
       report_status: "draft" | "submitted" | "approved"
       task_status: "not_started" | "in_progress" | "completed" | "delayed"
     }
@@ -1089,6 +1145,8 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
+      punch_priority: ["low", "medium", "high"],
+      punch_status: ["open", "in_progress", "done"],
       report_status: ["draft", "submitted", "approved"],
       task_status: ["not_started", "in_progress", "completed", "delayed"],
     },

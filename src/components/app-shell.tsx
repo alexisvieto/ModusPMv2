@@ -11,6 +11,7 @@ import {
   FlaskConical,
   FolderKanban,
   LayoutDashboard,
+  ListTodo,
   LogOut,
   Package,
   Receipt,
@@ -34,6 +35,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { PunchAlerts } from "@/components/punch/punch-alerts";
 
 type ShellProject = {
   id: string;
@@ -101,6 +103,11 @@ export function AppShell({
           label: "Pruebas",
           href: `/app/proyectos/${activeProjectId}/fat-sat`,
           icon: FlaskConical,
+        },
+        {
+          label: "Pendientes",
+          href: `/app/proyectos/${activeProjectId}/pendientes`,
+          icon: ListTodo,
         },
         {
           label: "Costos",
@@ -218,6 +225,7 @@ export function AppShell({
 
             {/* Right cluster: presence + user */}
             <div className="flex items-center gap-3">
+              <PunchAlerts projectId={activeProjectId} />
               <div className="hidden items-center gap-2 rounded-full border bg-card px-2.5 py-1 sm:flex">
                 <Avatar size="sm">
                   <AvatarFallback className="bg-primary/10 text-primary">

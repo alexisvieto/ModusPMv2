@@ -2,6 +2,7 @@
 
 import {
   Document,
+  Image,
   Page,
   StyleSheet,
   Text,
@@ -90,6 +91,7 @@ const s = StyleSheet.create({
     paddingTop: 4,
   },
   brandName: { fontSize: 13, fontFamily: "Helvetica-Bold" },
+  logo: { height: 26, width: 96, objectFit: "contain" },
   headerRight: { alignItems: "flex-end" },
   docTitle: { fontSize: 12, fontFamily: "Helvetica-Bold" },
   muted: { color: MUTED },
@@ -174,12 +176,16 @@ export function FatsatPdfDocument({ data }: { data: FatsatPdfData }) {
     <Document title={`Prueba en campo ${prueba.name ?? ""}`} author={brand.name}>
       <Page size="A4" style={s.page}>
         <View style={[s.header, { borderBottomColor: brand.primary }]}>
-          <View style={s.brand}>
-            <Text style={[s.mark, { backgroundColor: brand.primary }]}>
-              {brandInitial(brand)}
-            </Text>
-            <Text style={s.brandName}>{brand.name}</Text>
-          </View>
+          {brand.logoUrl ? (
+            <Image src={brand.logoUrl} style={s.logo} />
+          ) : (
+            <View style={s.brand}>
+              <Text style={[s.mark, { backgroundColor: brand.primary }]}>
+                {brandInitial(brand)}
+              </Text>
+              <Text style={s.brandName}>{brand.name}</Text>
+            </View>
+          )}
           <View style={s.headerRight}>
             <Text style={s.docTitle}>Acta de pruebas en campo</Text>
             <Text style={s.muted}>

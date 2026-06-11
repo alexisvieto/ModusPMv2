@@ -23,7 +23,8 @@ export default async function FatSatPage({
     .from("fatsat_protocols")
     .select("*, fatsat_points(*)")
     .eq("project_id", projectId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .order("sort_order", { referencedTable: "fatsat_points", ascending: true });
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6 md:p-8">

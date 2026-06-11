@@ -108,18 +108,30 @@ export function FatsatBoard({
     );
   }
 
-  async function persistItem(itemId: string, patch: Partial<Item>) {
+  async function persistItem(
+    itemId: string,
+    patch: Partial<Item>,
+    onError?: () => void,
+  ) {
     const supabase = createClient();
     const { error } = await supabase
       .from("fatsat_points")
       .update(patch)
       .eq("id", itemId);
-    if (error) toast.error("No se pudo guardar el cambio.");
+    if (error) {
+      toast.error("No se pudo guardar el cambio.");
+      onError?.();
+    }
   }
 
   function setResult(pid: string, itemId: string, result: FatsatResult) {
+    const prev = pruebas
+      .find((p) => p.id === pid)
+      ?.fatsat_points.find((i) => i.id === itemId)?.result;
     patchItem(pid, itemId, { result });
-    void persistItem(itemId, { result });
+    void persistItem(itemId, { result }, () => {
+      if (prev) patchItem(pid, itemId, { result: prev });
+    });
   }
 
   async function addItem(pid: string) {
@@ -154,6 +166,7 @@ export function FatsatBoard({
   }
 
   async function deleteItem(pid: string, itemId: string) {
+    const snapshot = pruebas;
     setPruebas((prev) =>
       prev.map((p) =>
         p.id === pid
@@ -163,7 +176,10 @@ export function FatsatBoard({
     );
     const supabase = createClient();
     const { error } = await supabase.from("fatsat_points").delete().eq("id", itemId);
-    if (error) toast.error("No se pudo eliminar la prueba.");
+    if (error) {
+      setPruebas(snapshot);
+      toast.error("No se pudo eliminar la prueba.");
+    }
   }
 
   async function deletePrueba(pid: string) {
@@ -315,9 +331,15 @@ export function FatsatBoard({
                           onChange={(e) =>
                             patchItem(p.id, item.id, { description: e.target.value })
                           }
-                          onBlur={(e) =>
-                            persistItem(item.id, { description: e.target.value })
-                          }
+                          onBlur={(e) => {
+                            const val = e.target.value.trim();
+                            if (!val) {
+                              toast.error("La descripción no puede quedar vacía.");
+                              router.refresh();
+                              return;
+                            }
+                            persistItem(item.id, { description: val });
+                          }}
                           className="w-full rounded bg-transparent text-sm font-medium outline-none focus-visible:bg-muted/40 focus-visible:px-1"
                         />
                         <input

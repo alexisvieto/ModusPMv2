@@ -78,10 +78,14 @@ export const STATUS_META: Record<
 };
 
 /** Estado de la prueba en campo derivado de sus pruebas relacionadas. */
-export function deriveStatus(items: { result: FatsatResult }[]): FatsatStatus {
+export function deriveStatus(
+  items: { result: FatsatResult; notes?: string | null }[],
+): FatsatStatus {
   if (items.length === 0) return "draft";
   const c = countResults(items);
   if (c.fail > 0) return "rejected";
   if (c.pending > 0) return "in_progress";
+  if (items.some((i) => i.notes && i.notes.trim()))
+    return "approved_with_observations";
   return "approved";
 }

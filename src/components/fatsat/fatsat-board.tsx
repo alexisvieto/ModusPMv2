@@ -2,43 +2,34 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { toast } from "sonner";
-import { FlaskConical, Plus } from "lucide-react";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  FatsatEditorSheet,
-  type EditablePoint,
-} from "@/components/fatsat/fatsat-editor-sheet";
+import { Button } from "@/components/ui/button";
 import {
   countResults,
+  deriveStatus,
+  RESULT_OPTIONS,
+  resultButtonClass,
   STATUS_META,
-  TEMPLATES,
-  TYPE_META,
   type FatsatResult,
-  type FatsatType,
 } from "@/lib/fatsat";
-import { toISODate } from "@/lib/calendar";
 import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
+import { FatsatEditorSheet } from "@/components/fatsat/fatsat-editor-sheet";
+import type { FatsatPdfData } from "@/components/fatsat/fatsat-pdf-document";
+
+const FatsatPdfButton = dynamic(
+  () => import("@/components/fatsat/fatsat-pdf-button"),
+  { ssr: false },
+);
 
 type Protocol = Database["public"]["Tables"]["fatsat_protocols"]["Row"];
-type Point = Database["public"]["Tables"]["fatsat_points"]["Row"];
-type ProtocolWithPoints = Protocol & { fatsat_points: Point[] };
-type Equipment = {
-  id: string;
-  description: string;
-  brand_model: string | null;
-  serial_number: string | null;
-};
+type Item = Database["public"]["Tables"]["fatsat_points"]["Row"];
+type Prueba = Protocol & { fatsat_points: Item[] };
 type Project = {
   id: string;
   organization_id: string;
@@ -47,35 +38,28 @@ type Project = {
   client_name: string | null;
 };
 
-function toEditable(points: Point[]): EditablePoint[] {
-  return points
-    .slice()
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map((p) => ({
-      section: p.section,
-      description: p.description,
-      expected_result: p.expected_result,
-      actual_result: p.actual_result,
-      result: p.result,
-      notes: p.notes,
-    }));
-}
+type Filter = "all" | FatsatResult;
 
 export function FatsatBoard({
   project,
-  protocols,
-  equipment,
+  initialPruebas,
 }: {
   project: Project;
-  protocols: ProtocolWithPoints[];
-  equipment: Equipment[];
+  initialPruebas: Prueba[];
 }) {
   const router = useRouter();
+  const [pruebas, setPruebas] = useState<Prueba[]>(initialPruebas);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Protocol | null>(null);
-  const [editingPoints, setEditingPoints] = useState<EditablePoint[]>([]);
-  const [open, setOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [newItem, setNewItem] = useState<Record<string, string>>({});
 
+  // Resync cuando el servidor manda datos nuevos (crear/editar/eliminar prueba).
+  useEffect(() => {
+    setPruebas(initialPruebas);
+  }, [initialPruebas]);
+
+  // Realtime sobre la cabecera (las pruebas relacionadas se editan en línea).
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -96,194 +80,345 @@ export function FatsatBoard({
     };
   }, [project.id, router]);
 
-  function openProtocol(p: ProtocolWithPoints) {
-    setEditing(p);
-    setEditingPoints(toEditable(p.fatsat_points ?? []));
-    setOpen(true);
+  const counts = useMemo(
+    () => countResults(pruebas.flatMap((p) => p.fatsat_points)),
+    [pruebas],
+  );
+
+  const chips: { k: Filter; label: string; n: number }[] = [
+    { k: "all", label: "Todos", n: counts.total },
+    { k: "pending", label: "Pendientes", n: counts.pending },
+    { k: "fail", label: "Fallidos", n: counts.fail },
+    { k: "pass", label: "Aprobados", n: counts.pass },
+    { k: "na", label: "N/A", n: counts.na },
+  ];
+
+  function patchItem(pid: string, itemId: string, patch: Partial<Item>) {
+    setPruebas((prev) =>
+      prev.map((p) =>
+        p.id === pid
+          ? {
+              ...p,
+              fatsat_points: p.fatsat_points.map((it) =>
+                it.id === itemId ? { ...it, ...patch } : it,
+              ),
+            }
+          : p,
+      ),
+    );
   }
 
-  async function create(type: FatsatType) {
-    if (creating) return;
-    setCreating(true);
+  async function persistItem(itemId: string, patch: Partial<Item>) {
     const supabase = createClient();
-    const nums = protocols
-      .filter((p) => p.type === type)
-      .map((p) => {
-        const m = p.code?.match(/(\d+)\s*$/);
-        return m ? parseInt(m[1], 10) : 0;
-      });
-    const next = (nums.length ? Math.max(...nums) : 0) + 1;
-    const code = `${type.toUpperCase()}-${String(next).padStart(3, "0")}`;
+    const { error } = await supabase
+      .from("fatsat_points")
+      .update(patch)
+      .eq("id", itemId);
+    if (error) toast.error("No se pudo guardar el cambio.");
+  }
 
+  function setResult(pid: string, itemId: string, result: FatsatResult) {
+    patchItem(pid, itemId, { result });
+    void persistItem(itemId, { result });
+  }
+
+  async function addItem(pid: string) {
+    const desc = (newItem[pid] ?? "").trim();
+    if (!desc) return;
+    const prueba = pruebas.find((p) => p.id === pid);
+    if (!prueba) return;
+    const nextOrder =
+      Math.max(0, ...prueba.fatsat_points.map((i) => i.sort_order)) + 1;
+    const supabase = createClient();
     const { data, error } = await supabase
-      .from("fatsat_protocols")
+      .from("fatsat_points")
       .insert({
-        organization_id: project.organization_id,
-        project_id: project.id,
-        type,
-        code,
-        protocol_date: toISODate(new Date()),
-        status: "draft",
+        organization_id: prueba.organization_id,
+        protocol_id: pid,
+        sort_order: nextOrder,
+        description: desc,
+        result: "pending",
       })
       .select()
       .maybeSingle();
     if (error || !data) {
-      setCreating(false);
-      toast.error("No se pudo crear el protocolo.");
+      toast.error("No se pudo agregar la prueba.");
       return;
     }
-
-    const { error: pErr } = await supabase.from("fatsat_points").insert(
-      TEMPLATES[type].map((t, i) => ({
-        organization_id: project.organization_id,
-        protocol_id: data.id,
-        sort_order: i + 1,
-        section: t.section,
-        description: t.description,
-        expected_result: t.expected_result,
-        result: "pending" as FatsatResult,
-      })),
+    setPruebas((prev) =>
+      prev.map((p) =>
+        p.id === pid ? { ...p, fatsat_points: [...p.fatsat_points, data] } : p,
+      ),
     );
-    if (pErr) toast.error("Protocolo creado, pero no se cargó la plantilla.");
-
-    const { data: fresh } = await supabase
-      .from("fatsat_points")
-      .select("*")
-      .eq("protocol_id", data.id)
-      .order("sort_order");
-    setCreating(false);
-    router.refresh();
-    openProtocol({ ...data, fatsat_points: fresh ?? [] });
+    setNewItem((m) => ({ ...m, [pid]: "" }));
   }
 
-  const sorted = useMemo(
-    () =>
-      protocols
+  async function deleteItem(pid: string, itemId: string) {
+    setPruebas((prev) =>
+      prev.map((p) =>
+        p.id === pid
+          ? { ...p, fatsat_points: p.fatsat_points.filter((i) => i.id !== itemId) }
+          : p,
+      ),
+    );
+    const supabase = createClient();
+    const { error } = await supabase.from("fatsat_points").delete().eq("id", itemId);
+    if (error) toast.error("No se pudo eliminar la prueba.");
+  }
+
+  async function deletePrueba(pid: string) {
+    if (!window.confirm("¿Eliminar esta prueba en campo y todas sus pruebas?"))
+      return;
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("fatsat_protocols")
+      .delete()
+      .eq("id", pid);
+    if (error) {
+      toast.error("No se pudo eliminar.");
+      return;
+    }
+    router.refresh();
+  }
+
+  function pdfFor(p: Prueba): FatsatPdfData {
+    return {
+      project: {
+        name: project.name,
+        code: project.code,
+        client_name: project.client_name,
+      },
+      prueba: {
+        name: p.name,
+        protocol_date: p.protocol_date,
+        status: deriveStatus(p.fatsat_points),
+        notes: p.notes,
+        executed_by_name: p.executed_by_name,
+        executed_by_role: p.executed_by_role,
+        executed_at: p.executed_at,
+        witness_by_name: p.witness_by_name,
+        witness_by_role: p.witness_by_role,
+        witness_at: p.witness_at,
+        approved_by_name: p.approved_by_name,
+        approved_by_role: p.approved_by_role,
+        approved_at: p.approved_at,
+      },
+      items: p.fatsat_points
         .slice()
-        .sort((a, b) => b.protocol_date.localeCompare(a.protocol_date)),
-    [protocols],
-  );
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((i) => ({
+          description: i.description,
+          result: i.result,
+          notes: i.notes,
+        })),
+    };
+  }
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {protocols.length} {protocols.length === 1 ? "protocolo" : "protocolos"}
-        </p>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            disabled={creating}
-            className={cn(buttonVariants({ size: "sm" }))}
-          >
-            <Plus className="size-4" />
-            Nuevo protocolo
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuItem onClick={() => create("fat")}>
-              <FlaskConical className="size-4 text-primary" />
-              <div className="flex flex-col">
-                <span>FAT</span>
-                <span className="text-xs text-muted-foreground">
-                  Pruebas en fábrica
-                </span>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => create("sat")}>
-              <FlaskConical className="size-4 text-primary" />
-              <div className="flex flex-col">
-                <span>SAT</span>
-                <span className="text-xs text-muted-foreground">
-                  Pruebas en sitio
-                </span>
-              </div>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* Barra: filtros + agregar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {chips.map((c) => (
+            <button
+              key={c.k}
+              onClick={() => setFilter(c.k)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                filter === c.k
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {c.label} ({c.n})
+            </button>
+          ))}
+        </div>
+        <Button
+          size="sm"
+          onClick={() => {
+            setEditing(null);
+            setFormOpen(true);
+          }}
+        >
+          <Plus className="size-4" />
+          Agregar
+        </Button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {sorted.map((p) => {
-          const c = countResults(p.fatsat_points ?? []);
-          const pct = c.total ? Math.round((c.pass / c.total) * 100) : 0;
-          const sm = STATUS_META[p.status];
+      {/* Secciones */}
+      <div className="space-y-4">
+        {pruebas.map((p) => {
+          const items = p.fatsat_points
+            .slice()
+            .sort((a, b) => a.sort_order - b.sort_order);
+          const visible =
+            filter === "all" ? items : items.filter((i) => i.result === filter);
+          if (filter !== "all" && visible.length === 0) return null;
+          const c = countResults(items);
+          const st = STATUS_META[deriveStatus(items)];
           return (
-            <button
-              key={p.id}
-              onClick={() => openProtocol(p)}
-              className="rounded-xl border bg-card p-4 text-left transition-colors hover:bg-muted/40"
-            >
-              <div className="flex items-start justify-between gap-3">
+            <section key={p.id} className="overflow-hidden rounded-xl border bg-card">
+              <header className="flex items-start justify-between gap-3 border-b bg-muted/30 px-4 py-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
-                      {TYPE_META[p.type].label}
+                    <h3 className="truncate font-semibold text-primary">
+                      {p.name ?? "Prueba en campo"}
+                    </h3>
+                    <span
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
+                        st.className,
+                      )}
+                    >
+                      <span className={cn("size-1.5 rounded-full", st.dot)} />
+                      {st.label}
                     </span>
-                    <span className="font-medium">{p.code ?? "—"}</span>
                   </div>
-                  <p className="mt-1 truncate text-sm">
-                    {p.equipment_name ?? "Sin equipo"}
-                    {p.tag ? ` · ${p.tag}` : ""}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(p.protocol_date)}
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {formatDate(p.protocol_date)} · {c.pass}/{c.total} aprobados
+                    {c.fail > 0 ? ` · ${c.fail} fallidos` : ""}
                   </p>
                 </div>
-                <span
-                  className={cn(
-                    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
-                    sm.className,
-                  )}
-                >
-                  <span className={cn("size-1.5 rounded-full", sm.dot)} />
-                  {sm.label}
-                </span>
+                <div className="flex shrink-0 items-center gap-1">
+                  <FatsatPdfButton
+                    data={pdfFor(p)}
+                    fileName={`Prueba_${(p.name ?? "campo").replace(/\s+/g, "_")}.pdf`}
+                  />
+                  <button
+                    onClick={() => {
+                      setEditing(p);
+                      setFormOpen(true);
+                    }}
+                    title="Editar"
+                    className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Pencil className="size-4" />
+                  </button>
+                  <button
+                    onClick={() => deletePrueba(p.id)}
+                    title="Eliminar"
+                    className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              </header>
+
+              <div className="divide-y">
+                {visible.map((item) => (
+                  <div key={item.id} className="px-4 py-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <input
+                          value={item.description}
+                          onChange={(e) =>
+                            patchItem(p.id, item.id, { description: e.target.value })
+                          }
+                          onBlur={(e) =>
+                            persistItem(item.id, { description: e.target.value })
+                          }
+                          className="w-full rounded bg-transparent text-sm font-medium outline-none focus-visible:bg-muted/40 focus-visible:px-1"
+                        />
+                        <input
+                          value={item.notes ?? ""}
+                          placeholder="Observación (opcional)…"
+                          onChange={(e) =>
+                            patchItem(p.id, item.id, {
+                              notes: e.target.value || null,
+                            })
+                          }
+                          onBlur={(e) =>
+                            persistItem(item.id, { notes: e.target.value || null })
+                          }
+                          className="mt-1 w-full rounded-md border border-input bg-transparent px-2 py-1 text-xs outline-none focus-visible:border-ring"
+                        />
+                      </div>
+                      <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                        {RESULT_OPTIONS.map((o) => (
+                          <button
+                            key={o.v}
+                            onClick={() => setResult(p.id, item.id, o.v)}
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors",
+                              resultButtonClass(o.v, item.result === o.v),
+                            )}
+                          >
+                            {o.v === "pass" && <Check className="size-3" />}
+                            {o.v === "fail" && <X className="size-3" />}
+                            {o.l}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => deleteItem(p.id, item.id)}
+                          title="Quitar"
+                          className="ml-0.5 text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Agregar prueba relacionada */}
+                <div className="px-4 py-2.5">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      addItem(p.id);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="size-4 shrink-0 text-muted-foreground" />
+                    <input
+                      value={newItem[p.id] ?? ""}
+                      onChange={(e) =>
+                        setNewItem((m) => ({ ...m, [p.id]: e.target.value }))
+                      }
+                      placeholder="Agregar prueba relacionada…"
+                      className="h-8 min-w-0 flex-1 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring"
+                    />
+                    <Button type="submit" size="sm" variant="outline">
+                      Agregar
+                    </Button>
+                  </form>
+                </div>
               </div>
 
-              <div className="mt-3 space-y-1.5">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    {c.pass}/{c.total} aprobados
-                  </span>
-                  <span className="flex gap-2">
-                    {c.fail > 0 && (
-                      <span className="text-destructive">{c.fail} falla(s)</span>
-                    )}
-                    {c.pending > 0 && <span>{c.pending} pend.</span>}
-                  </span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-success"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </div>
-            </button>
+              {(p.executed_by_name || p.witness_by_name || p.approved_by_name) && (
+                <footer className="flex flex-wrap gap-x-6 gap-y-1 border-t bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
+                  {p.executed_by_name && <span>Ejecutó: {p.executed_by_name}</span>}
+                  {p.witness_by_name && <span>Testigo: {p.witness_by_name}</span>}
+                  {p.approved_by_name && <span>Aprobó: {p.approved_by_name}</span>}
+                </footer>
+              )}
+            </section>
           );
         })}
 
-        {protocols.length === 0 && (
-          <div className="col-span-full flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-sm text-muted-foreground">
-            Aún no hay protocolos FAT/SAT.
-            <Button size="sm" onClick={() => create("fat")} disabled={creating}>
+        {pruebas.length === 0 && (
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-sm text-muted-foreground">
+            Aún no hay pruebas en campo.
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+            >
               <Plus className="size-4" />
-              Crear el primero (FAT)
+              Agregar la primera
             </Button>
           </div>
         )}
       </div>
 
       <FatsatEditorSheet
-        protocol={editing}
-        initialPoints={editingPoints}
-        project={{
-          name: project.name,
-          code: project.code,
-          client_name: project.client_name,
-        }}
-        equipment={equipment}
-        open={open}
-        onOpenChange={setOpen}
+        prueba={editing}
+        project={{ id: project.id, organization_id: project.organization_id }}
+        open={formOpen}
+        onOpenChange={setFormOpen}
       />
     </>
   );

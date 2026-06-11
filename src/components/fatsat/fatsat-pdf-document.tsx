@@ -10,24 +10,17 @@ import {
 
 import { formatDate } from "@/lib/format";
 
-export type FatsatPdfPoint = {
-  section: string | null;
+export type FatsatPdfItem = {
   description: string;
-  expected_result: string | null;
-  actual_result: string | null;
   result: string;
   notes: string | null;
 };
 
 export type FatsatPdfData = {
   project: { name: string; code: string | null; client_name: string | null };
-  protocol: {
-    type: string;
-    code: string | null;
-    equipment_name: string | null;
-    tag: string | null;
+  prueba: {
+    name: string | null;
     protocol_date: string;
-    location: string | null;
     status: string;
     notes: string | null;
     executed_by_name: string | null;
@@ -40,7 +33,7 @@ export type FatsatPdfData = {
     approved_by_role: string | null;
     approved_at: string | null;
   };
-  points: FatsatPdfPoint[];
+  items: FatsatPdfItem[];
 };
 
 const PETROL = "#0F766E";
@@ -51,18 +44,18 @@ const BORDER = "#E2E8F0";
 const STATUS_LABEL: Record<string, string> = {
   draft: "Borrador",
   in_progress: "En ejecución",
-  approved: "Aprobado",
-  approved_with_observations: "Aprobado con observaciones",
-  rejected: "Rechazado",
+  approved: "Aprobada",
+  approved_with_observations: "Aprobada con observaciones",
+  rejected: "Con fallos",
 };
 const RESULT_LABEL: Record<string, string> = {
   pending: "Pendiente",
   pass: "Aprobado",
-  fail: "Rechazado",
+  fail: "Fallido",
   na: "N/A",
 };
 const RESULT_COLOR: Record<string, string> = {
-  pending: MUTED,
+  pending: "#B45309",
   pass: "#15803D",
   fail: "#B91C1C",
   na: MUTED,
@@ -98,7 +91,7 @@ const s = StyleSheet.create({
   headerRight: { alignItems: "flex-end" },
   docTitle: { fontSize: 12, fontFamily: "Helvetica-Bold" },
   muted: { color: MUTED },
-  projectName: { fontSize: 13, fontFamily: "Helvetica-Bold", marginBottom: 2 },
+  pruebaName: { fontSize: 15, fontFamily: "Helvetica-Bold", marginBottom: 2 },
   metaRow: { flexDirection: "row", gap: 8, marginVertical: 12 },
   metaCard: {
     flex: 1,
@@ -127,11 +120,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 4,
   },
   cNum: { width: 16 },
-  cDesc: { flex: 2 },
-  cExp: { flex: 1.4 },
-  cAct: { flex: 1.4 },
-  cRes: { width: 50, textAlign: "right" },
-  secLabel: { fontSize: 7, color: PETROL, fontFamily: "Helvetica-Bold" },
+  cDesc: { flex: 1 },
+  cRes: { width: 60, textAlign: "right" },
   noteLine: { fontSize: 7, color: MUTED, marginTop: 1 },
   signRow: { flexDirection: "row", gap: 12, marginTop: 28 },
   signCell: { flex: 1 },
@@ -177,11 +167,9 @@ function Sign({
 }
 
 export function FatsatPdfDocument({ data }: { data: FatsatPdfData }) {
-  const { project, protocol, points } = data;
-  const isFat = protocol.type === "fat";
-  const title = isFat ? "Protocolo FAT" : "Protocolo SAT";
+  const { project, prueba, items } = data;
   return (
-    <Document title={`${title} ${protocol.code ?? ""}`} author="Modus PM">
+    <Document title={`Prueba en campo ${prueba.name ?? ""}`} author="Modus PM">
       <Page size="A4" style={s.page}>
         <View style={s.header}>
           <View style={s.brand}>
@@ -189,104 +177,84 @@ export function FatsatPdfDocument({ data }: { data: FatsatPdfData }) {
             <Text style={s.brandName}>Modus PM</Text>
           </View>
           <View style={s.headerRight}>
-            <Text style={s.docTitle}>
-              {title}
-              {protocol.code ? ` · ${protocol.code}` : ""}
-            </Text>
+            <Text style={s.docTitle}>Acta de pruebas en campo</Text>
             <Text style={s.muted}>
-              {isFat ? "Pruebas en fábrica" : "Pruebas en sitio"}
-            </Text>
-            <Text style={s.muted}>
-              Estado: {STATUS_LABEL[protocol.status] ?? protocol.status}
+              Estado: {STATUS_LABEL[prueba.status] ?? prueba.status}
             </Text>
           </View>
         </View>
 
-        <Text style={s.projectName}>{project.name}</Text>
+        <Text style={s.pruebaName}>{prueba.name ?? "Prueba en campo"}</Text>
         <Text style={s.muted}>
-          {project.code ? `${project.code}  ·  ` : ""}
-          {project.client_name ? `Cliente: ${project.client_name}` : ""}
+          {project.name}
+          {project.code ? `  ·  ${project.code}` : ""}
+          {project.client_name ? `  ·  ${project.client_name}` : ""}
         </Text>
 
         <View style={s.metaRow}>
           <View style={s.metaCard}>
-            <Text style={s.metaLabel}>EQUIPO / SISTEMA</Text>
-            <Text style={s.metaValue}>{protocol.equipment_name ?? "—"}</Text>
+            <Text style={s.metaLabel}>FECHA DE LAS PRUEBAS</Text>
+            <Text style={s.metaValue}>{fmtDate(prueba.protocol_date)}</Text>
           </View>
           <View style={s.metaCard}>
-            <Text style={s.metaLabel}>TAG</Text>
-            <Text style={s.metaValue}>{protocol.tag ?? "—"}</Text>
-          </View>
-          <View style={s.metaCard}>
-            <Text style={s.metaLabel}>FECHA</Text>
-            <Text style={s.metaValue}>{fmtDate(protocol.protocol_date)}</Text>
-          </View>
-          <View style={s.metaCard}>
-            <Text style={s.metaLabel}>UBICACIÓN</Text>
-            <Text style={s.metaValue}>{protocol.location ?? "—"}</Text>
+            <Text style={s.metaLabel}>PRUEBAS</Text>
+            <Text style={s.metaValue}>{items.length}</Text>
           </View>
         </View>
 
-        <Text style={s.section}>Puntos de prueba</Text>
+        <Text style={s.section}>Pruebas relacionadas</Text>
         <View style={s.thead}>
           <Text style={[s.th, s.cNum]}>#</Text>
-          <Text style={[s.th, s.cDesc]}>Criterio</Text>
-          <Text style={[s.th, s.cExp]}>Esperado</Text>
-          <Text style={[s.th, s.cAct]}>Real</Text>
+          <Text style={[s.th, s.cDesc]}>Prueba</Text>
           <Text style={[s.th, s.cRes]}>Resultado</Text>
         </View>
-        {points.length > 0 ? (
-          points.map((p, i) => (
+        {items.length > 0 ? (
+          items.map((it, i) => (
             <View key={i} style={s.row} wrap={false}>
               <Text style={s.cNum}>{i + 1}</Text>
               <View style={s.cDesc}>
-                {p.section ? <Text style={s.secLabel}>{p.section}</Text> : null}
-                <Text>{p.description}</Text>
-                {p.notes ? <Text style={s.noteLine}>Obs.: {p.notes}</Text> : null}
+                <Text>{it.description}</Text>
+                {it.notes ? <Text style={s.noteLine}>Obs.: {it.notes}</Text> : null}
               </View>
-              <Text style={s.cExp}>{p.expected_result ?? "—"}</Text>
-              <Text style={s.cAct}>{p.actual_result ?? "—"}</Text>
-              <Text style={[s.cRes, { color: RESULT_COLOR[p.result] ?? MUTED }]}>
-                {RESULT_LABEL[p.result] ?? p.result}
+              <Text style={[s.cRes, { color: RESULT_COLOR[it.result] ?? MUTED }]}>
+                {RESULT_LABEL[it.result] ?? it.result}
               </Text>
             </View>
           ))
         ) : (
-          <Text style={[s.muted, { paddingVertical: 6 }]}>
-            Sin puntos de prueba.
-          </Text>
+          <Text style={[s.muted, { paddingVertical: 6 }]}>Sin pruebas.</Text>
         )}
 
-        {protocol.notes ? (
+        {prueba.notes ? (
           <>
             <Text style={s.section}>Observaciones generales</Text>
-            <Text style={{ lineHeight: 1.5 }}>{protocol.notes}</Text>
+            <Text style={{ lineHeight: 1.5 }}>{prueba.notes}</Text>
           </>
         ) : null}
 
         <View style={s.signRow}>
           <Sign
             role="EJECUTÓ"
-            name={protocol.executed_by_name}
-            jobRole={protocol.executed_by_role}
-            date={protocol.executed_at}
+            name={prueba.executed_by_name}
+            jobRole={prueba.executed_by_role}
+            date={prueba.executed_at}
           />
           <Sign
             role="TESTIGO"
-            name={protocol.witness_by_name}
-            jobRole={protocol.witness_by_role}
-            date={protocol.witness_at}
+            name={prueba.witness_by_name}
+            jobRole={prueba.witness_by_role}
+            date={prueba.witness_at}
           />
           <Sign
             role="APROBÓ"
-            name={protocol.approved_by_name}
-            jobRole={protocol.approved_by_role}
-            date={protocol.approved_at}
+            name={prueba.approved_by_name}
+            jobRole={prueba.approved_by_role}
+            date={prueba.approved_at}
           />
         </View>
 
         <View style={s.footer} fixed>
-          <Text>{title}</Text>
+          <Text>Acta de pruebas en campo</Text>
           <Text>Generado con Modus PM</Text>
         </View>
       </Page>

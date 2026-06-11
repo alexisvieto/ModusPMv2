@@ -98,7 +98,7 @@ export function AppShell({
           icon: ClipboardList,
         },
         {
-          label: "FAT / SAT",
+          label: "Pruebas",
           href: `/app/proyectos/${activeProjectId}/fat-sat`,
           icon: FlaskConical,
         },

@@ -347,6 +347,7 @@ export type Database = {
       fatsat_protocols: {
         Row: {
           approved_at: string | null
+          name: string | null
           approved_by_name: string | null
           approved_by_role: string | null
           code: string | null
@@ -372,6 +373,7 @@ export type Database = {
         }
         Insert: {
           approved_at?: string | null
+          name?: string | null
           approved_by_name?: string | null
           approved_by_role?: string | null
           code?: string | null
@@ -397,6 +399,7 @@ export type Database = {
         }
         Update: {
           approved_at?: string | null
+          name?: string | null
           approved_by_name?: string | null
           approved_by_role?: string | null
           code?: string | null

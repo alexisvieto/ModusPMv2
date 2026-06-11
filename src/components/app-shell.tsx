@@ -8,6 +8,7 @@ import {
   Check,
   ChevronsUpDown,
   ClipboardList,
+  FlaskConical,
   FolderKanban,
   LayoutDashboard,
   LogOut,
@@ -95,6 +96,11 @@ export function AppShell({
           label: "Reportes diarios",
           href: `/app/proyectos/${activeProjectId}/reportes`,
           icon: ClipboardList,
+        },
+        {
+          label: "FAT / SAT",
+          href: `/app/proyectos/${activeProjectId}/fat-sat`,
+          icon: FlaskConical,
         },
         {
           label: "Costos",

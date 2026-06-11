@@ -287,6 +287,163 @@ export type Database = {
           },
         ]
       }
+      fatsat_points: {
+        Row: {
+          actual_result: string | null
+          created_at: string
+          description: string
+          expected_result: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          protocol_id: string
+          result: Database["public"]["Enums"]["fatsat_result"]
+          section: string | null
+          sort_order: number
+        }
+        Insert: {
+          actual_result?: string | null
+          created_at?: string
+          description?: string
+          expected_result?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          protocol_id: string
+          result?: Database["public"]["Enums"]["fatsat_result"]
+          section?: string | null
+          sort_order?: number
+        }
+        Update: {
+          actual_result?: string | null
+          created_at?: string
+          description?: string
+          expected_result?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          protocol_id?: string
+          result?: Database["public"]["Enums"]["fatsat_result"]
+          section?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fatsat_points_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fatsat_points_protocol_id_fkey"
+            columns: ["protocol_id"]
+            isOneToOne: false
+            referencedRelation: "fatsat_protocols"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fatsat_protocols: {
+        Row: {
+          approved_at: string | null
+          approved_by_name: string | null
+          approved_by_role: string | null
+          code: string | null
+          created_at: string
+          equipment_item_id: string | null
+          equipment_name: string | null
+          executed_at: string | null
+          executed_by_name: string | null
+          executed_by_role: string | null
+          id: string
+          location: string | null
+          notes: string | null
+          organization_id: string
+          project_id: string
+          protocol_date: string
+          status: Database["public"]["Enums"]["fatsat_status"]
+          tag: string | null
+          type: Database["public"]["Enums"]["fatsat_type"]
+          updated_at: string
+          witness_at: string | null
+          witness_by_name: string | null
+          witness_by_role: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_name?: string | null
+          approved_by_role?: string | null
+          code?: string | null
+          created_at?: string
+          equipment_item_id?: string | null
+          equipment_name?: string | null
+          executed_at?: string | null
+          executed_by_name?: string | null
+          executed_by_role?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          organization_id: string
+          project_id: string
+          protocol_date?: string
+          status?: Database["public"]["Enums"]["fatsat_status"]
+          tag?: string | null
+          type?: Database["public"]["Enums"]["fatsat_type"]
+          updated_at?: string
+          witness_at?: string | null
+          witness_by_name?: string | null
+          witness_by_role?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_name?: string | null
+          approved_by_role?: string | null
+          code?: string | null
+          created_at?: string
+          equipment_item_id?: string | null
+          equipment_name?: string | null
+          executed_at?: string | null
+          executed_by_name?: string | null
+          executed_by_role?: string | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          organization_id?: string
+          project_id?: string
+          protocol_date?: string
+          status?: Database["public"]["Enums"]["fatsat_status"]
+          tag?: string | null
+          type?: Database["public"]["Enums"]["fatsat_type"]
+          updated_at?: string
+          witness_at?: string | null
+          witness_by_name?: string | null
+          witness_by_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fatsat_protocols_equipment_item_id_fkey"
+            columns: ["equipment_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fatsat_protocols_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fatsat_protocols_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_items: {
         Row: {
           barcode: string | null
@@ -749,6 +906,14 @@ export type Database = {
         | "equipment"
         | "subcontract"
         | "other"
+      fatsat_result: "pending" | "pass" | "fail" | "na"
+      fatsat_status:
+        | "draft"
+        | "in_progress"
+        | "approved"
+        | "approved_with_observations"
+        | "rejected"
+      fatsat_type: "fat" | "sat"
       inventory_category:
         | "equipo"
         | "material"
@@ -895,6 +1060,15 @@ export const Constants = {
     Enums: {
       ai_provider: ["anthropic", "openai", "google"],
       cost_category: ["labor", "material", "equipment", "subcontract", "other"],
+      fatsat_result: ["pending", "pass", "fail", "na"],
+      fatsat_status: [
+        "draft",
+        "in_progress",
+        "approved",
+        "approved_with_observations",
+        "rejected",
+      ],
+      fatsat_type: ["fat", "sat"],
       inventory_category: [
         "equipo",
         "material",

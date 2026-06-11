@@ -2,6 +2,8 @@
 
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
+import { dayMonthShort } from "@/lib/format";
+
 import {
   ChartContainer,
   ChartLegend,
@@ -20,10 +22,7 @@ const config = {
 
 function fmtTick(d: string) {
   const [y, m, day] = d.split("-").map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString("es-PA", {
-    day: "2-digit",
-    month: "short",
-  });
+  return dayMonthShort(new Date(y, m - 1, day));
 }
 
 export function SCurve({ data }: { data: Point[] }) {

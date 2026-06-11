@@ -14,6 +14,8 @@ function Progress({
     <ProgressPrimitive.Root
       value={value}
       data-slot="progress"
+      // Determinista: evita el mismatch de hidratación de Intl ("100 %" vs "100%").
+      getAriaValueText={(_, v) => `${v ?? 0}%`}
       className={cn("flex flex-wrap gap-3", className)}
       {...props}
     >

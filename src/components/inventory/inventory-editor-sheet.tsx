@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,7 @@ export function InventoryEditorSheet({
     if (!form) return;
     setSaving(true);
     const supabase = createClient();
-    await supabase
+    const { error } = await supabase
       .from("inventory_items")
       .update({
         description: form.description,
@@ -74,6 +75,11 @@ export function InventoryEditorSheet({
         notes: form.notes,
       })
       .eq("id", form.id);
+    if (error) {
+      toast.error("No se pudo guardar el ítem.");
+      setSaving(false);
+      return;
+    }
     setSaving(false);
     onOpenChange(false);
     router.refresh();
@@ -81,8 +87,17 @@ export function InventoryEditorSheet({
 
   async function remove() {
     if (!form) return;
+    if (!window.confirm("¿Eliminar este ítem del inventario? No se puede deshacer."))
+      return;
     const supabase = createClient();
-    await supabase.from("inventory_items").delete().eq("id", form.id);
+    const { error } = await supabase
+      .from("inventory_items")
+      .delete()
+      .eq("id", form.id);
+    if (error) {
+      toast.error("No se pudo eliminar.");
+      return;
+    }
     onOpenChange(false);
     router.refresh();
   }

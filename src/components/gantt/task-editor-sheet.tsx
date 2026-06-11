@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -72,7 +73,7 @@ export function TaskEditorSheet({
     if (!form) return;
     setSaving(true);
     const supabase = createClient();
-    await supabase
+    const { error } = await supabase
       .from("tasks")
       .update({
         name: form.name,
@@ -88,6 +89,11 @@ export function TaskEditorSheet({
         actual_end: form.actual_end,
       })
       .eq("id", form.id);
+    if (error) {
+      toast.error("No se pudo guardar la tarea.");
+      setSaving(false);
+      return;
+    }
     setSaving(false);
     onOpenChange(false);
     router.refresh();
@@ -95,8 +101,14 @@ export function TaskEditorSheet({
 
   async function remove() {
     if (!form) return;
+    if (!window.confirm("¿Eliminar esta fila del cronograma? No se puede deshacer."))
+      return;
     const supabase = createClient();
-    await supabase.from("tasks").delete().eq("id", form.id);
+    const { error } = await supabase.from("tasks").delete().eq("id", form.id);
+    if (error) {
+      toast.error("No se pudo eliminar.");
+      return;
+    }
     onOpenChange(false);
     router.refresh();
   }

@@ -74,7 +74,13 @@ export function addWorkingDays(
 ): string {
   if (!startISO || durationDays <= 0) return startISO;
   const cur = parseISODate(startISO);
-  while (!isWorkingDay(cur, cal)) cur.setDate(cur.getDate() + 1);
+  // Guardia anti-loop: si no hay días hábiles configurados, no colgamos el navegador.
+  const MAX_ITER = durationDays * 7 + 800;
+  let iter = 0;
+  while (!isWorkingDay(cur, cal)) {
+    cur.setDate(cur.getDate() + 1);
+    if (++iter > MAX_ITER) return toISODate(cur);
+  }
   let counted = 0;
   while (true) {
     if (isWorkingDay(cur, cal)) {
@@ -82,6 +88,7 @@ export function addWorkingDays(
       if (counted >= durationDays) break;
     }
     cur.setDate(cur.getDate() + 1);
+    if (++iter > MAX_ITER) break;
   }
   return toISODate(cur);
 }

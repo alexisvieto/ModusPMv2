@@ -11,7 +11,7 @@ import {
   parseISODate,
   type CalendarException,
 } from "@/lib/calendar";
-import { formatDate } from "@/lib/format";
+import { formatDate, monthYearShort } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
@@ -62,6 +62,7 @@ export function GanttBoard({
   const [editing, setEditing] = useState<Task | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [present, setPresent] = useState<string[]>([]);
+  const [mounted, setMounted] = useState(false);
   const pxPerDay = ZOOMS[zoom];
 
   const nameOf = useMemo(() => {
@@ -69,6 +70,9 @@ export function GanttBoard({
     for (const p of profiles) m.set(p.id, p.full_name ?? "—");
     return m;
   }, [profiles]);
+
+  // Evita hydration mismatch: "hoy" depende del reloj y solo debe calcularse en el cliente.
+  useEffect(() => setMounted(true), []);
 
   // ----- Realtime: refrescar al cambiar tareas -----
   useEffect(() => {
@@ -92,11 +96,29 @@ export function GanttBoard({
   }, [project.id, router]);
 
   // ----- Presencia -----
+  // El canal se crea de forma SÍNCRONA y registramos `.on` antes de
+  // `.subscribe()`. Antes lo creábamos dentro de un IIFE async (tras
+  // `await getUser()`); en React Strict Mode el cleanup corría con el canal
+  // aún en `null`, no se eliminaba, y en el segundo montaje se reutilizaba un
+  // canal ya suscrito → "cannot add presence callbacks after subscribe()".
   useEffect(() => {
     const supabase = createClient();
     let active = true;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    (async () => {
+    const channel = supabase.channel(`presence-gantt-${project.id}`);
+
+    channel.on("presence", { event: "sync" }, () => {
+      const state = channel.presenceState() as Record<
+        string,
+        { name: string }[]
+      >;
+      const names = Object.values(state)
+        .flat()
+        .map((p) => p.name);
+      if (active) setPresent(Array.from(new Set(names)));
+    });
+
+    channel.subscribe(async (status) => {
+      if (status !== "SUBSCRIBED") return;
       let me = "Invitado";
       try {
         const { data } = await supabase.auth.getUser();
@@ -107,25 +129,12 @@ export function GanttBoard({
       } catch {
         // sin sesión
       }
-      channel = supabase.channel(`presence-gantt-${project.id}`);
-      channel
-        .on("presence", { event: "sync" }, () => {
-          const state = channel!.presenceState() as Record<
-            string,
-            { name: string }[]
-          >;
-          const names = Object.values(state)
-            .flat()
-            .map((p) => p.name);
-          if (active) setPresent(Array.from(new Set(names)));
-        })
-        .subscribe(async (status) => {
-          if (status === "SUBSCRIBED") await channel!.track({ name: me });
-        });
-    })();
+      if (active) await channel.track({ name: me });
+    });
+
     return () => {
       active = false;
-      if (channel) supabase.removeChannel(channel);
+      supabase.removeChannel(channel);
     };
   }, [project.id, nameOf]);
 
@@ -173,7 +182,7 @@ export function GanttBoard({
     let cur = new Date(rangeStart);
     for (let i = 0; i < 60; i++) {
       out.push({
-        label: cur.toLocaleDateString("es-PA", { month: "short", year: "2-digit" }),
+        label: monthYearShort(cur),
         x: xOf(cur),
       });
       cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
@@ -183,8 +192,8 @@ export function GanttBoard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rangeStart, pxPerDay, timelineWidth]);
 
-  const todayX = xOf(new Date());
-  const todayInRange = todayX >= 0 && todayX <= timelineWidth;
+  const todayX = mounted ? xOf(new Date()) : -1;
+  const todayInRange = mounted && todayX >= 0 && todayX <= timelineWidth;
 
   function toggle(id: string) {
     setCollapsed((prev) => {
@@ -216,7 +225,7 @@ export function GanttBoard({
         progress: 0,
       })
       .select()
-      .single();
+      .maybeSingle();
     router.refresh();
     if (data) openEditor(data);
   }
@@ -242,7 +251,7 @@ export function GanttBoard({
         planned_cost: 0,
       })
       .select()
-      .single();
+      .maybeSingle();
     router.refresh();
     if (data) openEditor(data);
   }
@@ -293,12 +302,13 @@ export function GanttBoard({
             {project.baseline_set_at ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">
                 <span className="size-1.5 rounded-full bg-success" />
-                Línea base ·{" "}
-                {formatDate(project.baseline_set_at, {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })}
+                Línea base
+                {mounted &&
+                  ` · ${formatDate(project.baseline_set_at, {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}`}
               </span>
             ) : (
               <span className="rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">

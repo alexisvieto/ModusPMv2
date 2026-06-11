@@ -170,7 +170,12 @@ export default async function ProjectDashboard({
             </span>
           </div>
         </div>
-        <Button variant="outline" className="h-9 shrink-0 gap-2">
+        <Button
+          variant="outline"
+          disabled
+          title="Próximamente"
+          className="h-9 shrink-0 gap-2"
+        >
           <Download className="size-4" />
           Exportar PDF
         </Button>

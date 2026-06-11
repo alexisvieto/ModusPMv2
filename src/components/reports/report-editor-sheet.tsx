@@ -20,6 +20,7 @@ import {
 import type { ReportPdfData } from "@/components/reports/report-pdf-document";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
+import { cn } from "@/lib/utils";
 
 const ReportPdfButton = dynamic(
   () => import("@/components/reports/report-pdf-button"),
@@ -349,19 +350,24 @@ export function ReportEditorSheet({
                     <Plus className="size-3.5" /> Actividad
                   </button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Lo ejecutado hoy: descripción · cantidad · unidad — ej.{" "}
+                  <span className="font-medium">“Tendido de cable THHN #12”</span> ·
+                  350 · ml
+                </p>
                 <div className="space-y-2">
                   {entries.map((e, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <input
-                        placeholder="Descripción"
-                        className={`${fieldCls} flex-1`}
+                        placeholder="Descripción de la actividad"
+                        className={cn(fieldCls, "min-w-0 flex-1")}
                         value={e.description}
                         onChange={(ev) => setEntry(i, { description: ev.target.value })}
                       />
                       <input
                         type="number"
                         placeholder="Cant."
-                        className={`${fieldCls} w-16`}
+                        className={cn(fieldCls, "w-20 shrink-0")}
                         value={e.quantity ?? ""}
                         onChange={(ev) =>
                           setEntry(i, {
@@ -371,7 +377,7 @@ export function ReportEditorSheet({
                       />
                       <input
                         placeholder="Un."
-                        className={`${fieldCls} w-14`}
+                        className={cn(fieldCls, "w-16 shrink-0")}
                         value={e.unit ?? ""}
                         onChange={(ev) => setEntry(i, { unit: ev.target.value || null })}
                       />

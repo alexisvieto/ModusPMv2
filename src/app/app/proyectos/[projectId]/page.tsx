@@ -26,6 +26,7 @@ import {
   HEALTH_META,
   healthFromSpi,
   latestSnapshot,
+  plannedCurve,
   TASK_STATUS_META,
   type Snapshot,
 } from "@/lib/metrics";
@@ -67,9 +68,10 @@ export default async function ProjectDashboard({
         .order("snapshot_date", { ascending: true }),
       supabase
         .from("tasks")
-        .select("id, name, wbs, progress, status, baseline_start, baseline_end, sort_order")
+        .select(
+          "id, name, wbs, progress, status, parent_id, planned_start, planned_end, weight, sort_order",
+        )
         .eq("project_id", projectId)
-        .is("parent_id", null)
         .order("sort_order", { ascending: true }),
       supabase
         .from("cost_entries")
@@ -98,14 +100,23 @@ export default async function ProjectDashboard({
   const costPct = budget ? (actualCost / budget) * 100 : 0;
   const currency = project.currency ?? "USD";
 
-  const phases = tasks ?? [];
+  const allTasks = tasks ?? [];
+  const phases = allTasks.filter((t) => t.parent_id === null);
+  const leaves = allTasks.filter((t) => t.parent_id !== null);
   const lastReport = reports?.[0] ?? null;
 
-  const chartData = snaps.map((s) => ({
-    date: s.snapshot_date,
-    plan: Number(s.planned_pct),
-    real: s.actual_pct === null ? null : Number(s.actual_pct),
-  }));
+  // La curva S usa los snapshots si existen; si no, deriva el plan del Gantt.
+  const chartData =
+    snaps.length > 0
+      ? snaps.map((s) => ({
+          date: s.snapshot_date,
+          plan: Number(s.planned_pct),
+          real: s.actual_pct === null ? null : Number(s.actual_pct),
+        }))
+      : plannedCurve(leaves, {
+          start: project.start_date,
+          end: project.end_date,
+        });
 
   const spiTone =
     m.spi === null

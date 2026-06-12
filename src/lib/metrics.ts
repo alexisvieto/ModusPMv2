@@ -4,6 +4,8 @@
 // SPI = EV/PV (cronograma) · CPI = EV/AC (costo)
 // =========================================================
 
+import { parseISODate, toISODate } from "@/lib/calendar";
+
 export type Snapshot = {
   snapshot_date: string;
   planned_pct: number;
@@ -91,3 +93,55 @@ export const TASK_STATUS_META: Record<
     dot: "bg-destructive",
   },
 };
+
+export type CurvePoint = { date: string; plan: number; real: number | null };
+
+/**
+ * Curva S planificada derivada del Gantt: cada tarea hoja aporta su peso
+ * distribuido linealmente entre su inicio y su fin planificados; el acumulado
+ * normalizado da el % planificado a lo largo del tiempo. `real` queda en null
+ * (se llena con el avance real cuando el proyecto arranca y se reporta).
+ */
+export function plannedCurve(
+  tasks: {
+    planned_start: string | null;
+    planned_end: string | null;
+    weight: number | null;
+  }[],
+  range: { start: string | null; end: string | null },
+): CurvePoint[] {
+  const valid = tasks.filter((t) => t.planned_start && t.planned_end);
+  if (valid.length === 0 || !range.start || !range.end) return [];
+
+  const DAY = 86400000;
+  const totalW = valid.reduce((a, t) => a + (Number(t.weight) || 1), 0) || 1;
+  const start = parseISODate(range.start);
+  const end = parseISODate(range.end);
+  const totalDays = Math.max(1, Math.round((+end - +start) / DAY) + 1);
+  const step = Math.max(1, Math.ceil(totalDays / 16));
+
+  const addDays = (base: Date, n: number) =>
+    new Date(base.getFullYear(), base.getMonth(), base.getDate() + n);
+
+  const points: CurvePoint[] = [];
+  const pushAt = (d: Date) => {
+    const cum = valid.reduce((acc, t) => {
+      const ts = parseISODate(t.planned_start as string);
+      const te = parseISODate(t.planned_end as string);
+      const span = Math.max(1, Math.round((+te - +ts) / DAY) + 1);
+      const elapsed = Math.round((+d - +ts) / DAY) + 1;
+      const frac = Math.max(0, Math.min(1, elapsed / span));
+      return acc + frac * (Number(t.weight) || 1);
+    }, 0);
+    points.push({
+      date: toISODate(d),
+      plan: Math.round((cum / totalW) * 1000) / 10,
+      real: null,
+    });
+  };
+
+  for (let i = 0; i < totalDays; i += step) pushAt(addDays(start, i));
+  const lastIso = toISODate(end);
+  if (!points.length || points[points.length - 1].date !== lastIso) pushAt(end);
+  return points;
+}

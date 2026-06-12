@@ -25,8 +25,9 @@ import {
   evm,
   HEALTH_META,
   healthFromSpi,
+  ganttCurve,
+  ganttSnapshot,
   latestSnapshot,
-  plannedCurve,
   TASK_STATUS_META,
   type Snapshot,
 } from "@/lib/metrics";
@@ -86,7 +87,27 @@ export default async function ProjectDashboard({
     ]);
 
   const snaps = (snapshots ?? []) as Snapshot[];
-  const latest = latestSnapshot(snaps);
+
+  const allTasks = tasks ?? [];
+  const phases = allTasks.filter((t) => t.parent_id === null);
+  const leaves = allTasks.filter((t) => t.parent_id !== null);
+  const lastReport = reports?.[0] ?? null;
+
+  const actualCost = (costs ?? []).reduce((a, c) => a + Number(c.actual ?? 0), 0);
+  const budget = Number(project.budget ?? 0);
+  const costPct = budget ? (actualCost / budget) * 100 : 0;
+  const currency = project.currency ?? "USD";
+
+  // EVM: usa snapshots si existen; si no, sintetiza "hoy" desde el Gantt.
+  const latest =
+    latestSnapshot(snaps) ??
+    ganttSnapshot(
+      leaves,
+      project.start_date,
+      project.end_date,
+      budget,
+      actualCost,
+    );
   const m = evm(latest);
   const health = healthFromSpi(m.spi);
   const hm = HEALTH_META[health];
@@ -95,17 +116,7 @@ export default async function ProjectDashboard({
   const plannedPct = Number(latest?.planned_pct ?? 0);
   const scheduleGap = actualPct - plannedPct;
 
-  const actualCost = (costs ?? []).reduce((a, c) => a + Number(c.actual ?? 0), 0);
-  const budget = Number(project.budget ?? 0);
-  const costPct = budget ? (actualCost / budget) * 100 : 0;
-  const currency = project.currency ?? "USD";
-
-  const allTasks = tasks ?? [];
-  const phases = allTasks.filter((t) => t.parent_id === null);
-  const leaves = allTasks.filter((t) => t.parent_id !== null);
-  const lastReport = reports?.[0] ?? null;
-
-  // La curva S usa los snapshots si existen; si no, deriva el plan del Gantt.
+  // Curva S: snapshots si existen; si no, plan + real derivados del Gantt.
   const chartData =
     snaps.length > 0
       ? snaps.map((s) => ({
@@ -113,7 +124,7 @@ export default async function ProjectDashboard({
           plan: Number(s.planned_pct),
           real: s.actual_pct === null ? null : Number(s.actual_pct),
         }))
-      : plannedCurve(leaves, {
+      : ganttCurve(leaves, {
           start: project.start_date,
           end: project.end_date,
         });

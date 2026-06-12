@@ -96,52 +96,100 @@ export const TASK_STATUS_META: Record<
 
 export type CurvePoint = { date: string; plan: number; real: number | null };
 
+type CurveTask = {
+  planned_start: string | null;
+  planned_end: string | null;
+  progress: number | null;
+  weight: number | null;
+};
+
+const DAY = 86400000;
+const wOf = (t: { weight: number | null }) => Number(t.weight) || 1;
+const progOf = (t: { progress: number | null }) =>
+  Math.min(Math.max(Number(t.progress) || 0, 0), 100) / 100;
+
+/** Fracción 0..1 del peso planificado de la tarea al día d (lineal en su ventana). */
+function planFrac(t: CurveTask, d: Date): number {
+  const s = parseISODate(t.planned_start as string);
+  const e = parseISODate(t.planned_end as string);
+  const span = Math.max(1, Math.round((+e - +s) / DAY) + 1);
+  const elapsed = Math.round((+d - +s) / DAY) + 1;
+  return Math.max(0, Math.min(1, elapsed / span));
+}
+
 /**
- * Curva S planificada derivada del Gantt: cada tarea hoja aporta su peso
- * distribuido linealmente entre su inicio y su fin planificados; el acumulado
- * normalizado da el % planificado a lo largo del tiempo. `real` queda en null
- * (se llena con el avance real cuando el proyecto arranca y se reporta).
+ * Curva S derivada del Gantt: línea PLAN (fechas planificadas) vs línea REAL
+ * (cada tarea aporta su peso × su % de avance). Sin avance, la real queda en 0;
+ * con todo al 100%, real = plan.
  */
-export function plannedCurve(
-  tasks: {
-    planned_start: string | null;
-    planned_end: string | null;
-    weight: number | null;
-  }[],
+export function ganttCurve(
+  tasks: CurveTask[],
   range: { start: string | null; end: string | null },
 ): CurvePoint[] {
   const valid = tasks.filter((t) => t.planned_start && t.planned_end);
   if (valid.length === 0 || !range.start || !range.end) return [];
 
-  const DAY = 86400000;
-  const totalW = valid.reduce((a, t) => a + (Number(t.weight) || 1), 0) || 1;
+  const totalW = valid.reduce((a, t) => a + wOf(t), 0) || 1;
   const start = parseISODate(range.start);
   const end = parseISODate(range.end);
   const totalDays = Math.max(1, Math.round((+end - +start) / DAY) + 1);
   const step = Math.max(1, Math.ceil(totalDays / 16));
-
-  const addDays = (base: Date, n: number) =>
-    new Date(base.getFullYear(), base.getMonth(), base.getDate() + n);
+  const addDays = (b: Date, n: number) =>
+    new Date(b.getFullYear(), b.getMonth(), b.getDate() + n);
 
   const points: CurvePoint[] = [];
   const pushAt = (d: Date) => {
-    const cum = valid.reduce((acc, t) => {
-      const ts = parseISODate(t.planned_start as string);
-      const te = parseISODate(t.planned_end as string);
-      const span = Math.max(1, Math.round((+te - +ts) / DAY) + 1);
-      const elapsed = Math.round((+d - +ts) / DAY) + 1;
-      const frac = Math.max(0, Math.min(1, elapsed / span));
-      return acc + frac * (Number(t.weight) || 1);
-    }, 0);
+    let plan = 0;
+    let real = 0;
+    for (const t of valid) {
+      const pf = planFrac(t, d);
+      plan += pf * wOf(t);
+      real += pf * wOf(t) * progOf(t);
+    }
     points.push({
       date: toISODate(d),
-      plan: Math.round((cum / totalW) * 1000) / 10,
-      real: null,
+      plan: Math.round((plan / totalW) * 1000) / 10,
+      real: Math.round((real / totalW) * 1000) / 10,
     });
   };
 
   for (let i = 0; i < totalDays; i += step) pushAt(addDays(start, i));
-  const lastIso = toISODate(end);
-  if (!points.length || points[points.length - 1].date !== lastIso) pushAt(end);
+  if (!points.length || points[points.length - 1].date !== toISODate(end))
+    pushAt(end);
   return points;
+}
+
+/** "Snapshot" sintético de hoy (para KPIs SPI/CPI/avance) derivado del Gantt. */
+export function ganttSnapshot(
+  tasks: CurveTask[],
+  start: string | null,
+  end: string | null,
+  budget: number,
+  actualCost: number,
+  now: Date = new Date(),
+): Snapshot | null {
+  const valid = tasks.filter((t) => t.planned_start && t.planned_end);
+  if (valid.length === 0 || !start || !end) return null;
+
+  const totalW = valid.reduce((a, t) => a + wOf(t), 0) || 1;
+  const s = parseISODate(start);
+  const e = parseISODate(end);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const ref: Date | null = +today < +s ? null : +today > +e ? e : today;
+
+  const planW = ref
+    ? valid.reduce((a, t) => a + planFrac(t, ref) * wOf(t), 0)
+    : 0;
+  const realW = valid.reduce((a, t) => a + wOf(t) * progOf(t), 0);
+  const planned_pct = Math.round((planW / totalW) * 1000) / 10;
+  const actual_pct = Math.round((realW / totalW) * 1000) / 10;
+
+  return {
+    snapshot_date: toISODate(today),
+    planned_pct,
+    actual_pct,
+    planned_value: (budget * planned_pct) / 100,
+    earned_value: (budget * actual_pct) / 100,
+    actual_cost: actualCost,
+  };
 }

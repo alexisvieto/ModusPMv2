@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
+import { ChevronDown, Eye, EyeOff, KeyRound, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import {
   STATUS_OPTIONS,
 } from "@/lib/inventory";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import type { Database } from "@/lib/supabase/database.types";
 
 type Item = Database["public"]["Tables"]["inventory_items"]["Row"];
@@ -47,6 +48,8 @@ export function InventoryEditorSheet({
   const router = useRouter();
   const [form, setForm] = useState<Item | null>(item);
   const [saving, setSaving] = useState(false);
+  const [iloOpen, setIloOpen] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   useEffect(() => setForm(item), [item]);
 
@@ -75,6 +78,9 @@ export function InventoryEditorSheet({
         supplier: form.supplier,
         task_id: form.task_id,
         notes: form.notes,
+        ilo_user: form.ilo_user,
+        ilo_password: form.ilo_password,
+        ilo_license: form.ilo_license,
       })
       .eq("id", form.id);
     if (error) {
@@ -282,6 +288,82 @@ export function InventoryEditorSheet({
                   onChange={(e) => set("notes", e.target.value || null)}
                 />
               </div>
+
+              {/* iLO: solo para equipos (servidores). Oculto tras un botón. */}
+              {form.category === "equipo" && (
+                <div className="rounded-md border">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!iloOpen && !form.ilo_user)
+                        set("ilo_user", "Administrator");
+                      setIloOpen((o) => !o);
+                    }}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-sm font-medium"
+                  >
+                    <span className="flex items-center gap-2">
+                      <KeyRound className="size-4 text-primary" />
+                      iLO Configuration
+                    </span>
+                    <ChevronDown
+                      className={cn(
+                        "size-4 text-muted-foreground transition-transform",
+                        iloOpen && "rotate-180",
+                      )}
+                    />
+                  </button>
+                  {iloOpen && (
+                    <div className="space-y-3 border-t p-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="i-ilo-user">User</Label>
+                        <Input
+                          id="i-ilo-user"
+                          value={form.ilo_user ?? ""}
+                          onChange={(e) => set("ilo_user", e.target.value || null)}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="i-ilo-pw">Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="i-ilo-pw"
+                            type={showPw ? "text" : "password"}
+                            placeholder="Ej. 858NXY7M"
+                            className="pr-9"
+                            value={form.ilo_password ?? ""}
+                            onChange={(e) =>
+                              set("ilo_password", e.target.value || null)
+                            }
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPw((s) => !s)}
+                            aria-label={showPw ? "Ocultar" : "Mostrar"}
+                            className="absolute inset-y-0 right-0 flex items-center px-2.5 text-muted-foreground hover:text-foreground"
+                          >
+                            {showPw ? (
+                              <EyeOff className="size-4" />
+                            ) : (
+                              <Eye className="size-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="i-ilo-lic">Licencia</Label>
+                        <Input
+                          id="i-ilo-lic"
+                          placeholder="Ej. 3M7G9-72CWP-P7LRD-5RK87-JTQLH"
+                          value={form.ilo_license ?? ""}
+                          onChange={(e) =>
+                            set("ilo_license", e.target.value || null)
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <SheetFooter className="flex-row justify-between border-t">

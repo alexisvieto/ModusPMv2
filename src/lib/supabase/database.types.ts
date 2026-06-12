@@ -452,6 +452,9 @@ export type Database = {
           barcode: string | null
           equipment_name: string | null
           rack_position: string | null
+          ilo_user: string | null
+          ilo_password: string | null
+          ilo_license: string | null
           brand_model: string | null
           category: Database["public"]["Enums"]["inventory_category"]
           created_at: string
@@ -474,6 +477,9 @@ export type Database = {
           brand_model?: string | null
           equipment_name?: string | null
           rack_position?: string | null
+          ilo_user?: string | null
+          ilo_password?: string | null
+          ilo_license?: string | null
           category?: Database["public"]["Enums"]["inventory_category"]
           created_at?: string
           description: string
@@ -495,6 +501,9 @@ export type Database = {
           brand_model?: string | null
           equipment_name?: string | null
           rack_position?: string | null
+          ilo_user?: string | null
+          ilo_password?: string | null
+          ilo_license?: string | null
           category?: Database["public"]["Enums"]["inventory_category"]
           created_at?: string
           description?: string

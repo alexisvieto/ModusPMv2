@@ -189,6 +189,9 @@ export function InventoryBoard({
       { width: 16 }, // Proveedor
       { width: 11 }, // Tarea (WBS)
       { width: 32 }, // Notas
+      { width: 16 }, // iLO User
+      { width: 18 }, // iLO Password
+      { width: 30 }, // iLO Licencia
     ];
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -229,19 +232,19 @@ export function InventoryBoard({
     }
 
     const rightMid = { vertical: "middle", horizontal: "right" };
-    ws.mergeCells("E1:M1");
+    ws.mergeCells("E1:P1");
     paint(ws.getCell("E1"), {
       v: brand.name,
       font: { name: FONT_BLACK, size: 16, bold: true, color: { argb: NAVY } },
       align: rightMid,
     });
-    ws.mergeCells("E2:M2");
+    ws.mergeCells("E2:P2");
     paint(ws.getCell("E2"), {
       v: brand.website ?? "",
       font: { name: FONT, size: 10, color: { argb: TEXT } },
       align: rightMid,
     });
-    ws.mergeCells("E3:M3");
+    ws.mergeCells("E3:P3");
     paint(ws.getCell("E3"), {
       v: [brand.email, brand.phone].filter(Boolean).join("   ·   "),
       font: { name: FONT, size: 10, color: { argb: TEXT } },
@@ -252,19 +255,19 @@ export function InventoryBoard({
     ws.getRow(3).height = 18;
 
     // ── Franja naranja separadora ──
-    ws.mergeCells("A4:M4");
+    ws.mergeCells("A4:P4");
     ws.getRow(4).height = 5;
     paint(ws.getCell("A4"), { fill: ORANGE });
 
     // ── Título + fecha ──
-    ws.mergeCells("A5:I5");
+    ws.mergeCells("A5:K5");
     paint(ws.getCell("A5"), {
       v: `Inventario · ${project.name}`,
       font: { name: FONT_BLACK, size: 13, bold: true, color: { argb: NAVY } },
       align: { vertical: "middle" },
     });
-    ws.mergeCells("J5:M5");
-    paint(ws.getCell("J5"), {
+    ws.mergeCells("L5:P5");
+    paint(ws.getCell("L5"), {
       v: `Generado ${formatDate(new Date())}`,
       font: { name: FONT, size: 10, color: { argb: TEXT } },
       align: rightMid,
@@ -286,6 +289,9 @@ export function InventoryBoard({
       "Proveedor",
       "Tarea (WBS)",
       "Notas",
+      "iLO User",
+      "iLO Password",
+      "iLO Licencia",
     ];
     const headRow = ws.getRow(6);
     headers.forEach((h, i) => {
@@ -320,6 +326,9 @@ export function InventoryBoard({
         it.supplier ?? "",
         it.task_id ? (taskById.get(it.task_id)?.wbs ?? "") : "",
         it.notes ?? "",
+        it.ilo_user ?? "",
+        it.ilo_password ?? "",
+        it.ilo_license ?? "",
       ];
       vals.forEach((v, i) => {
         paint(r.getCell(i + 1), {
@@ -340,11 +349,11 @@ export function InventoryBoard({
     // ── Pie de página (gris oscuro, texto blanco) con franja naranja ──
     const lastRow = 6 + filtered.length;
     const stripe = lastRow + 1;
-    ws.mergeCells(stripe, 1, stripe, 13);
+    ws.mergeCells(stripe, 1, stripe, 16);
     ws.getRow(stripe).height = 5;
     paint(ws.getCell(stripe, 1), { fill: ORANGE });
     const foot = stripe + 1;
-    ws.mergeCells(foot, 1, foot, 13);
+    ws.mergeCells(foot, 1, foot, 16);
     paint(ws.getCell(foot, 1), {
       v: `${brand.name} · División de Telecomunicaciones y Sistemas Especiales`,
       font: { name: FONT, size: 9, color: { argb: WHITE } },

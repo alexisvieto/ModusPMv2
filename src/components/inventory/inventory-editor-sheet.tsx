@@ -62,6 +62,8 @@ export function InventoryEditorSheet({
       .from("inventory_items")
       .update({
         description: form.description,
+        equipment_name: form.equipment_name,
+        rack_position: form.rack_position,
         product_number: form.product_number,
         serial_number: form.serial_number,
         barcode: form.barcode,
@@ -122,6 +124,27 @@ export function InventoryEditorSheet({
                   value={form.description}
                   onChange={(e) => set("description", e.target.value)}
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="i-name">Nombre / Hostname</Label>
+                  <Input
+                    id="i-name"
+                    placeholder="Ej. MIANAP-SRV19"
+                    value={form.equipment_name ?? ""}
+                    onChange={(e) => set("equipment_name", e.target.value || null)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="i-rack">Ubicación en rack</Label>
+                  <Input
+                    id="i-rack"
+                    placeholder="Ej. SEC 0205/F 20U"
+                    value={form.rack_position ?? ""}
+                    onChange={(e) => set("rack_position", e.target.value || null)}
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">

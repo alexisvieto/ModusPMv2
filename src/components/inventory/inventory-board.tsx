@@ -153,7 +153,9 @@ export function InventoryBoard({
   async function exportExcel() {
     const XLSX = await import("xlsx");
     const rows = filtered.map((it) => ({
+      Nombre: it.equipment_name ?? "",
       Descripción: it.description,
+      "Ubicación en rack": it.rack_position ?? "",
       "N° de producto": it.product_number ?? "",
       Serial: it.serial_number ?? "",
       "Marca/Modelo": it.brand_model ?? "",
@@ -177,13 +179,15 @@ export function InventoryBoard({
     ]);
     XLSX.utils.sheet_add_json(ws, rows, { origin: "A5" });
     ws["!merges"] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 10 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 10 } },
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 12 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 12 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 12 } },
     ];
     ws["!cols"] = [
+      { wch: 16 },
       { wch: 42 },
-      { wch: 14 },
+      { wch: 18 },
+      { wch: 16 },
       { wch: 14 },
       { wch: 16 },
       { wch: 12 },
@@ -296,7 +300,12 @@ export function InventoryBoard({
                     >
                       <td className="px-3 py-2">
                         <div className="font-medium">{it.description}</div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                          {it.equipment_name && (
+                            <span className="font-mono font-semibold text-primary">
+                              {it.equipment_name}
+                            </span>
+                          )}
                           {it.product_number && <span>{it.product_number}</span>}
                           {task && (
                             <span className="rounded bg-primary/10 px-1 font-mono text-primary">
@@ -329,7 +338,12 @@ export function InventoryBoard({
                         </span>
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">
-                        {INV_LOCATION[it.location]}
+                        {it.rack_position && (
+                          <span className="block font-mono text-xs text-foreground">
+                            {it.rack_position}
+                          </span>
+                        )}
+                        <span className="text-xs">{INV_LOCATION[it.location]}</span>
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">
                         {it.supplier || "—"}

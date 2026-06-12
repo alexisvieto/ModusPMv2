@@ -450,6 +450,8 @@ export type Database = {
       inventory_items: {
         Row: {
           barcode: string | null
+          equipment_name: string | null
+          rack_position: string | null
           brand_model: string | null
           category: Database["public"]["Enums"]["inventory_category"]
           created_at: string
@@ -470,6 +472,8 @@ export type Database = {
         Insert: {
           barcode?: string | null
           brand_model?: string | null
+          equipment_name?: string | null
+          rack_position?: string | null
           category?: Database["public"]["Enums"]["inventory_category"]
           created_at?: string
           description: string
@@ -489,6 +493,8 @@ export type Database = {
         Update: {
           barcode?: string | null
           brand_model?: string | null
+          equipment_name?: string | null
+          rack_position?: string | null
           category?: Database["public"]["Enums"]["inventory_category"]
           created_at?: string
           description?: string

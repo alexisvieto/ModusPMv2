@@ -15,6 +15,10 @@ export default async function AppHome() {
     .select(
       "id, name, code, client_name, description, status, start_date, end_date, location, currency, budget",
     )
+    .eq(
+      "organization_id",
+      membership?.organization_id ?? "00000000-0000-0000-0000-000000000000",
+    )
     .order("created_at", { ascending: false });
 
   return (

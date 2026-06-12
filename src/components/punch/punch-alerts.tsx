@@ -35,6 +35,7 @@ export function PunchAlerts({ projectId }: { projectId: string | null }) {
     }
     const supabase = createClient();
     let active = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
     async function load() {
       const t = new Date();
@@ -52,6 +53,13 @@ export function PunchAlerts({ projectId }: { projectId: string | null }) {
       if (active && data) setAlerts(data as Alert[]);
     }
 
+    const scheduleLoad = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (active) load();
+      }, 400);
+    };
+
     load();
     const channel = supabase
       .channel(`punch-alerts-${projectId}`)
@@ -63,11 +71,12 @@ export function PunchAlerts({ projectId }: { projectId: string | null }) {
           table: "punch_items",
           filter: `project_id=eq.${projectId}`,
         },
-        () => load(),
+        () => scheduleLoad(),
       )
       .subscribe();
     return () => {
       active = false;
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [projectId]);

@@ -39,7 +39,7 @@ export function ProjectCreateSheet({
   const [client, setClient] = useState("");
   const [location, setLocation] = useState("");
   const [status, setStatus] = useState<ProjectStatus>("active");
-  const [start, setStart] = useState(toISODate(new Date()));
+  const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [budget, setBudget] = useState("");
   const [description, setDescription] = useState("");

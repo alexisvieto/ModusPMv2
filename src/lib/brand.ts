@@ -42,6 +42,12 @@ export type OrgBranding = {
   address: string | null;
 };
 
+/** Solo permite logos same-origin (/…) o https:// (evita data:/javascript:). */
+function safeLogo(url: string | null): string | null {
+  if (!url) return null;
+  return /^(https:\/\/|\/)/.test(url) ? url : null;
+}
+
 export function brandFromOrg(org: OrgBranding | null | undefined): Brand {
   if (!org) return DEFAULT_BRAND;
   return {
@@ -53,7 +59,7 @@ export function brandFromOrg(org: OrgBranding | null | undefined): Brand {
     email: org.contact_email,
     phone: org.contact_phone,
     address: org.address,
-    logoUrl: org.logo_url,
+    logoUrl: safeLogo(org.logo_url),
   };
 }
 

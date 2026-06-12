@@ -43,6 +43,10 @@ export default async function AppLayout({
   const { data: projects } = await supabase
     .from("projects")
     .select("id, name, code, client_name, status")
+    .eq(
+      "organization_id",
+      membership?.organization_id ?? "00000000-0000-0000-0000-000000000000",
+    )
     .order("created_at", { ascending: true });
 
   return (

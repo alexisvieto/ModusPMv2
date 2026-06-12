@@ -139,7 +139,9 @@ export function AppShell({
 
   const initials = initialsOf(profile?.full_name ?? null, userEmail);
   // White-label por tenant: tiñe los tokens de marca con el color de la org.
-  const brandColor = /^#[0-9a-fA-F]{3,8}$/.test(brand.primary)
+  const brandColor = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(
+    brand.primary,
+  )
     ? brand.primary
     : null;
 

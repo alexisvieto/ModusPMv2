@@ -110,8 +110,9 @@ const progOf = (t: { progress: number | null }) =>
 
 /** Fracción 0..1 del peso planificado de la tarea al día d (lineal en su ventana). */
 function planFrac(t: CurveTask, d: Date): number {
-  const s = parseISODate(t.planned_start as string);
-  const e = parseISODate(t.planned_end as string);
+  if (!t.planned_start || !t.planned_end) return 0;
+  const s = parseISODate(t.planned_start);
+  const e = parseISODate(t.planned_end);
   const span = Math.max(1, Math.round((+e - +s) / DAY) + 1);
   const elapsed = Math.round((+d - +s) / DAY) + 1;
   return Math.max(0, Math.min(1, elapsed / span));

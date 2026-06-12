@@ -151,56 +151,219 @@ export function InventoryBoard({
   }
 
   async function exportExcel() {
-    const XLSX = await import("xlsx");
-    const rows = filtered.map((it) => ({
-      Nombre: it.equipment_name ?? "",
-      Descripción: it.description,
-      "Ubicación en rack": it.rack_position ?? "",
-      "N° de producto": it.product_number ?? "",
-      Serial: it.serial_number ?? "",
-      "Marca/Modelo": it.brand_model ?? "",
-      Categoría: INV_CATEGORY[it.category],
-      Cantidad: Number(it.quantity),
-      Estado: INV_STATUS[it.status].label,
-      Ubicación: INV_LOCATION[it.location],
-      Proveedor: it.supplier ?? "",
-      "Tarea (WBS)": it.task_id ? (taskById.get(it.task_id)?.wbs ?? "") : "",
-      Notas: it.notes ?? "",
-    }));
-    const ws = XLSX.utils.aoa_to_sheet([
-      [brand.name],
-      [`Inventario · ${project.name}`],
-      [
-        `Generado ${formatDate(new Date())}${
-          brand.website ? ` · ${brand.website}` : ""
-        }`,
-      ],
-      [],
-    ]);
-    XLSX.utils.sheet_add_json(ws, rows, { origin: "A5" });
-    ws["!merges"] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 12 } },
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 12 } },
-      { s: { r: 2, c: 0 }, e: { r: 2, c: 12 } },
+    // Paleta "documentos oficiales" del BRANDING GUIDE de Ingesoft
+    // (azul marino + naranja). Es específica del exportable: el resto de la
+    // app usa la paleta clásica de la marca. Si se vuelve multi-tenant,
+    // esto debería migrar a una config de marca-de-documento por org.
+    const NAVY = "FF071D4C";
+    const ORANGE = "FFFF9A00";
+    const TEXT = "FF333333";
+    const ZEBRA = "FFF6F6F6";
+    const WHITE = "FFFFFFFF";
+    const FONT = "Archivo";
+    const FONT_BLACK = "Archivo Black";
+
+    const excelMod: { default?: unknown } = await import("exceljs");
+    // El build de navegador puede exponer el namespace como default.
+    const ExcelJS = (excelMod.default ?? excelMod) as {
+      Workbook: new () => Record<string, unknown>;
+    };
+    // A partir de aquí trabajamos con la API de ExcelJS (tipos laxos).
+    const wb = new ExcelJS.Workbook() as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const ws = wb.addWorksheet("Inventario", {
+      views: [{ state: "frozen", ySplit: 6, showGridLines: false }],
+      pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    });
+
+    ws.columns = [
+      { width: 18 }, // Nombre
+      { width: 40 }, // Descripción
+      { width: 18 }, // Ubicación en rack
+      { width: 18 }, // N° de producto
+      { width: 16 }, // Serial
+      { width: 18 }, // Marca/Modelo
+      { width: 13 }, // Categoría
+      { width: 10 }, // Cantidad
+      { width: 14 }, // Estado
+      { width: 14 }, // Ubicación
+      { width: 16 }, // Proveedor
+      { width: 11 }, // Tarea (WBS)
+      { width: 32 }, // Notas
     ];
-    ws["!cols"] = [
-      { wch: 16 },
-      { wch: 42 },
-      { wch: 18 },
-      { wch: 16 },
-      { wch: 14 },
-      { wch: 16 },
-      { wch: 12 },
-      { wch: 9 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 14 },
-      { wch: 8 },
-      { wch: 30 },
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const paint = (
+      c: any,
+      o: { v?: string | number; font?: unknown; fill?: string; align?: unknown; border?: unknown },
+    ) => {
+      if (o.v !== undefined) c.value = o.v;
+      if (o.font) c.font = o.font;
+      if (o.fill)
+        c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: o.fill } };
+      if (o.align) c.alignment = o.align;
+      if (o.border) c.border = o.border;
+    };
+
+    // ── Encabezado: logo (incluye el slogan "Endless Possibilities") ──
+    try {
+      const res = await fetch(brand.logoUrl ?? "/ingesoft-logo.png");
+      if (res.ok) {
+        const blob = await res.blob();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onloadend = () =>
+            resolve(String(fr.result).replace(/^data:image\/\w+;base64,/, ""));
+          fr.onerror = reject;
+          fr.readAsDataURL(blob);
+        });
+        const imgId = wb.addImage({ base64, extension: "png" });
+        // Logo 1101×320 → 280×81 px (conserva proporción)
+        ws.addImage(imgId, {
+          tl: { col: 0, row: 0 },
+          ext: { width: 280, height: 81 },
+          editAs: "oneCell",
+        });
+      }
+    } catch {
+      // sin logo: el documento se genera igual
+    }
+
+    const rightMid = { vertical: "middle", horizontal: "right" };
+    ws.mergeCells("E1:M1");
+    paint(ws.getCell("E1"), {
+      v: brand.name,
+      font: { name: FONT_BLACK, size: 16, bold: true, color: { argb: NAVY } },
+      align: rightMid,
+    });
+    ws.mergeCells("E2:M2");
+    paint(ws.getCell("E2"), {
+      v: brand.website ?? "",
+      font: { name: FONT, size: 10, color: { argb: TEXT } },
+      align: rightMid,
+    });
+    ws.mergeCells("E3:M3");
+    paint(ws.getCell("E3"), {
+      v: [brand.email, brand.phone].filter(Boolean).join("   ·   "),
+      font: { name: FONT, size: 10, color: { argb: TEXT } },
+      align: rightMid,
+    });
+    ws.getRow(1).height = 30;
+    ws.getRow(2).height = 18;
+    ws.getRow(3).height = 18;
+
+    // ── Franja naranja separadora ──
+    ws.mergeCells("A4:M4");
+    ws.getRow(4).height = 5;
+    paint(ws.getCell("A4"), { fill: ORANGE });
+
+    // ── Título + fecha ──
+    ws.mergeCells("A5:I5");
+    paint(ws.getCell("A5"), {
+      v: `Inventario · ${project.name}`,
+      font: { name: FONT_BLACK, size: 13, bold: true, color: { argb: NAVY } },
+      align: { vertical: "middle" },
+    });
+    ws.mergeCells("J5:M5");
+    paint(ws.getCell("J5"), {
+      v: `Generado ${formatDate(new Date())}`,
+      font: { name: FONT, size: 10, color: { argb: TEXT } },
+      align: rightMid,
+    });
+    ws.getRow(5).height = 24;
+
+    // ── Cabecera de tabla (azul marino, texto blanco, borde naranja) ──
+    const headers = [
+      "Nombre",
+      "Descripción",
+      "Ubicación en rack",
+      "N° de producto",
+      "Serial",
+      "Marca/Modelo",
+      "Categoría",
+      "Cantidad",
+      "Estado",
+      "Ubicación",
+      "Proveedor",
+      "Tarea (WBS)",
+      "Notas",
     ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Inventario");
-    XLSX.writeFile(wb, `Inventario_${project.code ?? "proyecto"}.xlsx`);
+    const headRow = ws.getRow(6);
+    headers.forEach((h, i) => {
+      paint(headRow.getCell(i + 1), {
+        v: h,
+        font: { name: FONT, size: 10, bold: true, color: { argb: WHITE } },
+        fill: NAVY,
+        align: {
+          vertical: "middle",
+          horizontal: i === 7 ? "center" : "left",
+          wrapText: true,
+        },
+        border: { bottom: { style: "medium", color: { argb: ORANGE } } },
+      });
+    });
+    headRow.height = 22;
+
+    // ── Filas de datos (zebra) ──
+    filtered.forEach((it, idx) => {
+      const r = ws.getRow(7 + idx);
+      const vals: (string | number)[] = [
+        it.equipment_name ?? "",
+        it.description,
+        it.rack_position ?? "",
+        it.product_number ?? "",
+        it.serial_number ?? "",
+        it.brand_model ?? "",
+        INV_CATEGORY[it.category],
+        Number(it.quantity),
+        INV_STATUS[it.status].label,
+        INV_LOCATION[it.location],
+        it.supplier ?? "",
+        it.task_id ? (taskById.get(it.task_id)?.wbs ?? "") : "",
+        it.notes ?? "",
+      ];
+      vals.forEach((v, i) => {
+        paint(r.getCell(i + 1), {
+          v,
+          font: { name: FONT, size: 10, color: { argb: TEXT } },
+          fill: idx % 2 === 1 ? ZEBRA : undefined,
+          align: {
+            vertical: "middle",
+            horizontal: i === 7 ? "center" : "left",
+            wrapText: i === 1 || i === 12,
+          },
+          border: { bottom: { style: "thin", color: { argb: "FFE5E5E5" } } },
+        });
+      });
+      r.height = 16;
+    });
+
+    // ── Pie de página (gris oscuro, texto blanco) con franja naranja ──
+    const lastRow = 6 + filtered.length;
+    const stripe = lastRow + 1;
+    ws.mergeCells(stripe, 1, stripe, 13);
+    ws.getRow(stripe).height = 5;
+    paint(ws.getCell(stripe, 1), { fill: ORANGE });
+    const foot = stripe + 1;
+    ws.mergeCells(foot, 1, foot, 13);
+    paint(ws.getCell(foot, 1), {
+      v: `${brand.name} · División de Telecomunicaciones y Sistemas Especiales`,
+      font: { name: FONT, size: 9, color: { argb: WHITE } },
+      fill: TEXT,
+      align: { vertical: "middle", horizontal: "center" },
+    });
+    ws.getRow(foot).height = 20;
+
+    // ── Descarga ──
+    const out = await wb.xlsx.writeBuffer();
+    const blob = new Blob([out], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Inventario_${project.code ?? "proyecto"}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (

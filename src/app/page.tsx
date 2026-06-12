@@ -32,12 +32,6 @@ export default function Home() {
               IA
             </span>
           </nav>
-          <Link
-            href="/login"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            Entrar
-          </Link>
         </div>
       </header>
 
@@ -64,7 +58,7 @@ export default function Home() {
             href="/login"
             className={cn(buttonVariants({ size: "lg" }), "h-10 px-5")}
           >
-            Entrar al demo
+            Entrar
           </Link>
           <Link
             href="/login"

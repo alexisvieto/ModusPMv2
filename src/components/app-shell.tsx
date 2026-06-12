@@ -11,6 +11,7 @@ import {
   FlaskConical,
   FolderKanban,
   LayoutDashboard,
+  LayoutGrid,
   ListTodo,
   LogOut,
   Package,
@@ -74,7 +75,7 @@ export function AppShell({
   const router = useRouter();
 
   const activeProjectId =
-    pathname.match(/\/app\/proyectos\/([^/]+)/)?.[1] ?? projects[0]?.id ?? null;
+    pathname.match(/\/app\/proyectos\/([^/]+)/)?.[1] ?? null;
   const activeProject =
     projects.find((p) => p.id === activeProjectId) ?? null;
 
@@ -178,28 +179,45 @@ export function AppShell({
           </div>
 
           <nav className="flex flex-1 flex-col gap-0.5 p-3">
-            <p className="truncate px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground">
-              {activeProject?.name ?? "Proyecto"}
-            </p>
-            {nav.map((item) => {
-              const Icon = item.icon;
-              const active = isActive(item.href, item.exact);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                    active
-                      ? "bg-primary/10 font-medium text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )}
-                >
-                  <Icon className="size-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
+            <Link
+              href="/app"
+              className={cn(
+                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                pathname === "/app"
+                  ? "bg-primary/10 font-medium text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              <LayoutGrid className="size-4" />
+              Proyectos
+            </Link>
+
+            {activeProjectId && (
+              <>
+                <p className="truncate px-3 pt-3 pb-1 text-xs font-medium text-muted-foreground">
+                  {activeProject?.name ?? "Proyecto"}
+                </p>
+                {nav.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.href, item.exact);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                        active
+                          ? "bg-primary/10 font-medium text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      )}
+                    >
+                      <Icon className="size-4" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </>
+            )}
           </nav>
 
           <div className="border-t p-3">

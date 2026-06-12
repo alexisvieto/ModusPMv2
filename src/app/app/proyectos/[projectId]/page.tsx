@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import {
   CalendarRange,
-  Download,
   Gauge,
   MapPin,
   Receipt,
@@ -11,7 +10,8 @@ import {
 } from "lucide-react";
 
 import { SCurve } from "@/components/charts/s-curve";
-import { Button } from "@/components/ui/button";
+import DashboardPdfButton from "@/components/dashboard/dashboard-pdf-button";
+import type { DashboardPdfData } from "@/components/dashboard/dashboard-pdf-document";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -31,6 +31,7 @@ import {
   TASK_STATUS_META,
   type Snapshot,
 } from "@/lib/metrics";
+import { brandFromOrg, ORG_BRAND_COLUMNS, type OrgBranding } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
@@ -58,8 +59,13 @@ export default async function ProjectDashboard({
 
   if (!project) notFound();
 
-  const [{ data: snapshots }, { data: tasks }, { data: costs }, { data: reports }] =
-    await Promise.all([
+  const [
+    { data: snapshots },
+    { data: tasks },
+    { data: costs },
+    { data: reports },
+    { data: org },
+  ] = await Promise.all([
       supabase
         .from("progress_snapshots")
         .select(
@@ -84,9 +90,15 @@ export default async function ProjectDashboard({
         .eq("project_id", projectId)
         .order("report_date", { ascending: false })
         .limit(1),
+      supabase
+        .from("organizations")
+        .select(ORG_BRAND_COLUMNS)
+        .eq("id", project.organization_id)
+        .maybeSingle(),
     ]);
 
   const snaps = (snapshots ?? []) as Snapshot[];
+  const brand = brandFromOrg(org as OrgBranding | null);
 
   const allTasks = tasks ?? [];
   const phases = allTasks.filter((t) => t.parent_id === null);
@@ -146,6 +158,47 @@ export default async function ProjectDashboard({
           ? "text-warning"
           : "text-destructive";
 
+  const pdfData: DashboardPdfData = {
+    brand,
+    project: {
+      name: project.name,
+      code: project.code,
+      client_name: project.client_name,
+      location: project.location,
+      start_date: project.start_date,
+      end_date: project.end_date,
+      status: PROJECT_STATUS[project.status] ?? project.status,
+    },
+    health: hm.label,
+    generatedAt: formatDate(new Date()),
+    kpis: {
+      actualPct,
+      plannedPct,
+      scheduleGap,
+      spi: m.spi,
+      cpi: m.cpi,
+      actualCost,
+      budget,
+      costPct,
+      currency,
+    },
+    curve: chartData.map((d) => ({ date: d.date, plan: d.plan, real: d.real ?? null })),
+    phases: phases.map((t) => ({
+      wbs: t.wbs,
+      name: t.name,
+      progress: Number(t.progress),
+    })),
+    lastReport: lastReport
+      ? {
+          report_date: lastReport.report_date,
+          summary: lastReport.summary,
+          ai_summary: lastReport.ai_summary,
+          workforce: lastReport.workforce,
+          hours: lastReport.hours,
+        }
+      : null,
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
       {/* ===== Header ===== */}
@@ -192,15 +245,10 @@ export default async function ProjectDashboard({
             </span>
           </div>
         </div>
-        <Button
-          variant="outline"
-          disabled
-          title="Próximamente"
-          className="h-9 shrink-0 gap-2"
-        >
-          <Download className="size-4" />
-          Exportar PDF
-        </Button>
+        <DashboardPdfButton
+          data={pdfData}
+          fileName={`Dashboard_${project.code ?? "proyecto"}.pdf`}
+        />
       </header>
 
       {/* ===== KPIs ===== */}

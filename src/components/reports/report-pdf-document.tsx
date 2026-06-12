@@ -1,16 +1,10 @@
 "use client";
 
-import {
-  Document,
-  Image,
-  Page,
-  StyleSheet,
-  Text,
-  View,
-} from "@react-pdf/renderer";
+import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 import { formatDate } from "@/lib/format";
-import { brandInitial, type Brand } from "@/lib/brand";
+import { type Brand } from "@/lib/brand";
+import { DOC, PdfFooter, PdfHeader } from "@/components/pdf/pdf-chrome";
 
 type Entry = { description: string; quantity: number | null; unit: string | null };
 
@@ -31,11 +25,6 @@ export type ReportPdfData = {
   author: string | null;
 };
 
-const PETROL = "#0F766E";
-const SLATE = "#1F2937";
-const MUTED = "#64748B";
-const BORDER = "#E2E8F0";
-
 const STATUS: Record<string, string> = {
   draft: "Borrador",
   submitted: "Enviado",
@@ -52,48 +41,18 @@ const fmtDate = (d: string) =>
   });
 
 const s = StyleSheet.create({
-  page: { padding: 32, fontSize: 10, color: SLATE, fontFamily: "Helvetica" },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    borderBottomWidth: 2,
-    borderBottomColor: PETROL,
-    paddingBottom: 12,
-    marginBottom: 16,
-  },
-  brand: { flexDirection: "row", alignItems: "center", gap: 6 },
-  mark: {
-    width: 22,
-    height: 22,
-    backgroundColor: PETROL,
-    borderRadius: 4,
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontFamily: "Helvetica-Bold",
-    textAlign: "center",
-    paddingTop: 4,
-  },
-  brandName: { fontSize: 13, fontFamily: "Helvetica-Bold" },
-  logo: { height: 26, width: 96, objectFit: "contain" },
-  headerRight: { alignItems: "flex-end" },
-  docTitle: { fontSize: 12, fontFamily: "Helvetica-Bold" },
-  muted: { color: MUTED },
+  page: { padding: 32, fontSize: 10, color: DOC.text, fontFamily: "Helvetica" },
   projectBox: { marginBottom: 14 },
-  projectName: { fontSize: 14, fontFamily: "Helvetica-Bold", marginBottom: 2 },
+  projectName: { fontSize: 14, fontFamily: "Helvetica-Bold", color: DOC.navy, marginBottom: 2 },
+  muted: { color: DOC.muted },
   metaRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
-  metaCard: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 4,
-    padding: 8,
-  },
-  metaLabel: { color: MUTED, fontSize: 8, marginBottom: 2 },
-  metaValue: { fontSize: 13, fontFamily: "Helvetica-Bold" },
+  metaCard: { flex: 1, borderWidth: 1, borderColor: DOC.border, borderRadius: 4, padding: 8 },
+  metaLabel: { color: DOC.muted, fontSize: 8, marginBottom: 2 },
+  metaValue: { fontSize: 13, fontFamily: "Helvetica-Bold", color: DOC.navy },
   section: {
     fontSize: 11,
     fontFamily: "Helvetica-Bold",
+    color: DOC.navy,
     marginBottom: 6,
     marginTop: 6,
   },
@@ -101,67 +60,36 @@ const s = StyleSheet.create({
   row: {
     flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    borderBottomColor: DOC.border,
     paddingVertical: 5,
   },
   cellDesc: { flex: 1 },
-  cellQty: { width: 90, textAlign: "right", color: MUTED },
+  cellQty: { width: 90, textAlign: "right", color: DOC.muted },
   aiBox: {
     borderWidth: 1,
-    borderColor: "#99E0D8",
-    backgroundColor: "#F0FBFA",
+    borderColor: DOC.orange,
     borderRadius: 4,
     padding: 10,
     marginTop: 8,
   },
   aiLabel: {
-    color: PETROL,
+    color: DOC.orange,
     fontFamily: "Helvetica-Bold",
     fontSize: 9,
     marginBottom: 3,
-  },
-  footer: {
-    position: "absolute",
-    bottom: 24,
-    left: 32,
-    right: 32,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
-    paddingTop: 8,
-    color: MUTED,
-    fontSize: 8,
   },
 });
 
 export function ReportPdfDocument({ data }: { data: ReportPdfData }) {
   const { brand, project, report, entries, author } = data;
   return (
-    <Document
-      title={`Reporte diario ${report.report_date}`}
-      author={brand.name}
-    >
+    <Document title={`Reporte diario ${report.report_date}`} author={brand.name}>
       <Page size="A4" style={s.page}>
-        <View style={[s.header, { borderBottomColor: brand.primary }]}>
-          {brand.logoUrl ? (
-            <Image src={brand.logoUrl} style={s.logo} />
-          ) : (
-            <View style={s.brand}>
-              <Text style={[s.mark, { backgroundColor: brand.primary }]}>
-                {brandInitial(brand)}
-              </Text>
-              <Text style={s.brandName}>{brand.name}</Text>
-            </View>
-          )}
-          <View style={s.headerRight}>
-            <Text style={s.docTitle}>Reporte diario</Text>
-            <Text style={s.muted}>{fmtDate(report.report_date)}</Text>
-            <Text style={s.muted}>
-              Estado: {STATUS[report.status] ?? report.status}
-            </Text>
-          </View>
-        </View>
+        <PdfHeader
+          brand={brand}
+          title="Reporte diario"
+          meta={[fmtDate(report.report_date), `Estado: ${STATUS[report.status] ?? report.status}`]}
+        />
 
         <View style={s.projectBox}>
           <Text style={s.projectName}>{project.name}</Text>
@@ -215,26 +143,13 @@ export function ReportPdfDocument({ data }: { data: ReportPdfData }) {
         ) : null}
 
         {report.ai_summary ? (
-          <View
-            style={[
-              s.aiBox,
-              { borderColor: brand.primary, backgroundColor: "#FFFFFF" },
-            ]}
-          >
-            <Text style={[s.aiLabel, { color: brand.primary }]}>RESUMEN IA</Text>
+          <View style={s.aiBox}>
+            <Text style={s.aiLabel}>RESUMEN IA</Text>
             <Text style={{ lineHeight: 1.5 }}>{report.ai_summary}</Text>
           </View>
         ) : null}
 
-        <View style={s.footer} fixed>
-          <Text>
-            {brand.name}
-            {brand.website ? ` · ${brand.website}` : ""}
-          </Text>
-          <Text>
-            {author ? `Elaborado por ${author}` : "Generado con Modus PM"}
-          </Text>
-        </View>
+        <PdfFooter brand={brand} right={author ? `Elaborado por ${author}` : undefined} />
       </Page>
     </Document>
   );

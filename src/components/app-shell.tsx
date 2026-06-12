@@ -133,8 +133,8 @@ export function AppShell({
   async function signOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    // Cierre limpio: recarga dura al landing público de Modus PM (limpia la caché del router).
+    window.location.href = "/";
   }
 
   const initials = initialsOf(profile?.full_name ?? null, userEmail);
@@ -227,6 +227,13 @@ export function AppShell({
               <Building2 className="size-3.5 shrink-0" />
               <span className="truncate">{org?.name ?? "Sin organización"}</span>
             </div>
+            <button
+              onClick={signOut}
+              className="mt-1 flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            >
+              <LogOut className="size-4" />
+              Cerrar sesión
+            </button>
           </div>
         </aside>
 

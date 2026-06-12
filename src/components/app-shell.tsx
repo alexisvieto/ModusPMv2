@@ -35,6 +35,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { PunchAlerts } from "@/components/punch/punch-alerts";
+import type { Brand } from "@/lib/brand";
 
 type ShellProject = {
   id: string;
@@ -60,12 +61,14 @@ export function AppShell({
   org,
   profile,
   userEmail,
+  brand,
 }: {
   children: React.ReactNode;
   projects: ShellProject[];
   org: { id: string; name: string; slug: string } | null;
   profile: { full_name: string | null; title: string | null } | null;
   userEmail: string | null;
+  brand: Brand;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -134,20 +137,44 @@ export function AppShell({
   }
 
   const initials = initialsOf(profile?.full_name ?? null, userEmail);
+  // White-label por tenant: tiñe los tokens de marca con el color de la org.
+  const brandColor = /^#[0-9a-fA-F]{3,8}$/.test(brand.primary)
+    ? brand.primary
+    : null;
 
   return (
     <TooltipProvider delay={200}>
+      {brandColor && (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `:root{--primary:${brandColor};--sidebar-primary:${brandColor};--ring:${brandColor};--sidebar-ring:${brandColor};}`,
+          }}
+        />
+      )}
       <div className="flex min-h-svh">
         {/* ===== Sidebar ===== */}
         <aside className="hidden w-60 shrink-0 flex-col border-r bg-sidebar md:flex">
           <div className="flex h-16 items-center gap-2 border-b px-5">
-            <div className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
-              <span className="font-mono text-sm font-bold">M</span>
-            </div>
-            <span className="text-base font-semibold tracking-tight">
-              Modus
-              <span className="ml-1 font-mono font-medium text-primary">PM</span>
-            </span>
+            {brand.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={brand.logoUrl}
+                alt={brand.name}
+                className="h-7 w-auto max-w-[190px] object-contain"
+              />
+            ) : (
+              <>
+                <div className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
+                  <span className="font-mono text-sm font-bold">M</span>
+                </div>
+                <span className="text-base font-semibold tracking-tight">
+                  Modus
+                  <span className="ml-1 font-mono font-medium text-primary">
+                    PM
+                  </span>
+                </span>
+              </>
+            )}
           </div>
 
           <nav className="flex flex-1 flex-col gap-0.5 p-3">

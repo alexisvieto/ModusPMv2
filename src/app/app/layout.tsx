@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
+import { brandFromOrg, ORG_BRAND_COLUMNS, type OrgBranding } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({
@@ -28,15 +29,16 @@ export default async function AppLayout({
     .limit(1)
     .maybeSingle();
 
-  let org: { id: string; name: string; slug: string } | null = null;
+  let org: (OrgBranding & { id: string; slug: string }) | null = null;
   if (membership) {
     const { data } = await supabase
       .from("organizations")
-      .select("id, name, slug")
+      .select(`id, slug, ${ORG_BRAND_COLUMNS}`)
       .eq("id", membership.organization_id)
       .maybeSingle();
     org = data;
   }
+  const brand = brandFromOrg(org);
 
   const { data: projects } = await supabase
     .from("projects")
@@ -49,6 +51,7 @@ export default async function AppLayout({
       org={org}
       profile={profile}
       userEmail={user.email ?? null}
+      brand={brand}
     >
       {children}
     </AppShell>

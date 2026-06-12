@@ -36,6 +36,7 @@ const ROW_H = 40;
 const HEADER_H = 52;
 const LEFT_W = 380;
 const ZOOMS = { mes: 4.2, semana: 11 } as const;
+const ZOOM_KEY = "moduspm:gantt-zoom";
 type Zoom = keyof typeof ZOOMS;
 
 const STATUS_FILL: Record<string, string> = {
@@ -72,7 +73,16 @@ export function GanttBoard({
   }, [profiles]);
 
   // Evita hydration mismatch: "hoy" depende del reloj y solo debe calcularse en el cliente.
-  useEffect(() => setMounted(true), []);
+  // Además restaura la preferencia de zoom (mes/semana) del PM desde localStorage.
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const saved = window.localStorage.getItem(ZOOM_KEY);
+      if (saved === "mes" || saved === "semana") setZoom(saved);
+    } catch {
+      // localStorage no disponible: se queda con el default.
+    }
+  }, []);
 
   // ----- Realtime: refrescar al cambiar tareas -----
   useEffect(() => {
@@ -335,7 +345,12 @@ export function GanttBoard({
               {(["mes", "semana"] as Zoom[]).map((z) => (
                 <button
                   key={z}
-                  onClick={() => setZoom(z)}
+                  onClick={() => {
+                    setZoom(z);
+                    try {
+                      window.localStorage.setItem(ZOOM_KEY, z);
+                    } catch {}
+                  }}
                   className={cn(
                     "rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors",
                     zoom === z

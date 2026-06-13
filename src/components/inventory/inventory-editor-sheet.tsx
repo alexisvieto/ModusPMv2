@@ -50,8 +50,38 @@ export function InventoryEditorSheet({
   const [saving, setSaving] = useState(false);
   const [iloOpen, setIloOpen] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  const [iloLoaded, setIloLoaded] = useState(false);
 
-  useEffect(() => setForm(item), [item]);
+  // Las credenciales iLO NO vienen en el listado (no se difunden a cada
+  // cliente). Al abrir un equipo, las cargamos bajo demanda solo para ese
+  // ítem. `iloLoaded` evita que un guardado previo a la carga las borre.
+  useEffect(() => {
+    setForm(item);
+    setIloOpen(false);
+    setShowPw(false);
+    setIloLoaded(false);
+    if (!item?.id || item.category !== "equipo") return;
+    const supabase = createClient();
+    supabase
+      .from("inventory_items")
+      .select("ilo_user, ilo_password, ilo_license")
+      .eq("id", item.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        setForm((f) =>
+          f && f.id === item.id
+            ? {
+                ...f,
+                ilo_user: data.ilo_user,
+                ilo_password: data.ilo_password,
+                ilo_license: data.ilo_license,
+              }
+            : f,
+        );
+        setIloLoaded(true);
+      });
+  }, [item]);
 
   function set<K extends keyof Item>(k: K, v: Item[K]) {
     setForm((f) => (f ? { ...f, [k]: v } : f));
@@ -61,27 +91,32 @@ export function InventoryEditorSheet({
     if (!form) return;
     setSaving(true);
     const supabase = createClient();
+    const patch: Database["public"]["Tables"]["inventory_items"]["Update"] = {
+      description: form.description,
+      equipment_name: form.equipment_name,
+      rack_position: form.rack_position,
+      product_number: form.product_number,
+      serial_number: form.serial_number,
+      barcode: form.barcode,
+      brand_model: form.brand_model,
+      category: form.category,
+      quantity: form.quantity,
+      status: form.status,
+      location: form.location,
+      supplier: form.supplier,
+      task_id: form.task_id,
+      notes: form.notes,
+    };
+    // Solo tocar las credenciales iLO si se cargaron bajo demanda; así un
+    // guardado previo a la carga no las borra.
+    if (iloLoaded) {
+      patch.ilo_user = form.ilo_user;
+      patch.ilo_password = form.ilo_password;
+      patch.ilo_license = form.ilo_license;
+    }
     const { error } = await supabase
       .from("inventory_items")
-      .update({
-        description: form.description,
-        equipment_name: form.equipment_name,
-        rack_position: form.rack_position,
-        product_number: form.product_number,
-        serial_number: form.serial_number,
-        barcode: form.barcode,
-        brand_model: form.brand_model,
-        category: form.category,
-        quantity: form.quantity,
-        status: form.status,
-        location: form.location,
-        supplier: form.supplier,
-        task_id: form.task_id,
-        notes: form.notes,
-        ilo_user: form.ilo_user,
-        ilo_password: form.ilo_password,
-        ilo_license: form.ilo_license,
-      })
+      .update(patch)
       .eq("id", form.id);
     if (error) {
       toast.error("No se pudo guardar el ítem.");

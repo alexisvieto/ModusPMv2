@@ -39,6 +39,14 @@ export default async function InventarioPage({
   ]);
   const brand = brandFromOrg(org);
 
+  // Seguridad: no difundir las credenciales iLO en el listado (irían a cada
+  // cliente). El editor y el export las cargan bajo demanda por ítem.
+  const safeItems = (items ?? []).map((it) => ({
+    ...it,
+    ilo_password: null,
+    ilo_license: null,
+  }));
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">
       <div>
@@ -49,7 +57,7 @@ export default async function InventarioPage({
       </div>
       <InventoryBoard
         project={project}
-        items={items ?? []}
+        items={safeItems}
         tasks={tasks ?? []}
         brand={brand}
       />

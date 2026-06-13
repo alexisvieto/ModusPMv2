@@ -309,6 +309,23 @@ export function InventoryBoard({
     });
     headRow.height = 22;
 
+    // iLO: las credenciales no vienen en el listado (seguridad); se cargan
+    // solo al exportar, para los equipos visibles.
+    const iloById = new Map<
+      string,
+      { ilo_user: string | null; ilo_password: string | null; ilo_license: string | null }
+    >();
+    const equipoIds = filtered
+      .filter((it) => it.category === "equipo")
+      .map((it) => it.id);
+    if (equipoIds.length) {
+      const { data: iloRows } = await createClient()
+        .from("inventory_items")
+        .select("id, ilo_user, ilo_password, ilo_license")
+        .in("id", equipoIds);
+      for (const r of iloRows ?? []) iloById.set(r.id, r);
+    }
+
     // ── Filas de datos (zebra) ──
     filtered.forEach((it, idx) => {
       const r = ws.getRow(7 + idx);
@@ -326,9 +343,9 @@ export function InventoryBoard({
         it.supplier ?? "",
         it.task_id ? (taskById.get(it.task_id)?.wbs ?? "") : "",
         it.notes ?? "",
-        it.ilo_user ?? "",
-        it.ilo_password ?? "",
-        it.ilo_license ?? "",
+        iloById.get(it.id)?.ilo_user ?? "",
+        iloById.get(it.id)?.ilo_password ?? "",
+        iloById.get(it.id)?.ilo_license ?? "",
       ];
       vals.forEach((v, i) => {
         paint(r.getCell(i + 1), {

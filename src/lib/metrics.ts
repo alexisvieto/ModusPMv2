@@ -19,9 +19,13 @@ export type Health = "on_track" | "at_risk" | "delayed";
 
 export function latestSnapshot(snaps: Snapshot[]): Snapshot | null {
   if (!snaps.length) return null;
-  return [...snaps].sort((a, b) =>
+  // El "último" para EVM es el snapshot más reciente CON avance real; así un
+  // plan sembrado hacia el futuro (actual_pct null) no rompe SPI/CPI.
+  const withActual = snaps.filter((s) => s.actual_pct !== null);
+  const pool = withActual.length ? withActual : snaps;
+  return [...pool].sort((a, b) =>
     a.snapshot_date < b.snapshot_date ? -1 : 1,
-  )[snaps.length - 1];
+  )[pool.length - 1];
 }
 
 export function evm(snap: Snapshot | null) {

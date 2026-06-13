@@ -4,7 +4,12 @@ import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 import { formatDate } from "@/lib/format";
 import { type Brand } from "@/lib/brand";
-import { DOC, PdfFooter, PdfHeader } from "@/components/pdf/pdf-chrome";
+import {
+  docPalette,
+  type DocPalette,
+  PdfFooter,
+  PdfHeader,
+} from "@/components/pdf/pdf-chrome";
 
 type Entry = { description: string; quantity: number | null; unit: string | null };
 
@@ -40,48 +45,50 @@ const fmtDate = (d: string) =>
     year: "numeric",
   });
 
-const s = StyleSheet.create({
-  page: { padding: 32, fontSize: 10, color: DOC.text, fontFamily: "Helvetica" },
-  projectBox: { marginBottom: 14 },
-  projectName: { fontSize: 14, fontFamily: "Helvetica-Bold", color: DOC.navy, marginBottom: 2 },
-  muted: { color: DOC.muted },
-  metaRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
-  metaCard: { flex: 1, borderWidth: 1, borderColor: DOC.border, borderRadius: 4, padding: 8 },
-  metaLabel: { color: DOC.muted, fontSize: 8, marginBottom: 2 },
-  metaValue: { fontSize: 13, fontFamily: "Helvetica-Bold", color: DOC.navy },
-  section: {
-    fontSize: 11,
-    fontFamily: "Helvetica-Bold",
-    color: DOC.navy,
-    marginBottom: 6,
-    marginTop: 6,
-  },
-  paragraph: { lineHeight: 1.5, marginBottom: 10 },
-  row: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: DOC.border,
-    paddingVertical: 5,
-  },
-  cellDesc: { flex: 1 },
-  cellQty: { width: 90, textAlign: "right", color: DOC.muted },
-  aiBox: {
-    borderWidth: 1,
-    borderColor: DOC.orange,
-    borderRadius: 4,
-    padding: 10,
-    marginTop: 8,
-  },
-  aiLabel: {
-    color: DOC.orange,
-    fontFamily: "Helvetica-Bold",
-    fontSize: 9,
-    marginBottom: 3,
-  },
-});
+const makeStyles = (P: DocPalette) =>
+  StyleSheet.create({
+    page: { padding: 32, fontSize: 10, color: P.text, fontFamily: "Helvetica" },
+    projectBox: { marginBottom: 14 },
+    projectName: { fontSize: 14, fontFamily: "Helvetica-Bold", color: P.navy, marginBottom: 2 },
+    muted: { color: P.muted },
+    metaRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
+    metaCard: { flex: 1, borderWidth: 1, borderColor: P.border, borderRadius: 4, padding: 8 },
+    metaLabel: { color: P.muted, fontSize: 8, marginBottom: 2 },
+    metaValue: { fontSize: 13, fontFamily: "Helvetica-Bold", color: P.navy },
+    section: {
+      fontSize: 11,
+      fontFamily: "Helvetica-Bold",
+      color: P.navy,
+      marginBottom: 6,
+      marginTop: 6,
+    },
+    paragraph: { lineHeight: 1.5, marginBottom: 10 },
+    row: {
+      flexDirection: "row",
+      borderBottomWidth: 1,
+      borderBottomColor: P.border,
+      paddingVertical: 5,
+    },
+    cellDesc: { flex: 1 },
+    cellQty: { width: 90, textAlign: "right", color: P.muted },
+    aiBox: {
+      borderWidth: 1,
+      borderColor: P.orange,
+      borderRadius: 4,
+      padding: 10,
+      marginTop: 8,
+    },
+    aiLabel: {
+      color: P.orange,
+      fontFamily: "Helvetica-Bold",
+      fontSize: 9,
+      marginBottom: 3,
+    },
+  });
 
 export function ReportPdfDocument({ data }: { data: ReportPdfData }) {
   const { brand, project, report, entries, author } = data;
+  const s = makeStyles(docPalette(brand));
   return (
     <Document title={`Reporte diario ${report.report_date}`} author={brand.name}>
       <Page size="A4" style={s.page}>

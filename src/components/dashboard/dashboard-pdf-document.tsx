@@ -19,7 +19,12 @@ import {
   formatPercent,
 } from "@/lib/format";
 import { type Brand } from "@/lib/brand";
-import { DOC, PdfFooter, PdfHeader } from "@/components/pdf/pdf-chrome";
+import {
+  docPalette,
+  type DocPalette,
+  PdfFooter,
+  PdfHeader,
+} from "@/components/pdf/pdf-chrome";
 
 export type DashboardPdfData = {
   brand: Brand;
@@ -56,36 +61,47 @@ export type DashboardPdfData = {
   } | null;
 };
 
-const s = StyleSheet.create({
-  page: { padding: 32, fontSize: 10, color: DOC.text, fontFamily: "Helvetica" },
-  projectName: { fontSize: 16, fontFamily: "Helvetica-Bold", color: DOC.navy, marginBottom: 2 },
-  muted: { color: DOC.muted },
-  metaLine: { color: DOC.muted, marginBottom: 1 },
-  kpiRow: { flexDirection: "row", gap: 8, marginTop: 14, marginBottom: 6 },
-  kpiCard: { flex: 1, borderWidth: 1, borderColor: DOC.border, borderRadius: 4, padding: 8 },
-  kpiLabel: { color: DOC.muted, fontSize: 8, marginBottom: 3 },
-  kpiValue: { fontSize: 15, fontFamily: "Helvetica-Bold", color: DOC.navy },
-  kpiHint: { color: DOC.muted, fontSize: 7, marginTop: 2 },
-  section: { fontSize: 11, fontFamily: "Helvetica-Bold", color: DOC.navy, marginTop: 14, marginBottom: 6 },
-  legendRow: { flexDirection: "row", gap: 14, marginBottom: 4 },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  chartWrap: { position: "relative", height: 196 },
-  yLabel: { position: "absolute", left: 0, fontSize: 7, color: DOC.muted },
-  xLabel: { position: "absolute", bottom: 0, fontSize: 7, color: DOC.muted },
-  phaseItem: { marginBottom: 7 },
-  phaseTop: { flexDirection: "row", justifyContent: "space-between", marginBottom: 2 },
-  phaseName: { flexDirection: "row", gap: 5, flex: 1 },
-  wbs: { fontFamily: "Helvetica-Bold", color: DOC.muted, fontSize: 9 },
-  bar: { height: 3, backgroundColor: DOC.light, borderRadius: 2 },
-  barFill: { height: 3, backgroundColor: DOC.navy, borderRadius: 2 },
-  aiBox: { borderWidth: 1, borderColor: DOC.orange, borderRadius: 4, padding: 10, marginTop: 8 },
-  aiLabel: { color: DOC.orange, fontFamily: "Helvetica-Bold", fontSize: 9, marginBottom: 3 },
-  statRow: { flexDirection: "row", gap: 8, marginTop: 8 },
-  statCard: { flex: 1, borderWidth: 1, borderColor: DOC.border, borderRadius: 4, padding: 7 },
-});
+const makeStyles = (P: DocPalette) =>
+  StyleSheet.create({
+    page: { padding: 32, fontSize: 10, color: P.text, fontFamily: "Helvetica" },
+    projectName: { fontSize: 16, fontFamily: "Helvetica-Bold", color: P.navy, marginBottom: 2 },
+    muted: { color: P.muted },
+    metaLine: { color: P.muted, marginBottom: 1 },
+    kpiRow: { flexDirection: "row", gap: 8, marginTop: 14, marginBottom: 6 },
+    kpiCard: { flex: 1, borderWidth: 1, borderColor: P.border, borderRadius: 4, padding: 8 },
+    kpiLabel: { color: P.muted, fontSize: 8, marginBottom: 3 },
+    kpiValue: { fontSize: 15, fontFamily: "Helvetica-Bold", color: P.navy },
+    kpiHint: { color: P.muted, fontSize: 7, marginTop: 2 },
+    section: { fontSize: 11, fontFamily: "Helvetica-Bold", color: P.navy, marginTop: 14, marginBottom: 6 },
+    legendRow: { flexDirection: "row", gap: 14, marginBottom: 4 },
+    legendItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+    legendDot: { width: 8, height: 8, borderRadius: 4 },
+    chartWrap: { position: "relative", height: 196 },
+    yLabel: { position: "absolute", left: 0, fontSize: 7, color: P.muted },
+    xLabel: { position: "absolute", bottom: 0, fontSize: 7, color: P.muted },
+    phaseItem: { marginBottom: 7 },
+    phaseTop: { flexDirection: "row", justifyContent: "space-between", marginBottom: 2 },
+    phaseName: { flexDirection: "row", gap: 5, flex: 1 },
+    wbs: { fontFamily: "Helvetica-Bold", color: P.muted, fontSize: 9 },
+    bar: { height: 3, backgroundColor: P.light, borderRadius: 2 },
+    barFill: { height: 3, backgroundColor: P.navy, borderRadius: 2 },
+    aiBox: { borderWidth: 1, borderColor: P.orange, borderRadius: 4, padding: 10, marginTop: 8 },
+    aiLabel: { color: P.orange, fontFamily: "Helvetica-Bold", fontSize: 9, marginBottom: 3 },
+    statRow: { flexDirection: "row", gap: 8, marginTop: 8 },
+    statCard: { flex: 1, borderWidth: 1, borderColor: P.border, borderRadius: 4, padding: 7 },
+  });
 
-function SCurve({ curve }: { curve: DashboardPdfData["curve"] }) {
+type Styles = ReturnType<typeof makeStyles>;
+
+function SCurve({
+  curve,
+  s,
+  P,
+}: {
+  curve: DashboardPdfData["curve"];
+  s: Styles;
+  P: DocPalette;
+}) {
   const W = 464;
   const H = 170;
   const n = curve.length;
@@ -106,13 +122,13 @@ function SCurve({ curve }: { curve: DashboardPdfData["curve"] }) {
       <Text style={[s.yLabel, { top: 168 }]}>0%</Text>
       <View style={{ position: "absolute", left: 24, right: 6, top: 6 }}>
         <Svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: 174 }}>
-          <Rect x={0} y={0} width={W} height={H} fill={DOC.light} />
+          <Rect x={0} y={0} width={W} height={H} fill={P.light} />
           {grid.map((g) => (
             <Line key={g} x1={0} y1={Y(g)} x2={W} y2={Y(g)} stroke="#E2E5EA" strokeWidth={1} />
           ))}
-          {n > 1 && <Polyline points={planPts} fill="none" stroke={DOC.navy} strokeWidth={2} />}
+          {n > 1 && <Polyline points={planPts} fill="none" stroke={P.navy} strokeWidth={2} />}
           {n > 1 && realPts !== "" && (
-            <Polyline points={realPts} fill="none" stroke={DOC.orange} strokeWidth={2.5} />
+            <Polyline points={realPts} fill="none" stroke={P.orange} strokeWidth={2.5} />
           )}
         </Svg>
       </View>
@@ -124,6 +140,8 @@ function SCurve({ curve }: { curve: DashboardPdfData["curve"] }) {
 
 export function DashboardPdfDocument({ data }: { data: DashboardPdfData }) {
   const { brand, project, kpis, curve, phases, lastReport } = data;
+  const P = docPalette(brand);
+  const s = makeStyles(P);
   const fmtCur = (v: number) => formatCompactCurrency(v, kpis.currency);
   return (
     <Document title={`Resumen ejecutivo — ${project.name}`} author={brand.name}>
@@ -185,15 +203,15 @@ export function DashboardPdfDocument({ data }: { data: DashboardPdfData }) {
         <Text style={s.section}>Curva S — avance planificado vs real</Text>
         <View style={s.legendRow}>
           <View style={s.legendItem}>
-            <View style={[s.legendDot, { backgroundColor: DOC.navy }]} />
+            <View style={[s.legendDot, { backgroundColor: P.navy }]} />
             <Text style={s.muted}>Plan</Text>
           </View>
           <View style={s.legendItem}>
-            <View style={[s.legendDot, { backgroundColor: DOC.orange }]} />
+            <View style={[s.legendDot, { backgroundColor: P.orange }]} />
             <Text style={s.muted}>Real</Text>
           </View>
         </View>
-        <SCurve curve={curve} />
+        <SCurve curve={curve} s={s} P={P} />
 
         {/* Avance por fase */}
         {phases.length > 0 ? (

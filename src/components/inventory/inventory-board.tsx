@@ -155,8 +155,10 @@ export function InventoryBoard({
     // (azul marino + naranja). Es específica del exportable: el resto de la
     // app usa la paleta clásica de la marca. Si se vuelve multi-tenant,
     // esto debería migrar a una config de marca-de-documento por org.
-    const NAVY = "FF071D4C";
-    const ORANGE = "FFFF9A00";
+    // Colores de marca del tenant (ARGB): NAVY = oscuro, ORANGE = primario.
+    const toARGB = (hex: string) => "FF" + hex.replace("#", "").toUpperCase();
+    const NAVY = toARGB(brand.dark);
+    const ORANGE = toARGB(brand.primary);
     const TEXT = "FF333333";
     const ZEBRA = "FFF6F6F6";
     const WHITE = "FFFFFFFF";
@@ -372,7 +374,7 @@ export function InventoryBoard({
     const foot = stripe + 1;
     ws.mergeCells(foot, 1, foot, 16);
     paint(ws.getCell(foot, 1), {
-      v: `${brand.name} · División de Telecomunicaciones y Sistemas Especiales`,
+      v: `${brand.name}${brand.website ? ` · ${brand.website}` : ""}`,
       font: { name: FONT, size: 9, color: { argb: WHITE } },
       fill: TEXT,
       align: { vertical: "middle", horizontal: "center" },

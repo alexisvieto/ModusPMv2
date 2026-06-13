@@ -104,7 +104,7 @@ export function CostBoard({
     return costs.filter((c) => {
       if (cat && c.category !== cat) return false;
       if (needle) {
-        const hay = `${c.cost_code ?? ""} ${c.description ?? ""}`.toLowerCase();
+        const hay = `${c.cost_code ?? ""} ${c.description ?? ""} ${c.supplier ?? ""}`.toLowerCase();
         if (!hay.includes(needle)) return false;
       }
       return true;
@@ -205,11 +205,12 @@ export function CostBoard({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
+            <table className="w-full min-w-[920px] text-sm">
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
                   <th className="px-3 py-2 font-medium">Código</th>
                   <th className="px-3 py-2 font-medium">Descripción</th>
+                  <th className="px-3 py-2 font-medium">Proveedor</th>
                   <th className="px-3 py-2 font-medium">Categoría</th>
                   <th className="px-3 py-2 text-right font-medium">Presupuesto</th>
                   <th className="px-3 py-2 text-right font-medium">Comprometido</th>
@@ -230,6 +231,9 @@ export function CostBoard({
                         {c.cost_code || "—"}
                       </td>
                       <td className="px-3 py-2">{c.description || "—"}</td>
+                      <td className="px-3 py-2 text-muted-foreground">
+                        {c.supplier || "—"}
+                      </td>
                       <td className="px-3 py-2 text-muted-foreground">
                         {COST_CATEGORY[c.category]}
                       </td>
@@ -255,7 +259,7 @@ export function CostBoard({
                 })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-3 py-12 text-center text-muted-foreground">
+                    <td colSpan={8} className="px-3 py-12 text-center text-muted-foreground">
                       Sin partidas. Agrega una o importa un Excel/CSV.
                     </td>
                   </tr>

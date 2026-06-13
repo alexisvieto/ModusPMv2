@@ -110,6 +110,7 @@ export type Database = {
           category: Database["public"]["Enums"]["cost_category"]
           committed: number
           cost_code: string | null
+          supplier: string | null
           created_at: string
           description: string | null
           entry_date: string
@@ -125,6 +126,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["cost_category"]
           committed?: number
           cost_code?: string | null
+          supplier?: string | null
           created_at?: string
           description?: string | null
           entry_date?: string
@@ -140,6 +142,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["cost_category"]
           committed?: number
           cost_code?: string | null
+          supplier?: string | null
           created_at?: string
           description?: string | null
           entry_date?: string

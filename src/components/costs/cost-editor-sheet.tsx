@@ -53,6 +53,7 @@ export function CostEditorSheet({
       .from("cost_entries")
       .update({
         cost_code: form.cost_code,
+        supplier: form.supplier,
         description: form.description,
         category: form.category,
         budget: form.budget,
@@ -133,6 +134,16 @@ export function CostEditorSheet({
                   id="c-desc"
                   value={form.description ?? ""}
                   onChange={(e) => set("description", e.target.value || null)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="c-supplier">Proveedor</Label>
+                <Input
+                  id="c-supplier"
+                  placeholder="Ej. Anixter INC."
+                  value={form.supplier ?? ""}
+                  onChange={(e) => set("supplier", e.target.value || null)}
                 />
               </div>
 

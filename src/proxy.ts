@@ -4,6 +4,8 @@ import { type NextRequest, NextResponse } from "next/server";
 // Next.js 16: convención `proxy` (reemplaza a `middleware`).
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
+  const isProtected = pathname.startsWith("/app");
 
   try {
     const supabase = createServerClient(
@@ -31,9 +33,7 @@ export async function proxy(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const { pathname } = request.nextUrl;
     const isAuthRoute = pathname === "/login";
-    const isProtected = pathname.startsWith("/app");
 
     if (!user && isProtected) {
       const url = request.nextUrl.clone();
@@ -47,7 +47,13 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(url);
     }
   } catch {
-    // Si Supabase falla, no bloqueamos la navegación; el layout de /app protege igual.
+    // Si Supabase falla en una ruta protegida, fallamos seguro hacia /login
+    // (en vez de dejar pasar). El layout de /app es la segunda capa.
+    if (isProtected) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;

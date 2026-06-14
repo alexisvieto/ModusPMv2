@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
-import { Download } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import {
   DashboardPdfDocument,
@@ -10,7 +10,7 @@ import {
 } from "./dashboard-pdf-document";
 
 const cls =
-  "inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-60";
+  "inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-60";
 
 export default function DashboardPdfButton({
   data,
@@ -28,8 +28,8 @@ export default function DashboardPdfButton({
   if (!mounted) {
     return (
       <button type="button" disabled className={cls}>
-        <Download className="size-4" />
-        Exportar PDF
+        <Sparkles className="size-4" />
+        Análisis de Proyecto
       </button>
     );
   }
@@ -42,8 +42,8 @@ export default function DashboardPdfButton({
     >
       {({ loading }) => (
         <>
-          <Download className="size-4" />
-          {loading ? "Generando…" : "Exportar PDF"}
+          <Sparkles className="size-4" />
+          {loading ? "Generando…" : "Análisis de Proyecto"}
         </>
       )}
     </PDFDownloadLink>

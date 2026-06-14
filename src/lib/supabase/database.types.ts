@@ -994,11 +994,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      clear_org_ai_key: { Args: { p_org: string }; Returns: undefined }
       has_org_role: {
         Args: { org: string; roles: Database["public"]["Enums"]["org_role"][] }
         Returns: boolean
       }
       is_org_member: { Args: { org: string }; Returns: boolean }
+      set_org_ai_key: { Args: { p_org: string; p_key: string }; Returns: undefined }
     }
     Enums: {
       ai_provider: "anthropic" | "openai" | "google"

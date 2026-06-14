@@ -30,6 +30,8 @@ export function PunchAlerts({ projectId }: { projectId: string | null }) {
 
   useEffect(() => {
     if (!projectId) {
+      // Reset al deseleccionar proyecto, dentro de un efecto de suscripción.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAlerts([]);
       return;
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
@@ -52,7 +52,11 @@ export function PunchEditorSheet({
   const [status, setStatus] = useState<PunchStatus>("open");
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  // Resincroniza el formulario al cambiar el ítem o reabrir (ajuste de estado
+  // en render — patrón recomendado por React, sin efecto).
+  const [synced, setSynced] = useState({ item, open });
+  if (synced.item !== item || synced.open !== open) {
+    setSynced({ item, open });
     if (item) {
       setDescription(item.description);
       setResponsible(item.responsible ?? "");
@@ -66,7 +70,7 @@ export function PunchEditorSheet({
       setDueDate("");
       setStatus("open");
     }
-  }, [item, open]);
+  }
 
   async function save() {
     if (!description.trim()) {

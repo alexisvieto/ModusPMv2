@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
@@ -78,7 +78,11 @@ export function ReportEditorSheet({
   const [aiError, setAiError] = useState<string | null>(null);
   const [jornada, setJornada] = useState(8);
 
-  useEffect(() => {
+  // Resincroniza el formulario al cambiar el reporte (ajuste de estado en
+  // render — patrón recomendado por React, sin efecto).
+  const [synced, setSynced] = useState({ report, initialEntries });
+  if (synced.report !== report || synced.initialEntries !== initialEntries) {
+    setSynced({ report, initialEntries });
     setForm(report);
     setEntries(initialEntries);
     setAiError(null);
@@ -88,7 +92,7 @@ export function ReportEditorSheet({
       // Deriva la jornada de los datos ya guardados (sin columna extra en BD).
       setJornada(wf > 0 && hrs > 0 ? Math.round((hrs / wf) * 10) / 10 : 8);
     }
-  }, [report, initialEntries]);
+  }
 
   function set<K extends keyof Report>(k: K, v: Report[K]) {
     setForm((f) => (f ? { ...f, [k]: v } : f));

@@ -21,6 +21,8 @@ export default function DashboardPdfButton({
 }) {
   // PDFDownloadLink solo puede renderizar en el cliente; evitamos el SSR.
   const [mounted, setMounted] = useState(false);
+  // Hidratación: PDFDownloadLink es solo-cliente; montamos tras hidratar.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {

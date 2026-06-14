@@ -22,8 +22,6 @@ import type { Database } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
 
 type Item = Database["public"]["Tables"]["inventory_items"]["Row"];
-type Status = Database["public"]["Enums"]["inventory_status"];
-type Loc = Database["public"]["Enums"]["inventory_location"];
 type LogEntry = { code: string; label: string; ok: boolean };
 type Mode = "pistola" | "camara";
 
@@ -48,7 +46,9 @@ export function ScanSheet({
   const inputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const itemsRef = useRef(items);
-  itemsRef.current = items;
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
   const lastScan = useRef<{ code: string; ts: number }>({ code: "", ts: 0 });
   const controlsRef = useRef<{ stop: () => void } | null>(null);
 
@@ -95,8 +95,8 @@ export function ScanSheet({
   useEffect(() => {
     if (!open || mode !== "camara") return;
     let cancelled = false;
-    setCameraError(null);
     (async () => {
+      setCameraError(null);
       try {
         const { BrowserMultiFormatReader } = await import("@zxing/browser");
         const reader = new BrowserMultiFormatReader();

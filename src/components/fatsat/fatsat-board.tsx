@@ -57,10 +57,13 @@ export function FatsatBoard({
   const [editing, setEditing] = useState<Protocol | null>(null);
   const [newItem, setNewItem] = useState<Record<string, string>>({});
 
-  // Resync cuando el servidor manda datos nuevos (crear/editar/eliminar prueba).
-  useEffect(() => {
+  // Resync con los datos del servidor tras crear/editar/eliminar (ajuste de
+  // estado en render — patrón recomendado por React, sin efecto).
+  const [syncedPruebas, setSyncedPruebas] = useState(initialPruebas);
+  if (syncedPruebas !== initialPruebas) {
+    setSyncedPruebas(initialPruebas);
     setPruebas(initialPruebas);
-  }, [initialPruebas]);
+  }
 
   // Realtime sobre la cabecera (las pruebas relacionadas se editan en línea).
   useEffect(() => {

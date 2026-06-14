@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
@@ -39,7 +39,13 @@ export function CostEditorSheet({
   const [form, setForm] = useState<Cost | null>(cost);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => setForm(cost), [cost]);
+  // Resincroniza el formulario al cambiar el costo (ajuste de estado en
+  // render — patrón recomendado por React, sin efecto).
+  const [syncedCost, setSyncedCost] = useState(cost);
+  if (syncedCost !== cost) {
+    setSyncedCost(cost);
+    setForm(cost);
+  }
 
   function set<K extends keyof Cost>(k: K, v: Cost[K]) {
     setForm((f) => (f ? { ...f, [k]: v } : f));

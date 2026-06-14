@@ -55,11 +55,18 @@ export function InventoryEditorSheet({
   // Las credenciales iLO NO vienen en el listado (no se difunden a cada
   // cliente). Al abrir un equipo, las cargamos bajo demanda solo para ese
   // ítem. `iloLoaded` evita que un guardado previo a la carga las borre.
-  useEffect(() => {
+  // Resincroniza el formulario al cambiar el ítem (ajuste de estado en render).
+  const [syncedItem, setSyncedItem] = useState(item);
+  if (syncedItem !== item) {
+    setSyncedItem(item);
     setForm(item);
     setIloOpen(false);
     setShowPw(false);
     setIloLoaded(false);
+  }
+
+  // Carga bajo demanda de las credenciales iLO del equipo (efecto: I/O).
+  useEffect(() => {
     if (!item?.id || item.category !== "equipo") return;
     const supabase = createClient();
     supabase

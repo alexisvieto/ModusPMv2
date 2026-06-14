@@ -7,7 +7,6 @@ import { ChevronDown, ChevronRight, Flag, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TaskEditorSheet } from "@/components/gantt/task-editor-sheet";
 import {
-  makeCalendar,
   parseISODate,
   type CalendarException,
 } from "@/lib/calendar";
@@ -75,6 +74,8 @@ export function GanttBoard({
   // Evita hydration mismatch: "hoy" depende del reloj y solo debe calcularse en el cliente.
   // Además restaura la preferencia de zoom (mes/semana) del PM desde localStorage.
   useEffect(() => {
+    // Hidratación + lectura de localStorage: efecto solo-cliente legítimo.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     try {
       const saved = window.localStorage.getItem(ZOOM_KEY);

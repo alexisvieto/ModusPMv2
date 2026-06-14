@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -45,7 +45,11 @@ export function ProjectCreateSheet({
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  // Limpia el formulario al abrir (ajuste de estado en render — patrón
+  // recomendado por React, sin efecto).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
     if (open) {
       setName("");
       setCode("");
@@ -57,7 +61,7 @@ export function ProjectCreateSheet({
       setBudget("");
       setDescription("");
     }
-  }, [open]);
+  }
 
   async function save() {
     if (!name.trim()) {

@@ -213,9 +213,14 @@ export function InventoryBoard({
       { width: 30 }, // iLO Licencia
     ];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const paint = (
-      c: any,
+      c: {
+        value?: unknown;
+        font?: unknown;
+        fill?: unknown;
+        alignment?: unknown;
+        border?: unknown;
+      },
       o: { v?: string | number; font?: unknown; fill?: string; align?: unknown; border?: unknown },
     ) => {
       if (o.v !== undefined) c.value = o.v;

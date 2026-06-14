@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
@@ -56,7 +56,13 @@ export function TaskEditorSheet({
   const [form, setForm] = useState<Task | null>(task);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => setForm(task), [task]);
+  // Resincroniza el formulario al cambiar la tarea (ajuste de estado en
+  // render — patrón recomendado por React, sin efecto).
+  const [syncedTask, setSyncedTask] = useState(task);
+  if (syncedTask !== task) {
+    setSyncedTask(task);
+    setForm(task);
+  }
 
   function set<K extends keyof Task>(k: K, v: Task[K]) {
     setForm((f) => (f ? { ...f, [k]: v } : f));

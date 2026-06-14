@@ -42,8 +42,15 @@ export function PunchBoard({
   const [status, setStatus] = useState("");
   const [mounted, setMounted] = useState(false);
 
+  // Hidratación: dueState depende del reloj; solo en cliente tras montar.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
-  useEffect(() => setItems(initialItems), [initialItems]);
+  // Resincroniza con los datos del servidor tras un refresh (ajuste en render).
+  const [syncedItems, setSyncedItems] = useState(initialItems);
+  if (syncedItems !== initialItems) {
+    setSyncedItems(initialItems);
+    setItems(initialItems);
+  }
 
   useEffect(() => {
     const supabase = createClient();

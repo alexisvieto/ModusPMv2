@@ -78,6 +78,8 @@ export function PdfHeader({
   return (
     <View style={s.header}>
       {brand.logoUrl ? (
+        // @react-pdf Image no es un <img> del DOM; alt-text no aplica.
+        // eslint-disable-next-line jsx-a11y/alt-text
         <Image src={brand.logoUrl} style={s.logo} />
       ) : (
         <View style={s.brandFallback}>

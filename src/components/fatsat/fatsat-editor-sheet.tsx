@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
@@ -70,7 +70,11 @@ export function FatsatEditorSheet({
   const [sig, setSig] = useState<Sig>(EMPTY_SIG);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  // Resincroniza el formulario al cambiar la prueba o reabrir (ajuste de estado
+  // en render — patrón recomendado por React, sin efecto).
+  const [synced, setSynced] = useState({ prueba, open });
+  if (synced.prueba !== prueba || synced.open !== open) {
+    setSynced({ prueba, open });
     if (prueba) {
       setName(prueba.name ?? "");
       setDate(prueba.protocol_date);
@@ -93,7 +97,7 @@ export function FatsatEditorSheet({
       setItems([""]);
       setSig(EMPTY_SIG);
     }
-  }, [prueba, open]);
+  }
 
   function sigField(k: keyof Sig, v: string) {
     setSig((s) => ({ ...s, [k]: v || null }));

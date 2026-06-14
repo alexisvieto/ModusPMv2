@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   AlertTriangle,
   Download,
@@ -113,7 +114,7 @@ export function InventoryBoard({
 
   async function addItem() {
     const supabase = createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("inventory_items")
       .insert({
         organization_id: project.organization_id,
@@ -125,14 +126,18 @@ export function InventoryBoard({
         location: "en_galera",
       })
       .select()
-      .single();
+      .maybeSingle();
+    if (error) {
+      toast.error("No se pudo crear el ítem.");
+      return;
+    }
     router.refresh();
     if (data) openItem(data);
   }
 
   async function createWithBarcode(barcode: string) {
     const supabase = createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("inventory_items")
       .insert({
         organization_id: project.organization_id,
@@ -145,18 +150,30 @@ export function InventoryBoard({
         barcode,
       })
       .select()
-      .single();
+      .maybeSingle();
+    if (error) {
+      toast.error("No se pudo crear el ítem.");
+      return;
+    }
     router.refresh();
     if (data) openItem(data);
   }
 
   async function exportExcel() {
-    // Paleta "documentos oficiales" del BRANDING GUIDE de Ingesoft
-    // (azul marino + naranja). Es específica del exportable: el resto de la
-    // app usa la paleta clásica de la marca. Si se vuelve multi-tenant,
-    // esto debería migrar a una config de marca-de-documento por org.
+    try {
+      await buildAndDownloadExcel();
+    } catch {
+      toast.error("No se pudo generar el archivo Excel.");
+    }
+  }
+
+  async function buildAndDownloadExcel() {
     // Colores de marca del tenant (ARGB): NAVY = oscuro, ORANGE = primario.
-    const toARGB = (hex: string) => "FF" + hex.replace("#", "").toUpperCase();
+    const toARGB = (hex: string) => {
+      const h = hex.replace("#", "");
+      const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+      return "FF" + full.toUpperCase();
+    };
     const NAVY = toARGB(brand.dark);
     const ORANGE = toARGB(brand.primary);
     const TEXT = "FF333333";
@@ -209,10 +226,10 @@ export function InventoryBoard({
       if (o.border) c.border = o.border;
     };
 
-    // ── Encabezado: logo (incluye el slogan "Endless Possibilities") ──
+    // ── Encabezado: logo de la organización (si está configurado) ──
     try {
-      const res = await fetch(brand.logoUrl ?? "/ingesoft-logo.png");
-      if (res.ok) {
+      const res = brand.logoUrl ? await fetch(brand.logoUrl) : null;
+      if (res?.ok) {
         const blob = await res.blob();
         const base64 = await new Promise<string>((resolve, reject) => {
           const fr = new FileReader();
@@ -324,6 +341,7 @@ export function InventoryBoard({
       const { data: iloRows } = await createClient()
         .from("inventory_items")
         .select("id, ilo_user, ilo_password, ilo_license")
+        .eq("project_id", project.id)
         .in("id", equipoIds);
       for (const r of iloRows ?? []) iloById.set(r.id, r);
     }
@@ -464,8 +482,8 @@ export function InventoryBoard({
             </div>
           </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
+          {/* Tabla (escritorio) */}
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[920px] text-sm">
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
@@ -552,6 +570,68 @@ export function InventoryBoard({
               </tbody>
             </table>
           </div>
+
+          {/* Tarjetas (móvil) */}
+          <div className="divide-y md:hidden">
+            {filtered.map((it) => {
+              const sm = INV_STATUS[it.status];
+              const task = it.task_id ? taskById.get(it.task_id) : null;
+              return (
+                <button
+                  key={it.id}
+                  onClick={() => openItem(it)}
+                  className="flex w-full flex-col gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/40 active:bg-muted"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-medium">{it.description}</div>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                        {it.equipment_name && (
+                          <span className="font-mono font-semibold text-primary">
+                            {it.equipment_name}
+                          </span>
+                        )}
+                        {it.product_number && <span>{it.product_number}</span>}
+                        {task && (
+                          <span className="rounded bg-primary/10 px-1 font-mono text-primary">
+                            {task.wbs}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
+                        sm.className,
+                      )}
+                    >
+                      <span className={cn("size-1.5 rounded-full", sm.dot)} />
+                      {sm.label}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                    <CellField label="Serial" value={it.serial_number || "—"} mono />
+                    <CellField
+                      label="Cant."
+                      value={formatNumber(Number(it.quantity), 0)}
+                    />
+                    <CellField label="Marca / Modelo" value={it.brand_model || "—"} />
+                    <CellField label="Categoría" value={INV_CATEGORY[it.category]} />
+                    <CellField
+                      label="Ubicación"
+                      value={`${it.rack_position ? it.rack_position + " · " : ""}${INV_LOCATION[it.location]}`}
+                    />
+                    <CellField label="Proveedor" value={it.supplier || "—"} />
+                  </div>
+                </button>
+              );
+            })}
+            {filtered.length === 0 && (
+              <div className="px-4 py-12 text-center text-sm text-muted-foreground">
+                Sin ítems que coincidan con el filtro.
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -568,6 +648,25 @@ export function InventoryBoard({
         onOpenChange={setScanOpen}
         onCreateNew={createWithBarcode}
       />
+    </div>
+  );
+}
+
+function CellField({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
+      <div className={cn("truncate", mono && "font-mono")}>{value}</div>
     </div>
   );
 }

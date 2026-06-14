@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -14,6 +15,7 @@ import {
   LayoutGrid,
   ListTodo,
   LogOut,
+  Menu,
   Package,
   Receipt,
   Sparkles,
@@ -31,6 +33,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -73,6 +80,7 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const activeProjectId =
     pathname.match(/\/app\/proyectos\/([^/]+)/)?.[1] ?? null;
@@ -145,6 +153,94 @@ export function AppShell({
     ? brand.primary
     : null;
 
+  // Contenido del sidebar, reutilizado en el aside de escritorio y en el panel
+  // deslizante de móvil. `onNavigate` cierra el panel al tocar un enlace.
+  const sidebarInner = (onNavigate?: () => void) => (
+    <>
+      <div className="flex h-16 items-center gap-2 border-b px-5">
+        {brand.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={brand.logoUrl}
+            alt={brand.name}
+            className="h-7 w-auto max-w-[190px] object-contain"
+          />
+        ) : (
+          <>
+            <div className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
+              <span className="font-mono text-sm font-bold">M</span>
+            </div>
+            <span className="text-base font-semibold tracking-tight">
+              Modus
+              <span className="ml-1 font-mono font-medium text-primary">PM</span>
+            </span>
+          </>
+        )}
+      </div>
+
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
+        <Link
+          href="/app"
+          onClick={onNavigate}
+          className={cn(
+            "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+            pathname === "/app"
+              ? "bg-primary/10 font-medium text-primary"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+        >
+          <LayoutGrid className="size-4" />
+          Proyectos
+        </Link>
+
+        {activeProjectId && (
+          <>
+            <p className="truncate px-3 pt-3 pb-1 text-xs font-medium text-muted-foreground">
+              {activeProject?.name ?? "Proyecto"}
+            </p>
+            {nav.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href, item.exact);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+                    active
+                      ? "bg-primary/10 font-medium text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <Icon className="size-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </>
+        )}
+      </nav>
+
+      <div className="border-t p-3">
+        <div className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
+          <Building2 className="size-3.5 shrink-0" />
+          <span className="truncate">{org?.name ?? "Sin organización"}</span>
+        </div>
+        <button
+          onClick={() => {
+            onNavigate?.();
+            signOut();
+          }}
+          className="mt-1 flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+        >
+          <LogOut className="size-4" />
+          Cerrar sesión
+        </button>
+      </div>
+    </>
+  );
+
   return (
     <TooltipProvider delay={200}>
       {brandColor && (
@@ -155,128 +251,76 @@ export function AppShell({
         />
       )}
       <div className="flex min-h-svh">
-        {/* ===== Sidebar ===== */}
+        {/* ===== Sidebar (escritorio) ===== */}
         <aside className="hidden w-60 shrink-0 flex-col border-r bg-sidebar md:flex">
-          <div className="flex h-16 items-center gap-2 border-b px-5">
-            {brand.logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={brand.logoUrl}
-                alt={brand.name}
-                className="h-7 w-auto max-w-[190px] object-contain"
-              />
-            ) : (
-              <>
-                <div className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
-                  <span className="font-mono text-sm font-bold">M</span>
-                </div>
-                <span className="text-base font-semibold tracking-tight">
-                  Modus
-                  <span className="ml-1 font-mono font-medium text-primary">
-                    PM
-                  </span>
-                </span>
-              </>
-            )}
-          </div>
-
-          <nav className="flex flex-1 flex-col gap-0.5 p-3">
-            <Link
-              href="/app"
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                pathname === "/app"
-                  ? "bg-primary/10 font-medium text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
-              <LayoutGrid className="size-4" />
-              Proyectos
-            </Link>
-
-            {activeProjectId && (
-              <>
-                <p className="truncate px-3 pt-3 pb-1 text-xs font-medium text-muted-foreground">
-                  {activeProject?.name ?? "Proyecto"}
-                </p>
-                {nav.map((item) => {
-                  const Icon = item.icon;
-                  const active = isActive(item.href, item.exact);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                        active
-                          ? "bg-primary/10 font-medium text-primary"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                      )}
-                    >
-                      <Icon className="size-4" />
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </>
-            )}
-          </nav>
-
-          <div className="border-t p-3">
-            <div className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
-              <Building2 className="size-3.5 shrink-0" />
-              <span className="truncate">{org?.name ?? "Sin organización"}</span>
-            </div>
-            <button
-              onClick={signOut}
-              className="mt-1 flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-            >
-              <LogOut className="size-4" />
-              Cerrar sesión
-            </button>
-          </div>
+          {sidebarInner()}
         </aside>
+
+        {/* ===== Navegación móvil (panel deslizante) ===== */}
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetContent
+            side="left"
+            showCloseButton={false}
+            className="gap-0 border-r bg-sidebar p-0"
+          >
+            <SheetTitle className="sr-only">Navegación</SheetTitle>
+            <div className="flex h-full flex-col">
+              {sidebarInner(() => setMobileOpen(false))}
+            </div>
+          </SheetContent>
+        </Sheet>
 
         {/* ===== Main column ===== */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-5 backdrop-blur md:px-6">
-            {/* Project switcher */}
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex max-w-[60vw] items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted">
-                <FolderKanban className="size-4 shrink-0 text-primary" />
-                <span className="truncate font-medium">
-                  {activeProject?.name ?? "Selecciona un proyecto"}
-                </span>
-                {activeProject?.code && (
-                  <span className="hidden font-mono text-xs text-muted-foreground sm:inline">
-                    {activeProject.code}
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background/80 px-4 backdrop-blur md:px-6">
+            {/* Left: hamburguesa (móvil) + project switcher */}
+            <div className="flex min-w-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                aria-label="Abrir menú"
+                className="-ml-1 inline-flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
+              >
+                <Menu className="size-5" />
+              </button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex min-w-0 max-w-[60vw] items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted">
+                  <FolderKanban className="size-4 shrink-0 text-primary" />
+                  <span className="truncate font-medium">
+                    {activeProject?.name ?? "Selecciona un proyecto"}
                   </span>
-                )}
-                <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-72">
-                <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">
-                  Proyectos
-                </div>
-                {projects.map((p) => (
-                  <DropdownMenuItem
-                    key={p.id}
-                    onClick={() => router.push(`/app/proyectos/${p.id}`)}
-                  >
-                    <FolderKanban className="size-4 text-muted-foreground" />
-                    <div className="flex min-w-0 flex-col">
-                      <span className="truncate text-sm">{p.name}</span>
-                      <span className="truncate text-xs text-muted-foreground">
-                        {p.client_name ?? p.code ?? ""}
-                      </span>
-                    </div>
-                    {p.id === activeProjectId && (
-                      <Check className="ml-auto size-4 text-primary" />
-                    )}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  {activeProject?.code && (
+                    <span className="hidden font-mono text-xs text-muted-foreground sm:inline">
+                      {activeProject.code}
+                    </span>
+                  )}
+                  <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-72">
+                  <div className="px-1.5 py-1 text-xs font-medium text-muted-foreground">
+                    Proyectos
+                  </div>
+                  {projects.map((p) => (
+                    <DropdownMenuItem
+                      key={p.id}
+                      onClick={() => router.push(`/app/proyectos/${p.id}`)}
+                    >
+                      <FolderKanban className="size-4 text-muted-foreground" />
+                      <div className="flex min-w-0 flex-col">
+                        <span className="truncate text-sm">{p.name}</span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {p.client_name ?? p.code ?? ""}
+                        </span>
+                      </div>
+                      {p.id === activeProjectId && (
+                        <Check className="ml-auto size-4 text-primary" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
             {/* Right cluster: presence + user */}
             <div className="flex items-center gap-3">

@@ -139,7 +139,7 @@ export function PunchBoard({
 
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[820px] text-sm">
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
@@ -236,6 +236,88 @@ export function PunchBoard({
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Tarjetas (móvil) */}
+          <div className="divide-y md:hidden">
+            {filtered.map((i) => {
+              const ds = mounted ? dueState(i) : "ok";
+              const pm = PRIORITY_META[i.priority];
+              return (
+                <div
+                  key={i.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    setEditing(i);
+                    setOpen(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (
+                      (e.key === "Enter" || e.key === " ") &&
+                      e.target === e.currentTarget
+                    ) {
+                      e.preventDefault();
+                      setEditing(i);
+                      setOpen(true);
+                    }
+                  }}
+                  className="flex cursor-pointer flex-col gap-2 px-4 py-3 transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none active:bg-muted"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="line-clamp-2 text-sm font-medium">
+                      {i.description || "—"}
+                    </span>
+                    <span
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
+                        pm.className,
+                      )}
+                    >
+                      <span className={cn("size-1.5 rounded-full", pm.dot)} />
+                      {pm.label}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span>{i.responsible || "Sin responsable"}</span>
+                    {i.due_date && (
+                      <span
+                        className={cn(
+                          "tabular-nums",
+                          mounted && ds === "overdue" && "font-medium text-destructive",
+                          mounted && ds === "soon" && "text-warning",
+                        )}
+                      >
+                        Vence {formatDate(i.due_date)}
+                        {mounted && (ds === "overdue" || ds === "soon")
+                          ? ` · ${dueLabel(i.due_date)}`
+                          : ""}
+                      </span>
+                    )}
+                  </div>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <select
+                      className={cn(selectCls, "h-8 w-full")}
+                      value={i.status}
+                      onChange={(e) =>
+                        setItemStatus(i.id, e.target.value as PunchStatus)
+                      }
+                    >
+                      {STATUS_OPTIONS.map((o) => (
+                        <option key={o.v} value={o.v}>
+                          {o.l}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              );
+            })}
+            {filtered.length === 0 && (
+              <div className="px-4 py-12 text-center text-sm text-muted-foreground">
+                Sin pendientes. Agrega uno con “+ Agregar pendiente”.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

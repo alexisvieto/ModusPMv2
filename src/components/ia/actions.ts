@@ -24,24 +24,29 @@ export async function saveAiConfig(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "No autorizado." };
 
-  // El presupuesto (control de gasto) solo lo puede fijar un admin/owner.
+  // Toda la configuración de IA (proveedor, modelo, presupuesto y switch) es
+  // admin-only.
   const { data: isAdmin } = await supabase.rpc("has_org_role", {
     org: orgId,
     roles: ["owner", "admin"],
   });
+  if (!isAdmin) {
+    return {
+      ok: false,
+      error: "Solo un administrador puede cambiar la configuración de IA.",
+    };
+  }
 
-  const payload: Database["public"]["Tables"]["ai_provider_configs"]["Insert"] = {
-    organization_id: orgId,
-    provider: input.provider as Provider,
-    model: input.model.trim() || "claude-opus-4-8",
-    is_enabled: input.isEnabled,
-  };
-  // Si no es admin, no se toca el presupuesto (se conserva el existente).
-  if (isAdmin) payload.monthly_budget_usd = input.monthlyBudget;
-
-  const { error } = await supabase
-    .from("ai_provider_configs")
-    .upsert(payload, { onConflict: "organization_id" });
+  const { error } = await supabase.from("ai_provider_configs").upsert(
+    {
+      organization_id: orgId,
+      provider: input.provider as Provider,
+      model: input.model.trim() || "claude-opus-4-8",
+      monthly_budget_usd: input.monthlyBudget,
+      is_enabled: input.isEnabled,
+    },
+    { onConflict: "organization_id" },
+  );
   if (error) return { ok: false, error: "No se pudo guardar la configuración." };
 
   revalidatePath(`/app/proyectos/${projectId}/ia`);

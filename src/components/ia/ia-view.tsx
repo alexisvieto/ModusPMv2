@@ -241,6 +241,12 @@ export function IaView({
             </div>
           </div>
 
+          {!isAdmin && (
+            <div className="mt-4 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
+              Solo un administrador puede cambiar la configuración de IA.
+            </div>
+          )}
+
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <label className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 sm:col-span-2">
               <span className="text-sm font-medium">IA habilitada</span>
@@ -248,7 +254,8 @@ export function IaView({
                 type="checkbox"
                 checked={isEnabled}
                 onChange={(e) => setIsEnabled(e.target.checked)}
-                className="size-4 accent-[var(--primary)]"
+                disabled={!isAdmin}
+                className="size-4 accent-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
               />
             </label>
 
@@ -269,10 +276,11 @@ export function IaView({
                 Modelo
               </label>
               <input
-                className={inputCls}
+                className={inputCls + (!isAdmin ? " cursor-not-allowed opacity-60" : "")}
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
                 placeholder="claude-opus-4-8"
+                disabled={!isAdmin}
               />
             </div>
 
@@ -289,14 +297,16 @@ export function IaView({
                 disabled={!isAdmin}
               />
               <p className="mt-1 text-xs text-muted-foreground/70">
-                {isAdmin
-                  ? "Control de gasto mensual de IA."
-                  : "Solo un administrador puede cambiar el presupuesto."}
+                Control de gasto mensual de IA.
               </p>
             </div>
 
             <div className="flex items-end">
-              <Button onClick={onSaveConfig} disabled={savingCfg} size="sm">
+              <Button
+                onClick={onSaveConfig}
+                disabled={savingCfg || !isAdmin}
+                size="sm"
+              >
                 {savingCfg && <Loader2 className="size-4 animate-spin" />}
                 Guardar configuración
               </Button>
@@ -316,17 +326,18 @@ export function IaView({
             </div>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <input
-                className={inputCls}
+                className={inputCls + (!isAdmin ? " cursor-not-allowed opacity-60" : "")}
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder={keySet ? "•••••••• (reemplazar)" : "sk-ant-…"}
                 autoComplete="off"
+                disabled={!isAdmin}
               />
               <div className="flex gap-2">
                 <Button
                   onClick={onSaveKey}
-                  disabled={savingKey}
+                  disabled={savingKey || !isAdmin}
                   size="sm"
                   variant="outline"
                 >
@@ -336,7 +347,7 @@ export function IaView({
                 {keySet && (
                   <Button
                     onClick={onClearKey}
-                    disabled={savingKey}
+                    disabled={savingKey || !isAdmin}
                     size="sm"
                     variant="ghost"
                   >

@@ -11,6 +11,7 @@ import {
   ClipboardList,
   FlaskConical,
   FolderKanban,
+  Info,
   LayoutDashboard,
   LayoutGrid,
   ListTodo,
@@ -43,6 +44,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { PunchAlerts } from "@/components/punch/punch-alerts";
+import { AboutDialog } from "@/components/about-dialog";
 import type { Brand } from "@/lib/brand";
 
 type ShellProject = {
@@ -81,6 +83,7 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   const activeProjectId =
     pathname.match(/\/app\/proyectos\/([^/]+)/)?.[1] ?? null;
@@ -358,6 +361,10 @@ export function AppShell({
                     )}
                   </div>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setAboutOpen(true)}>
+                    <Info className="size-4" />
+                    Acerca de Modus PM
+                  </DropdownMenuItem>
                   <DropdownMenuItem variant="destructive" onClick={signOut}>
                     <LogOut className="size-4" />
                     Cerrar sesión
@@ -370,6 +377,7 @@ export function AppShell({
           <main className="min-w-0 flex-1 bg-muted/20">{children}</main>
         </div>
 
+        <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
         <Toaster position="top-right" />
       </div>
     </TooltipProvider>

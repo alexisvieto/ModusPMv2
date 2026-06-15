@@ -63,10 +63,14 @@ export function FatsatEditorSheet({
 }) {
   const router = useRouter();
   const isEdit = !!prueba;
+  // id estable por ítem para keys de React (evita confundir inputs al borrar del medio).
+  const newItem = () => ({ _id: crypto.randomUUID(), value: "" });
   const [name, setName] = useState("");
   const [date, setDate] = useState(toISODate(new Date()));
   const [notes, setNotes] = useState("");
-  const [items, setItems] = useState<string[]>([""]);
+  const [items, setItems] = useState<{ _id: string; value: string }[]>(() => [
+    newItem(),
+  ]);
   const [sig, setSig] = useState<Sig>(EMPTY_SIG);
   const [saving, setSaving] = useState(false);
 
@@ -94,7 +98,7 @@ export function FatsatEditorSheet({
       setName("");
       setDate(toISODate(new Date()));
       setNotes("");
-      setItems([""]);
+      setItems([newItem()]);
       setSig(EMPTY_SIG);
     }
   }
@@ -147,7 +151,7 @@ export function FatsatEditorSheet({
         return;
       }
       const toInsert = items
-        .map((d) => d.trim())
+        .map((it) => it.value.trim())
         .filter(Boolean)
         .map((d, i) => ({
           organization_id: project.organization_id,
@@ -211,24 +215,26 @@ export function FatsatEditorSheet({
               <div className="flex items-center justify-between">
                 <Label>Pruebas relacionadas</Label>
                 <button
-                  onClick={() => setItems((p) => [...p, ""])}
+                  onClick={() => setItems((p) => [...p, newItem()])}
                   className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                 >
                   <Plus className="size-3.5" /> Prueba
                 </button>
               </div>
-              {items.map((d, i) => (
-                <div key={i} className="flex items-center gap-2">
+              {items.map((it, i) => (
+                <div key={it._id} className="flex items-center gap-2">
                   <span className="w-4 shrink-0 text-xs text-muted-foreground">
                     {i + 1}
                   </span>
                   <input
                     placeholder="Ej. Certificación de cableado estructurado"
                     className={cn(fieldCls, "min-w-0 flex-1")}
-                    value={d}
+                    value={it.value}
                     onChange={(e) =>
                       setItems((prev) =>
-                        prev.map((x, idx) => (idx === i ? e.target.value : x)),
+                        prev.map((x, idx) =>
+                          idx === i ? { ...x, value: e.target.value } : x,
+                        ),
                       )
                     }
                   />
@@ -236,7 +242,7 @@ export function FatsatEditorSheet({
                     onClick={() =>
                       setItems((prev) =>
                         prev.length === 1
-                          ? [""]
+                          ? [newItem()]
                           : prev.filter((_, idx) => idx !== i),
                       )
                     }

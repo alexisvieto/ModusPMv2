@@ -40,6 +40,11 @@ type EntryRow = {
   quantity: number | null;
   unit: string | null;
 };
+// Estado local con id estable para keys de React (evita que borrar una fila
+// del medio confunda el foco/valor de los inputs).
+type LocalEntry = EntryRow & { _id: string };
+const withIds = (rows: EntryRow[]): LocalEntry[] =>
+  rows.map((e) => ({ ...e, _id: crypto.randomUUID() }));
 type Project = { name: string; code: string | null; client_name: string | null };
 
 const STATUS: { v: ReportStatus; l: string }[] = [
@@ -72,7 +77,9 @@ export function ReportEditorSheet({
 }) {
   const router = useRouter();
   const [form, setForm] = useState<Report | null>(report);
-  const [entries, setEntries] = useState<EntryRow[]>(initialEntries);
+  const [entries, setEntries] = useState<LocalEntry[]>(() =>
+    withIds(initialEntries),
+  );
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -84,7 +91,7 @@ export function ReportEditorSheet({
   if (synced.report !== report || synced.initialEntries !== initialEntries) {
     setSynced({ report, initialEntries });
     setForm(report);
-    setEntries(initialEntries);
+    setEntries(withIds(initialEntries));
     setAiError(null);
     if (report) {
       const wf = Number(report.workforce);
@@ -123,6 +130,7 @@ export function ReportEditorSheet({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          projectId: form.project_id,
           report: {
             projectName: project.name,
             report_date: form.report_date,
@@ -350,7 +358,12 @@ export function ReportEditorSheet({
                     onClick={() =>
                       setEntries((p) => [
                         ...p,
-                        { description: "", quantity: null, unit: null },
+                        {
+                          _id: crypto.randomUUID(),
+                          description: "",
+                          quantity: null,
+                          unit: null,
+                        },
                       ])
                     }
                     className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
@@ -365,7 +378,7 @@ export function ReportEditorSheet({
                 </p>
                 <div className="space-y-2">
                   {entries.map((e, i) => (
-                    <div key={i} className="flex items-center gap-2">
+                    <div key={e._id} className="flex items-center gap-2">
                       <input
                         placeholder="Descripción de la actividad"
                         className={cn(fieldCls, "min-w-0 flex-1")}

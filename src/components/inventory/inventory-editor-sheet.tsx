@@ -88,7 +88,7 @@ export function InventoryEditorSheet({
         );
         setIloLoaded(true);
       });
-  }, [item]);
+  }, [item?.id, item?.category]);
 
   function set<K extends keyof Item>(k: K, v: Item[K]) {
     setForm((f) => (f ? { ...f, [k]: v } : f));

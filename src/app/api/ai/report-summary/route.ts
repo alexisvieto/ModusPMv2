@@ -60,7 +60,7 @@ export async function POST(req: Request) {
 
   // Validación de entrada (evita 500 con body malformado)
   const body = (await req.json().catch(() => null)) as
-    | { report?: ReportInput }
+    | { report?: ReportInput; projectId?: string }
     | null;
   const report = body?.report;
   if (
@@ -71,6 +71,32 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "Datos de reporte inválidos." },
       { status: 400 },
+    );
+  }
+
+  // Aislamiento por tenant + respeta el switch de IA (igual que executive-analysis):
+  // RLS al cargar el proyecto evita resumir/gastar para un proyecto de otro tenant.
+  const projectId = body?.projectId;
+  if (!projectId || typeof projectId !== "string") {
+    return NextResponse.json({ error: "Falta projectId." }, { status: 400 });
+  }
+  const { data: project } = await supabase
+    .from("projects")
+    .select("organization_id")
+    .eq("id", projectId)
+    .maybeSingle();
+  if (!project) {
+    return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
+  }
+  const { data: aicfg } = await supabase
+    .from("ai_provider_configs")
+    .select("is_enabled")
+    .eq("organization_id", project.organization_id)
+    .maybeSingle();
+  if (aicfg && aicfg.is_enabled === false) {
+    return NextResponse.json(
+      { error: "La IA está deshabilitada para esta organización." },
+      { status: 403 },
     );
   }
 

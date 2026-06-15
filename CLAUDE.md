@@ -1,1 +1,2 @@
 @AGENTS.md
+@BUILD-PLAYBOOK.md

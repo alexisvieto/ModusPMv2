@@ -82,16 +82,31 @@ export default function Home() {
       </section>
 
       <footer className="border-t">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-3 px-6 py-5 text-xs text-muted-foreground sm:flex-row">
-          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-            {MODULES.map((m, i) => (
-              <span key={m} className="flex items-center gap-2">
-                {i > 0 && <span className="text-border">·</span>}
-                <span>{m}</span>
-              </span>
-            ))}
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-6 py-5 text-xs text-muted-foreground">
+          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+              {MODULES.map((m, i) => (
+                <span key={m} className="flex items-center gap-2">
+                  {i > 0 && <span className="text-border">·</span>}
+                  <span>{m}</span>
+                </span>
+              ))}
+            </div>
+            <span className="font-mono whitespace-nowrap">v0.1 · demo</span>
           </div>
-          <span className="font-mono whitespace-nowrap">v0.1 · demo</span>
+          <div className="border-t pt-3 text-center text-muted-foreground">
+            Modus PM — un producto de{" "}
+            <span className="font-medium text-foreground">Nexera</span>
+            {" · "}
+            <a
+              href="https://www.nexera.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors hover:text-foreground hover:underline"
+            >
+              www.nexera.io
+            </a>
+          </div>
         </div>
       </footer>
     </main>

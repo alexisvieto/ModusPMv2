@@ -37,10 +37,12 @@ export function IaView({
   projectId,
   orgId,
   config,
+  isAdmin,
 }: {
   projectId: string;
   orgId: string;
   config: Config;
+  isAdmin: boolean;
 }) {
   const enabled = config?.is_enabled !== false; // por defecto activada
 
@@ -279,14 +281,17 @@ export function IaView({
                 Presupuesto mensual (USD)
               </label>
               <input
-                className={inputCls}
+                className={inputCls + (!isAdmin ? " cursor-not-allowed opacity-60" : "")}
                 value={budget}
                 onChange={(e) => setBudget(e.target.value.replace(/[^\d.]/g, ""))}
                 inputMode="decimal"
                 placeholder="Sin límite"
+                disabled={!isAdmin}
               />
               <p className="mt-1 text-xs text-muted-foreground/70">
-                Referencial (control de gasto: próximamente).
+                {isAdmin
+                  ? "Control de gasto mensual de IA."
+                  : "Solo un administrador puede cambiar el presupuesto."}
               </p>
             </div>
 

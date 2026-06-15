@@ -18,11 +18,17 @@ export default async function IaPage({
     .maybeSingle();
   if (!project) notFound();
 
-  const { data: cfg } = await supabase
-    .from("ai_provider_configs")
-    .select("provider, model, monthly_budget_usd, is_enabled, api_key_set")
-    .eq("organization_id", project.organization_id)
-    .maybeSingle();
+  const [{ data: cfg }, { data: isAdmin }] = await Promise.all([
+    supabase
+      .from("ai_provider_configs")
+      .select("provider, model, monthly_budget_usd, is_enabled, api_key_set")
+      .eq("organization_id", project.organization_id)
+      .maybeSingle(),
+    supabase.rpc("has_org_role", {
+      org: project.organization_id,
+      roles: ["owner", "admin"],
+    }),
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-8">
@@ -38,6 +44,7 @@ export default async function IaPage({
         projectId={project.id}
         orgId={project.organization_id}
         config={cfg ?? null}
+        isAdmin={!!isAdmin}
       />
     </div>
   );

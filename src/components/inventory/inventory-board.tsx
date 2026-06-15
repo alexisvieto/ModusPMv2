@@ -404,6 +404,18 @@ export function InventoryBoard({
     });
     ws.getRow(foot).height = 20;
 
+    // Crédito discreto de Nexera (subordinado a la marca del cliente; el tier "full" lo apaga).
+    if (brand.exportCredit) {
+      const credit = foot + 1;
+      ws.mergeCells(credit, 1, credit, 16);
+      paint(ws.getCell(credit, 1), {
+        v: "a product by Nexera · nexera.io",
+        font: { name: FONT, size: 8, italic: true, color: { argb: "FF9CA3AF" } },
+        align: { vertical: "middle", horizontal: "center" },
+      });
+      ws.getRow(credit).height = 14;
+    }
+
     // ── Descarga ──
     const out = await wb.xlsx.writeBuffer();
     const blob = new Blob([out], {

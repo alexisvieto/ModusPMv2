@@ -13,6 +13,7 @@ export type Brand = {
   phone: string | null;
   address: string | null;
   logoUrl: string | null;
+  exportCredit: boolean; // muestra el crédito discreto "by Nexera" en exportables
 };
 
 /** Fallback al producto cuando una org no tiene marca configurada. */
@@ -26,6 +27,7 @@ export const DEFAULT_BRAND: Brand = {
   phone: null,
   address: null,
   logoUrl: null,
+  exportCredit: true,
 };
 
 /** Columnas de branding que se seleccionan de `organizations`. */
@@ -40,6 +42,7 @@ export type OrgBranding = {
   contact_email: string | null;
   contact_phone: string | null;
   address: string | null;
+  export_credit: boolean | null;
 };
 
 /** Solo permite logos same-origin (/…) o https:// (evita data:/javascript:). */
@@ -60,6 +63,7 @@ export function brandFromOrg(org: OrgBranding | null | undefined): Brand {
     phone: org.contact_phone,
     address: org.address,
     logoUrl: safeLogo(org.logo_url),
+    exportCredit: org.export_credit ?? true,
   };
 }
 
@@ -70,4 +74,4 @@ export function brandInitial(brand: Brand): string {
 
 /** Columnas a seleccionar de `organizations` para construir el Brand. */
 export const ORG_BRAND_COLUMNS =
-  "name, legal_name, brand_primary, brand_accent, brand_dark, logo_url, website, contact_email, contact_phone, address";
+  "name, legal_name, brand_primary, brand_accent, brand_dark, logo_url, website, contact_email, contact_phone, address, export_credit";

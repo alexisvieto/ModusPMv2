@@ -588,6 +588,7 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string
+          export_credit: boolean
           id: string
           legal_name: string | null
           logo_url: string | null
@@ -604,6 +605,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          export_credit?: boolean
           id?: string
           legal_name?: string | null
           logo_url?: string | null
@@ -620,6 +622,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          export_credit?: boolean
           id?: string
           legal_name?: string | null
           logo_url?: string | null

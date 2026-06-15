@@ -52,9 +52,11 @@ const makeChrome = (P: DocPalette) =>
     metaLine: { color: P.muted, fontSize: 9, marginTop: 1 },
     footer: {
       position: "absolute",
-      bottom: 24,
+      bottom: 18,
       left: 32,
       right: 32,
+    },
+    footerRow: {
       flexDirection: "row",
       justifyContent: "space-between",
       borderTopWidth: 2,
@@ -62,6 +64,12 @@ const makeChrome = (P: DocPalette) =>
       paddingTop: 8,
       color: P.muted,
       fontSize: 8,
+    },
+    credit: {
+      textAlign: "center",
+      color: "#9CA3AF",
+      fontSize: 7,
+      marginTop: 3,
     },
   });
 
@@ -103,11 +111,16 @@ export function PdfFooter({ brand, right }: { brand: Brand; right?: string }) {
   const s = makeChrome(docPalette(brand));
   return (
     <View style={s.footer} fixed>
-      <Text>
-        {brand.name}
-        {brand.website ? ` · ${brand.website}` : ""}
-      </Text>
-      <Text>{right ?? ""}</Text>
+      <View style={s.footerRow}>
+        <Text>
+          {brand.name}
+          {brand.website ? ` · ${brand.website}` : ""}
+        </Text>
+        <Text>{right ?? ""}</Text>
+      </View>
+      {brand.exportCredit && (
+        <Text style={s.credit}>a product by Nexera · nexera.io</Text>
+      )}
     </View>
   );
 }

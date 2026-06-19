@@ -66,8 +66,11 @@ export function InventoryEditorSheet({
   }
 
   // Carga bajo demanda de las credenciales iLO del equipo (efecto: I/O).
+  // Depende de `open`: tras guardar, el ítem regresa con las credenciales
+  // ocultas (safeItems) y reabrir el MISMO equipo no re-dispararía el efecto
+  // si solo dependiera del id. Recargar al abrir evita que se vean en blanco.
   useEffect(() => {
-    if (!item?.id || item.category !== "equipo") return;
+    if (!open || !item?.id || item.category !== "equipo") return;
     const supabase = createClient();
     supabase
       .from("inventory_items")
@@ -88,7 +91,7 @@ export function InventoryEditorSheet({
         );
         setIloLoaded(true);
       });
-  }, [item?.id, item?.category]);
+  }, [open, item?.id, item?.category]);
 
   function set<K extends keyof Item>(k: K, v: Item[K]) {
     setForm((f) => (f ? { ...f, [k]: v } : f));

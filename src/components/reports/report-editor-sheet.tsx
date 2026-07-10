@@ -183,33 +183,22 @@ export function ReportEditorSheet({
       return;
     }
 
-    const { error: delError } = await supabase
-      .from("daily_report_entries")
-      .delete()
-      .eq("daily_report_id", form.id);
-    if (delError) {
-      toast.error("No se pudieron actualizar las actividades.");
+    // RPC transaccional: reemplaza todas las actividades en una sola operación
+    // (un delete+insert suelto perdía las actividades si fallaba a mitad).
+    const { error: entriesError } = await supabase.rpc("save_report_entries", {
+      p_report_id: form.id,
+      p_entries: entries
+        .filter((e) => e.description.trim())
+        .map((e) => ({
+          description: e.description,
+          quantity: e.quantity,
+          unit: e.unit,
+        })),
+    });
+    if (entriesError) {
+      toast.error("No se pudieron guardar las actividades.");
       setSaving(false);
       return;
-    }
-    const toInsert = entries
-      .filter((e) => e.description.trim())
-      .map((e) => ({
-        organization_id: form.organization_id,
-        daily_report_id: form.id,
-        description: e.description,
-        quantity: e.quantity,
-        unit: e.unit,
-      }));
-    if (toInsert.length) {
-      const { error: insError } = await supabase
-        .from("daily_report_entries")
-        .insert(toInsert);
-      if (insError) {
-        toast.error("No se pudieron guardar las actividades.");
-        setSaving(false);
-        return;
-      }
     }
     setSaving(false);
     onOpenChange(false);

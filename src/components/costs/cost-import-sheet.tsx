@@ -131,8 +131,6 @@ export function CostImportSheet({
           : "";
         const id = (code || `IMP-${i + 1}`).slice(0, 120);
         return {
-          organization_id: project.organization_id,
-          project_id: project.id,
           cost_code: id,
           description: mapping.description
             ? String(r[mapping.description] ?? "").slice(0, 500) || null
@@ -144,7 +142,6 @@ export function CostImportSheet({
           committed: mapping.committed ? num(r[mapping.committed]) : 0,
           actual: mapping.actual ? num(r[mapping.actual]) : 0,
           entry_date: toISODate(new Date()),
-          source: "import",
           external_id: id,
         };
       })
@@ -159,22 +156,12 @@ export function CostImportSheet({
     }
     setImporting(true);
     const supabase = createClient();
-    // Dedup: reemplaza importaciones previas con el mismo código.
-    const { error: delError } = await supabase
-      .from("cost_entries")
-      .delete()
-      .eq("project_id", project.id)
-      .eq("source", "import")
-      .in(
-        "external_id",
-        toInsert.map((r) => r.external_id),
-      );
-    if (delError) {
-      setImporting(false);
-      toast.error("No se pudo limpiar la importación previa. Intenta de nuevo.");
-      return;
-    }
-    const { error } = await supabase.from("cost_entries").insert(toInsert);
+    // RPC transaccional: limpia la importación previa (mismo código) e inserta
+    // en una sola operación — un fallo a mitad ya no deja los costos a medias.
+    const { error } = await supabase.rpc("import_cost_entries", {
+      p_project_id: project.id,
+      p_rows: toInsert,
+    });
     setImporting(false);
     if (error) {
       toast.error("No se pudo importar. Revisa el mapeo.");

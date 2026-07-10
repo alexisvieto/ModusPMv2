@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, Flag, Plus } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { TaskEditorSheet } from "@/components/gantt/task-editor-sheet";
@@ -275,18 +276,15 @@ export function GanttBoard({
     )
       return;
     const supabase = createClient();
-    await Promise.all(
-      tasks.map((t) =>
-        supabase
-          .from("tasks")
-          .update({ baseline_start: t.planned_start, baseline_end: t.planned_end })
-          .eq("id", t.id),
-      ),
-    );
-    await supabase
-      .from("projects")
-      .update({ baseline_set_at: new Date().toISOString() })
-      .eq("id", project.id);
+    // RPC transaccional: congela todas las tareas y sella el proyecto de una vez
+    // (antes era un UPDATE por tarea; un fallo parcial dejaba la línea base a medias).
+    const { error } = await supabase.rpc("set_baseline", {
+      p_project_id: project.id,
+    });
+    if (error) {
+      toast.error("No se pudo establecer la línea base. Intenta de nuevo.");
+      return;
+    }
     router.refresh();
   }
 

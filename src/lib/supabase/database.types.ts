@@ -1017,8 +1017,17 @@ export type Database = {
         Args: { org: string; roles: Database["public"]["Enums"]["org_role"][] }
         Returns: boolean
       }
+      import_cost_entries: {
+        Args: { p_project_id: string; p_rows: Json }
+        Returns: number
+      }
       is_org_member: { Args: { org: string }; Returns: boolean }
       is_platform_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
+      save_report_entries: {
+        Args: { p_report_id: string; p_entries: Json }
+        Returns: undefined
+      }
+      set_baseline: { Args: { p_project_id: string }; Returns: undefined }
       set_org_ai_key: { Args: { p_org: string; p_key: string }; Returns: undefined }
     }
     Enums: {

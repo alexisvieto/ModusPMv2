@@ -101,7 +101,10 @@ export default async function ProjectDashboard({
 
   const allTasks = tasks ?? [];
   const phases = allTasks.filter((t) => t.parent_id === null);
-  const leaves = allTasks.filter((t) => t.parent_id !== null);
+  // Proyecto plano (sin jerarquía): todas las tareas cuentan como hojas para el
+  // EVM — si no, spi queda null y el proyecto se reporta "en curso" sin datos.
+  const leaves0 = allTasks.filter((t) => t.parent_id !== null);
+  const leaves = leaves0.length ? leaves0 : allTasks;
   const lastReport = reports?.[0] ?? null;
 
   const actualCost = (costs ?? []).reduce((a, c) => a + Number(c.actual ?? 0), 0);

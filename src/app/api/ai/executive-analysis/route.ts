@@ -135,7 +135,10 @@ export async function POST(req: Request) {
 
   const snaps = (snapshots ?? []) as Snapshot[];
   const allTasks = tasks ?? [];
-  const leaves = allTasks.filter((t) => t.parent_id !== null);
+  // Proyecto plano (sin jerarquía): todas las tareas cuentan como hojas para el
+  // EVM — si no, spi queda null y el análisis reporta salud sin datos.
+  const leaves0 = allTasks.filter((t) => t.parent_id !== null);
+  const leaves = leaves0.length ? leaves0 : allTasks;
   const phases = allTasks.filter((t) => t.parent_id === null);
 
   const actualCost = (costs ?? []).reduce((a, c) => a + Number(c.actual ?? 0), 0);

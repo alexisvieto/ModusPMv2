@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { GanttBoard } from "@/components/gantt/gantt-board";
+import { orgMemberProfiles } from "@/lib/supabase/org-profiles";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function CronogramaPage({
@@ -21,14 +22,14 @@ export default async function CronogramaPage({
 
   if (!project) notFound();
 
-  const [{ data: tasks }, { data: profiles }, { data: exceptions }] =
+  const [{ data: tasks }, profiles, { data: exceptions }] =
     await Promise.all([
       supabase
         .from("tasks")
         .select("*")
         .eq("project_id", projectId)
         .order("wbs", { ascending: true }),
-      supabase.from("profiles").select("id, full_name"),
+      orgMemberProfiles(supabase, project.organization_id),
       supabase
         .from("calendar_exceptions")
         .select("date, is_working, note")
@@ -40,7 +41,7 @@ export default async function CronogramaPage({
       <GanttBoard
         project={project}
         tasks={tasks ?? []}
-        profiles={profiles ?? []}
+        profiles={profiles}
         exceptions={exceptions ?? []}
       />
     </div>

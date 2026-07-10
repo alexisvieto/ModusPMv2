@@ -392,6 +392,11 @@ ${all.filter((i) => i.category === "alcance").slice(0, 20).map((i) => `- ${i.des
     const executive = msg.content
       .map((b) => (b.type === "text" ? b.text : ""))
       .join("")
+      .trim()
+      // El modelo a veces antepone un encabezado markdown pese al prompt;
+      // se pidió prosa corrida, así que se quitan encabezados y viñetas.
+      .replace(/^#{1,6}\s+.*$/gm, "")
+      .replace(/^\s*[-*]\s+/gm, "")
       .trim();
 
     // Auto-sugerir tarjetas de sistema detectadas en el pliego

@@ -42,7 +42,7 @@ async function requirePlatformAdmin(): Promise<
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "No autorizado." };
-  const { data: isAdmin } = await supabase.rpc("is_platform_admin", {});
+  const { data: isAdmin } = await supabase.rpc("is_platform_admin");
   if (!isAdmin) {
     return {
       ok: false,

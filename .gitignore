@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Especificaciones locales (no publicar)
+INSTRUCCIONES_MODULO_CALCULO_PLANOS.md

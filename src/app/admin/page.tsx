@@ -12,7 +12,7 @@ export default async function AdminPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const { data: isAdmin } = await supabase.rpc("is_platform_admin", {});
+  const { data: isAdmin } = await supabase.rpc("is_platform_admin");
   if (!isAdmin) redirect("/app");
 
   const admin = createAdminClient();

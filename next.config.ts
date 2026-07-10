@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // mupdf es WASM: no debe pasar por el bundler del servidor.
+  serverExternalPackages: ["mupdf"],
   // Headers de seguridad para todas las rutas (A-05 del security review).
   // Sin CSP por ahora: requiere afinarse para Next (inline) + recharts + la
   // inyección white-label; se deja para post-demo.

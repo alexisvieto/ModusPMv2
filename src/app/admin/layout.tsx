@@ -18,7 +18,7 @@ export default async function AdminLayout({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: isAdmin } = await supabase.rpc("is_platform_admin", {});
+  const { data: isAdmin } = await supabase.rpc("is_platform_admin");
   if (!isAdmin) redirect("/app");
 
   return (

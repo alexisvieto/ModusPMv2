@@ -157,7 +157,6 @@ export type Database = {
           category: Database["public"]["Enums"]["cost_category"]
           committed: number
           cost_code: string | null
-          supplier: string | null
           created_at: string
           description: string | null
           entry_date: string
@@ -166,6 +165,7 @@ export type Database = {
           organization_id: string
           project_id: string
           source: string
+          supplier: string | null
         }
         Insert: {
           actual?: number
@@ -173,7 +173,6 @@ export type Database = {
           category?: Database["public"]["Enums"]["cost_category"]
           committed?: number
           cost_code?: string | null
-          supplier?: string | null
           created_at?: string
           description?: string | null
           entry_date?: string
@@ -182,6 +181,7 @@ export type Database = {
           organization_id: string
           project_id: string
           source?: string
+          supplier?: string | null
         }
         Update: {
           actual?: number
@@ -189,7 +189,6 @@ export type Database = {
           category?: Database["public"]["Enums"]["cost_category"]
           committed?: number
           cost_code?: string | null
-          supplier?: string | null
           created_at?: string
           description?: string | null
           entry_date?: string
@@ -198,6 +197,7 @@ export type Database = {
           organization_id?: string
           project_id?: string
           source?: string
+          supplier?: string | null
         }
         Relationships: [
           {
@@ -397,7 +397,6 @@ export type Database = {
       fatsat_protocols: {
         Row: {
           approved_at: string | null
-          name: string | null
           approved_by_name: string | null
           approved_by_role: string | null
           code: string | null
@@ -409,6 +408,7 @@ export type Database = {
           executed_by_role: string | null
           id: string
           location: string | null
+          name: string | null
           notes: string | null
           organization_id: string
           project_id: string
@@ -423,7 +423,6 @@ export type Database = {
         }
         Insert: {
           approved_at?: string | null
-          name?: string | null
           approved_by_name?: string | null
           approved_by_role?: string | null
           code?: string | null
@@ -435,6 +434,7 @@ export type Database = {
           executed_by_role?: string | null
           id?: string
           location?: string | null
+          name?: string | null
           notes?: string | null
           organization_id: string
           project_id: string
@@ -449,7 +449,6 @@ export type Database = {
         }
         Update: {
           approved_at?: string | null
-          name?: string | null
           approved_by_name?: string | null
           approved_by_role?: string | null
           code?: string | null
@@ -461,6 +460,7 @@ export type Database = {
           executed_by_role?: string | null
           id?: string
           location?: string | null
+          name?: string | null
           notes?: string | null
           organization_id?: string
           project_id?: string
@@ -500,22 +500,22 @@ export type Database = {
       inventory_items: {
         Row: {
           barcode: string | null
-          equipment_name: string | null
-          rack_position: string | null
-          ilo_user: string | null
-          ilo_password: string | null
-          ilo_license: string | null
           brand_model: string | null
           category: Database["public"]["Enums"]["inventory_category"]
           created_at: string
           description: string
+          equipment_name: string | null
           id: string
+          ilo_license: string | null
+          ilo_password: string | null
+          ilo_user: string | null
           location: Database["public"]["Enums"]["inventory_location"]
           notes: string | null
           organization_id: string
           product_number: string | null
           project_id: string
           quantity: number
+          rack_position: string | null
           serial_number: string | null
           status: Database["public"]["Enums"]["inventory_status"]
           supplier: string | null
@@ -525,21 +525,21 @@ export type Database = {
         Insert: {
           barcode?: string | null
           brand_model?: string | null
-          equipment_name?: string | null
-          rack_position?: string | null
-          ilo_user?: string | null
-          ilo_password?: string | null
-          ilo_license?: string | null
           category?: Database["public"]["Enums"]["inventory_category"]
           created_at?: string
           description: string
+          equipment_name?: string | null
           id?: string
+          ilo_license?: string | null
+          ilo_password?: string | null
+          ilo_user?: string | null
           location?: Database["public"]["Enums"]["inventory_location"]
           notes?: string | null
           organization_id: string
           product_number?: string | null
           project_id: string
           quantity?: number
+          rack_position?: string | null
           serial_number?: string | null
           status?: Database["public"]["Enums"]["inventory_status"]
           supplier?: string | null
@@ -549,21 +549,21 @@ export type Database = {
         Update: {
           barcode?: string | null
           brand_model?: string | null
-          equipment_name?: string | null
-          rack_position?: string | null
-          ilo_user?: string | null
-          ilo_password?: string | null
-          ilo_license?: string | null
           category?: Database["public"]["Enums"]["inventory_category"]
           created_at?: string
           description?: string
+          equipment_name?: string | null
           id?: string
+          ilo_license?: string | null
+          ilo_password?: string | null
+          ilo_user?: string | null
           location?: Database["public"]["Enums"]["inventory_location"]
           notes?: string | null
           organization_id?: string
           product_number?: string | null
           project_id?: string
           quantity?: number
+          rack_position?: string | null
           serial_number?: string | null
           status?: Database["public"]["Enums"]["inventory_status"]
           supplier?: string | null
@@ -632,6 +632,7 @@ export type Database = {
           brand_accent: string | null
           brand_dark: string | null
           brand_primary: string | null
+          company_tax_id: string | null
           contact_email: string | null
           contact_phone: string | null
           created_at: string
@@ -640,6 +641,7 @@ export type Database = {
           legal_name: string | null
           logo_url: string | null
           name: string
+          report_footer: string | null
           slug: string
           updated_at: string
           website: string | null
@@ -649,6 +651,7 @@ export type Database = {
           brand_accent?: string | null
           brand_dark?: string | null
           brand_primary?: string | null
+          company_tax_id?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -657,6 +660,7 @@ export type Database = {
           legal_name?: string | null
           logo_url?: string | null
           name: string
+          report_footer?: string | null
           slug: string
           updated_at?: string
           website?: string | null
@@ -666,6 +670,7 @@ export type Database = {
           brand_accent?: string | null
           brand_dark?: string | null
           brand_primary?: string | null
+          company_tax_id?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -674,6 +679,7 @@ export type Database = {
           legal_name?: string | null
           logo_url?: string | null
           name?: string
+          report_footer?: string | null
           slug?: string
           updated_at?: string
           website?: string | null
@@ -898,6 +904,628 @@ export type Database = {
           },
         ]
       }
+      takeoff_analyses: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          notes: string | null
+          organization_id: string
+          scope_doc_id: string | null
+          status: string
+          system_id: string
+          system_type: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          notes?: string | null
+          organization_id: string
+          scope_doc_id?: string | null
+          status?: string
+          system_id: string
+          system_type: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          scope_doc_id?: string | null
+          status?: string
+          system_id?: string
+          system_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_analysis_system"
+            columns: ["system_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "takeoff_systems"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "takeoff_analyses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "takeoff_analyses_scope_doc_id_fkey"
+            columns: ["scope_doc_id"]
+            isOneToOne: false
+            referencedRelation: "takeoff_scope_docs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      takeoff_cable_params: {
+        Row: {
+          analysis_id: string | null
+          cable_type: string
+          computed_length_m: number | null
+          id: string
+          mounting_height_m: number
+          organization_id: string
+          slack_pct: number
+        }
+        Insert: {
+          analysis_id?: string | null
+          cable_type: string
+          computed_length_m?: number | null
+          id?: string
+          mounting_height_m?: number
+          organization_id: string
+          slack_pct?: number
+        }
+        Update: {
+          analysis_id?: string | null
+          cable_type?: string
+          computed_length_m?: number | null
+          id?: string
+          mounting_height_m?: number
+          organization_id?: string
+          slack_pct?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_cable_analysis"
+            columns: ["analysis_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "takeoff_analyses"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "takeoff_cable_params_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      takeoff_detections: {
+        Row: {
+          confidence: string
+          element_key: string
+          id: string
+          method: string | null
+          organization_id: string
+          original_key: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sheet_id: string
+          status: string
+          x: number
+          y: number
+        }
+        Insert: {
+          confidence: string
+          element_key: string
+          id?: string
+          method?: string | null
+          organization_id: string
+          original_key?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sheet_id: string
+          status?: string
+          x: number
+          y: number
+        }
+        Update: {
+          confidence?: string
+          element_key?: string
+          id?: string
+          method?: string | null
+          organization_id?: string
+          original_key?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sheet_id?: string
+          status?: string
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_detection_sheet"
+            columns: ["sheet_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "takeoff_sheets"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "takeoff_detections_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      takeoff_org_settings: {
+        Row: {
+          organization_id: string
+          share_learning: boolean
+          updated_at: string
+          use_global_library: boolean
+        }
+        Insert: {
+          organization_id: string
+          share_learning?: boolean
+          updated_at?: string
+          use_global_library?: boolean
+        }
+        Update: {
+          organization_id?: string
+          share_learning?: boolean
+          updated_at?: string
+          use_global_library?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "takeoff_org_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      takeoff_results: {
+        Row: {
+          analysis_id: string
+          cost_item_id: string | null
+          element_key: string
+          element_name: string
+          id: string
+          organization_id: string
+          qty_detected: number
+          qty_final: number
+          unit: string
+        }
+        Insert: {
+          analysis_id: string
+          cost_item_id?: string | null
+          element_key: string
+          element_name: string
+          id?: string
+          organization_id: string
+          qty_detected: number
+          qty_final: number
+          unit?: string
+        }
+        Update: {
+          analysis_id?: string
+          cost_item_id?: string | null
+          element_key?: string
+          element_name?: string
+          id?: string
+          organization_id?: string
+          qty_detected?: number
+          qty_final?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_result_analysis"
+            columns: ["analysis_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "takeoff_analyses"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "takeoff_results_cost_item_id_fkey"
+            columns: ["cost_item_id"]
+            isOneToOne: false
+            referencedRelation: "cost_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "takeoff_results_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      takeoff_scope_docs: {
+        Row: {
+          analyzed_at: string | null
+          contracting_entity: string | null
+          created_at: string
+          created_by: string | null
+          doc_name: string
+          executive_summary: string | null
+          file_hash: string
+          id: string
+          job_state: Json | null
+          location: string | null
+          organization_id: string
+          page_count: number | null
+          pdf_path: string | null
+          progress: string | null
+          project_id: string
+          project_title: string | null
+          status: string
+          tender_ref: string | null
+        }
+        Insert: {
+          analyzed_at?: string | null
+          contracting_entity?: string | null
+          created_at?: string
+          created_by?: string | null
+          doc_name: string
+          executive_summary?: string | null
+          file_hash: string
+          id?: string
+          job_state?: Json | null
+          location?: string | null
+          organization_id: string
+          page_count?: number | null
+          pdf_path?: string | null
+          progress?: string | null
+          project_id: string
+          project_title?: string | null
+          status?: string
+          tender_ref?: string | null
+        }
+        Update: {
+          analyzed_at?: string | null
+          contracting_entity?: string | null
+          created_at?: string
+          created_by?: string | null
+          doc_name?: string
+          executive_summary?: string | null
+          file_hash?: string
+          id?: string
+          job_state?: Json | null
+          location?: string | null
+          organization_id?: string
+          page_count?: number | null
+          pdf_path?: string | null
+          progress?: string | null
+          project_id?: string
+          project_title?: string | null
+          status?: string
+          tender_ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_scope_doc_project"
+            columns: ["project_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "takeoff_scope_docs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      takeoff_scope_items: {
+        Row: {
+          category: string
+          cost_impact: boolean
+          cost_item_id: string | null
+          description: string
+          id: string
+          manufacturer: string | null
+          model: string | null
+          organization_id: string
+          page_ref: string | null
+          qty_specified: number | null
+          quote: string | null
+          scope_doc_id: string
+          severity: string | null
+          system_type: string | null
+        }
+        Insert: {
+          category: string
+          cost_impact?: boolean
+          cost_item_id?: string | null
+          description: string
+          id?: string
+          manufacturer?: string | null
+          model?: string | null
+          organization_id: string
+          page_ref?: string | null
+          qty_specified?: number | null
+          quote?: string | null
+          scope_doc_id: string
+          severity?: string | null
+          system_type?: string | null
+        }
+        Update: {
+          category?: string
+          cost_impact?: boolean
+          cost_item_id?: string | null
+          description?: string
+          id?: string
+          manufacturer?: string | null
+          model?: string | null
+          organization_id?: string
+          page_ref?: string | null
+          qty_specified?: number | null
+          quote?: string | null
+          scope_doc_id?: string
+          severity?: string | null
+          system_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_scope_item_doc"
+            columns: ["scope_doc_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "takeoff_scope_docs"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "takeoff_scope_items_cost_item_id_fkey"
+            columns: ["cost_item_id"]
+            isOneToOne: false
+            referencedRelation: "cost_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "takeoff_scope_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      takeoff_scope_status: {
+        Row: {
+          declared_at: string | null
+          declared_by: string | null
+          organization_id: string
+          project_id: string
+          status: string
+        }
+        Insert: {
+          declared_at?: string | null
+          declared_by?: string | null
+          organization_id: string
+          project_id: string
+          status?: string
+        }
+        Update: {
+          declared_at?: string | null
+          declared_by?: string | null
+          organization_id?: string
+          project_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_scope_status_project"
+            columns: ["project_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "takeoff_scope_status_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      takeoff_sheets: {
+        Row: {
+          analysis_id: string
+          error_detail: string | null
+          file_hash: string
+          file_name: string | null
+          id: string
+          is_vector: boolean | null
+          organization_id: string
+          page_count: number
+          processed_at: string | null
+          scale_text: string | null
+          sheet_number: string
+          sheet_title: string | null
+          snapshot_path: string | null
+          status: string
+        }
+        Insert: {
+          analysis_id: string
+          error_detail?: string | null
+          file_hash: string
+          file_name?: string | null
+          id?: string
+          is_vector?: boolean | null
+          organization_id: string
+          page_count?: number
+          processed_at?: string | null
+          scale_text?: string | null
+          sheet_number: string
+          sheet_title?: string | null
+          snapshot_path?: string | null
+          status?: string
+        }
+        Update: {
+          analysis_id?: string
+          error_detail?: string | null
+          file_hash?: string
+          file_name?: string | null
+          id?: string
+          is_vector?: boolean | null
+          organization_id?: string
+          page_count?: number
+          processed_at?: string | null
+          scale_text?: string | null
+          sheet_number?: string
+          sheet_title?: string | null
+          snapshot_path?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_sheet_analysis"
+            columns: ["analysis_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "takeoff_analyses"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "takeoff_sheets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      takeoff_symbol_library: {
+        Row: {
+          created_at: string
+          element_key: string
+          element_name: string
+          id: string
+          organization_id: string | null
+          promoted_at: string | null
+          promoted_from: string | null
+          sample_png: string | null
+          scope: string
+          signature: Json
+          source_firm: string | null
+          system_type: string
+          times_confirmed: number
+          times_corrected: number
+        }
+        Insert: {
+          created_at?: string
+          element_key: string
+          element_name: string
+          id?: string
+          organization_id?: string | null
+          promoted_at?: string | null
+          promoted_from?: string | null
+          sample_png?: string | null
+          scope?: string
+          signature: Json
+          source_firm?: string | null
+          system_type: string
+          times_confirmed?: number
+          times_corrected?: number
+        }
+        Update: {
+          created_at?: string
+          element_key?: string
+          element_name?: string
+          id?: string
+          organization_id?: string | null
+          promoted_at?: string | null
+          promoted_from?: string | null
+          sample_png?: string | null
+          scope?: string
+          signature?: Json
+          source_firm?: string | null
+          system_type?: string
+          times_confirmed?: number
+          times_corrected?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "takeoff_symbol_library_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      takeoff_systems: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          organization_id: string
+          project_id: string
+          sort_order: number
+          source: string
+          system_type: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          organization_id: string
+          project_id: string
+          sort_order?: number
+          source?: string
+          system_type: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          organization_id?: string
+          project_id?: string
+          sort_order?: number
+          source?: string
+          system_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_system_project"
+            columns: ["project_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "takeoff_systems_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_dependencies: {
         Row: {
           created_at: string
@@ -1063,10 +1691,10 @@ export type Database = {
       cost_summary: {
         Args: { p_project_id: string }
         Returns: {
-          category: Database["public"]["Enums"]["cost_category"]
-          budget: number
-          committed: number
           actual: number
+          budget: number
+          category: Database["public"]["Enums"]["cost_category"]
+          committed: number
           n: number
         }[]
       }
@@ -1080,13 +1708,16 @@ export type Database = {
         Returns: number
       }
       is_org_member: { Args: { org: string }; Returns: boolean }
-      is_platform_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
       save_report_entries: {
-        Args: { p_report_id: string; p_entries: Json }
+        Args: { p_entries: Json; p_report_id: string }
         Returns: undefined
       }
       set_baseline: { Args: { p_project_id: string }; Returns: undefined }
-      set_org_ai_key: { Args: { p_org: string; p_key: string }; Returns: undefined }
+      set_org_ai_key: {
+        Args: { p_key: string; p_org: string }
+        Returns: undefined
+      }
     }
     Enums: {
       ai_provider: "anthropic" | "openai" | "google"

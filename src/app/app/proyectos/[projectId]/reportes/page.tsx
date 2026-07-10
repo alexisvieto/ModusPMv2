@@ -25,12 +25,18 @@ export default async function ReportesPage({
 
   if (!project) notFound();
 
-  const [{ data: reports }, profiles, { data: org }] = await Promise.all([
+  // Paginado: los últimos PAGE reportes; el board carga más bajo demanda.
+  const PAGE = 60;
+  const [{ data: reports, count }, profiles, { data: org }] = await Promise.all([
     supabase
       .from("daily_reports")
-      .select("*, daily_report_entries(description, quantity, unit)")
+      .select("*, daily_report_entries(description, quantity, unit)", {
+        count: "exact",
+      })
       .eq("project_id", projectId)
-      .order("report_date", { ascending: false }),
+      .order("report_date", { ascending: false })
+      .order("id", { ascending: false })
+      .range(0, PAGE - 1),
     orgMemberProfiles(supabase, project.organization_id),
     supabase
       .from("organizations")
@@ -56,6 +62,8 @@ export default async function ReportesPage({
         profiles={profiles}
         currentUserId={user?.id ?? null}
         brand={brand}
+        totalCount={count ?? 0}
+        pageSize={PAGE}
       />
     </div>
   );

@@ -49,18 +49,32 @@ export function ReportBoard({
   profiles,
   currentUserId,
   brand,
+  totalCount,
+  pageSize,
 }: {
   project: Project;
   reports: ReportWithEntries[];
   profiles: { id: string; full_name: string | null }[];
   currentUserId: string | null;
   brand: Brand;
+  totalCount: number;
+  pageSize: number;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState<Report | null>(null);
   const [editingEntries, setEditingEntries] = useState<EntryRow[]>([]);
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Reportes cargados (última página + "Cargar más"). Al refrescar el server
+  // (realtime/edición) los props cambian y se resincroniza a la primera página.
+  const [rows, setRows] = useState(reports);
+  const [prevReports, setPrevReports] = useState(reports);
+  if (prevReports !== reports) {
+    setPrevReports(reports);
+    setRows(reports);
+  }
 
   const nameOf = useMemo(() => {
     const m = new Map<string, string>();
@@ -92,6 +106,25 @@ export function ReportBoard({
     setEditing(r);
     setEditingEntries(r.daily_report_entries ?? []);
     setOpen(true);
+  }
+
+  async function loadMore() {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    const from = rows.length;
+    const { data, error } = await createClient()
+      .from("daily_reports")
+      .select("*, daily_report_entries(description, quantity, unit)")
+      .eq("project_id", project.id)
+      .order("report_date", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + pageSize - 1);
+    setLoadingMore(false);
+    if (error) {
+      toast.error("No se pudieron cargar más reportes.");
+      return;
+    }
+    setRows((r) => [...r, ...(data ?? [])]);
   }
 
   async function addReport() {
@@ -126,7 +159,7 @@ export function ReportBoard({
     <>
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {reports.length} {reports.length === 1 ? "reporte" : "reportes"}
+          {totalCount} {totalCount === 1 ? "reporte" : "reportes"}
         </p>
         <Button size="sm" onClick={addReport} disabled={creating}>
           <Plus className="size-4" />
@@ -135,7 +168,7 @@ export function ReportBoard({
       </div>
 
       <div className="space-y-3">
-        {reports.map((r) => {
+        {rows.map((r) => {
           const sm = STATUS[r.status] ?? STATUS.draft;
           return (
             <button
@@ -199,12 +232,27 @@ export function ReportBoard({
           );
         })}
 
-        {reports.length === 0 && (
+        {rows.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-sm text-muted-foreground">
             Aún no hay reportes diarios.
             <Button size="sm" onClick={addReport} disabled={creating}>
               <Plus className="size-4" />
               Crear el primero
+            </Button>
+          </div>
+        )}
+
+        {rows.length < totalCount && (
+          <div className="pt-1 text-center">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={loadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore
+                ? "Cargando…"
+                : `Cargar reportes anteriores (${rows.length} de ${totalCount})`}
             </Button>
           </div>
         )}

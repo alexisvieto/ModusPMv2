@@ -343,12 +343,17 @@ export function InventoryBoard({
       .filter((it) => it.category === "equipo")
       .map((it) => it.id);
     if (equipoIds.length) {
-      const { data: iloRows } = await createClient()
-        .from("inventory_items")
-        .select("id, ilo_user, ilo_password, ilo_license")
-        .eq("project_id", project.id)
-        .in("id", equipoIds);
-      for (const r of iloRows ?? []) iloById.set(r.id, r);
+      // En tandas: PostgREST manda los IDs en el query string y con cientos
+      // de equipos la URL excede el límite y la consulta falla.
+      const supabase = createClient();
+      for (let i = 0; i < equipoIds.length; i += 100) {
+        const { data: iloRows } = await supabase
+          .from("inventory_items")
+          .select("id, ilo_user, ilo_password, ilo_license")
+          .eq("project_id", project.id)
+          .in("id", equipoIds.slice(i, i + 100));
+        for (const r of iloRows ?? []) iloById.set(r.id, r);
+      }
     }
 
     // ── Filas de datos (zebra) ──

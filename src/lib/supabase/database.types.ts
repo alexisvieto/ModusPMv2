@@ -1060,6 +1060,16 @@ export type Database = {
     }
     Functions: {
       clear_org_ai_key: { Args: { p_org: string }; Returns: undefined }
+      cost_summary: {
+        Args: { p_project_id: string }
+        Returns: {
+          category: Database["public"]["Enums"]["cost_category"]
+          budget: number
+          committed: number
+          actual: number
+          n: number
+        }[]
+      }
       get_org_ai_key: { Args: { p_org: string }; Returns: string }
       has_org_role: {
         Args: { org: string; roles: Database["public"]["Enums"]["org_role"][] }

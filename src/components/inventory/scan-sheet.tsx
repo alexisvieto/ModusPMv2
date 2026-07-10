@@ -43,6 +43,8 @@ export function ScanSheet({
   const [log, setLog] = useState<LogEntry[]>([]);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
+  const [flash, setFlash] = useState<"ok" | "bad" | null>(null);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const itemsRef = useRef(items);
@@ -50,6 +52,11 @@ export function ScanSheet({
     itemsRef.current = items;
   }, [items]);
   const lastScan = useRef<{ code: string; ts: number }>({ code: "", ts: 0 });
+  // Cámara: consenso de lecturas (descarta frames mal decodificados) y pausa
+  // global tras aceptar un código (deja interactuar sin que el panel cambie).
+  const candidate = useRef<{ code: string; hits: number }>({ code: "", hits: 0 });
+  const acceptedAt = useRef(0);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
 
   function findItem(code: string): Item | null {
@@ -64,14 +71,13 @@ export function ScanSheet({
     );
   }
 
-  function handleCode(raw: string) {
-    const code = raw.trim();
-    if (!code) return;
-    const now = Date.now();
-    if (lastScan.current.code === code && now - lastScan.current.ts < 1500) return;
-    lastScan.current = { code, ts: now };
-
+  function acceptCode(code: string) {
+    lastScan.current = { code, ts: Date.now() };
     const item = findItem(code);
+    if (navigator.vibrate) navigator.vibrate(item ? 60 : [40, 60, 40]);
+    setFlash(item ? "ok" : "bad");
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlash(null), 400);
     if (item) {
       setMatched(item);
       setNotFound(null);
@@ -81,6 +87,33 @@ export function ScanSheet({
       setNotFound(code);
       setLog((l) => [{ code, label: "No encontrado", ok: false }, ...l].slice(0, 20));
     }
+  }
+
+  // Pistola: procesa al Enter; solo se filtra el doble disparo inmediato.
+  function handleGunCode(raw: string) {
+    const code = raw.trim();
+    if (!code) return;
+    const now = Date.now();
+    if (lastScan.current.code === code && now - lastScan.current.ts < 1500) return;
+    acceptCode(code);
+  }
+
+  // Cámara: ZXing dispara ~10 lecturas/segundo y una trama mal decodificada
+  // basta para aceptar un código fantasma. Se exige CONSENSO (2 lecturas
+  // idénticas seguidas), se pausa todo 2.5 s tras aceptar (para interactuar
+  // con el resultado sin que cambie) y el mismo código no se repite en 5 s.
+  function handleCameraCode(raw: string) {
+    const code = raw.trim();
+    if (!code) return;
+    const now = Date.now();
+    if (now - acceptedAt.current < 2500) return;
+    if (lastScan.current.code === code && now - lastScan.current.ts < 5000) return;
+    if (candidate.current.code === code) candidate.current.hits += 1;
+    else candidate.current = { code, hits: 1 };
+    if (candidate.current.hits < 2) return;
+    candidate.current = { code: "", hits: 0 };
+    acceptedAt.current = now;
+    acceptCode(code);
   }
 
   // Gun mode: keep input focused
@@ -99,12 +132,34 @@ export function ScanSheet({
       setCameraError(null);
       try {
         const { BrowserMultiFormatReader } = await import("@zxing/browser");
-        const reader = new BrowserMultiFormatReader();
+        const { BarcodeFormat, DecodeHintType } = await import("@zxing/library");
+        // Solo los formatos que traen las etiquetas de equipos: menos formatos
+        // = menos lecturas falsas y decodificación más rápida. TRY_HARDER
+        // mejora la tasa de acierto en 1D a costa de algo de CPU.
+        const hints = new Map();
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+          BarcodeFormat.QR_CODE,
+          BarcodeFormat.DATA_MATRIX,
+          BarcodeFormat.CODE_128,
+          BarcodeFormat.CODE_39,
+          BarcodeFormat.EAN_13,
+          BarcodeFormat.UPC_A,
+        ]);
+        hints.set(DecodeHintType.TRY_HARDER, true);
+        const reader = new BrowserMultiFormatReader(hints);
         const controls = await reader.decodeFromConstraints(
-          { video: { facingMode: "environment" } },
+          {
+            // Resolución alta: con la default (a veces 640×480) los códigos 1D
+            // de seriales apenas se resuelven.
+            video: {
+              facingMode: "environment",
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+            },
+          },
           videoRef.current!,
           (result) => {
-            if (result) handleCode(result.getText());
+            if (result) handleCameraCode(result.getText());
           },
         );
         if (cancelled) controls.stop();
@@ -177,7 +232,7 @@ export function ScanSheet({
                 placeholder="Esperando escaneo…"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    handleCode((e.target as HTMLInputElement).value);
+                    handleGunCode((e.target as HTMLInputElement).value);
                     (e.target as HTMLInputElement).value = "";
                     e.preventDefault();
                   }
@@ -198,6 +253,15 @@ export function ScanSheet({
                   playsInline
                 />
                 <div className="pointer-events-none absolute inset-x-6 top-1/2 h-0.5 -translate-y-1/2 bg-primary/70" />
+                {/* Flash de confirmación: verde = encontrado, ámbar = no está */}
+                {flash && (
+                  <div
+                    className={cn(
+                      "pointer-events-none absolute inset-0 transition-opacity",
+                      flash === "ok" ? "bg-success/40" : "bg-warning/40",
+                    )}
+                  />
+                )}
               </div>
               {cameraError ? (
                 <p className="text-xs text-destructive">{cameraError}</p>

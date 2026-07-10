@@ -19,6 +19,7 @@ import {
   Menu,
   Package,
   Receipt,
+  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 
@@ -72,6 +73,7 @@ export function AppShell({
   profile,
   userEmail,
   brand,
+  isPlatformAdmin = false,
 }: {
   children: React.ReactNode;
   projects: ShellProject[];
@@ -79,6 +81,7 @@ export function AppShell({
   profile: { full_name: string | null; title: string | null } | null;
   userEmail: string | null;
   brand: Brand;
+  isPlatformAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -361,6 +364,12 @@ export function AppShell({
                     )}
                   </div>
                   <DropdownMenuSeparator />
+                  {isPlatformAdmin && (
+                    <DropdownMenuItem onClick={() => router.push("/admin")}>
+                      <ShieldCheck className="size-4" />
+                      Plataforma (empresas y usuarios)
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => setAboutOpen(true)}>
                     <Info className="size-4" />
                     Acerca de Modus PM

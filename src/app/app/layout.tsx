@@ -29,6 +29,8 @@ export default async function AppLayout({
     .limit(1)
     .maybeSingle();
 
+  const { data: isPlatformAdmin } = await supabase.rpc("is_platform_admin", {});
+
   let org: (OrgBranding & { id: string; slug: string }) | null = null;
   if (membership) {
     const { data } = await supabase
@@ -56,6 +58,7 @@ export default async function AppLayout({
       profile={profile}
       userEmail={user.email ?? null}
       brand={brand}
+      isPlatformAdmin={!!isPlatformAdmin}
     >
       {children}
     </AppShell>

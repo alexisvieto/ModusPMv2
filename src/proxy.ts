@@ -5,7 +5,8 @@ import { type NextRequest, NextResponse } from "next/server";
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   const { pathname } = request.nextUrl;
-  const isProtected = pathname.startsWith("/app");
+  const isProtected =
+    pathname.startsWith("/app") || pathname.startsWith("/admin");
 
   try {
     const supabase = createServerClient(

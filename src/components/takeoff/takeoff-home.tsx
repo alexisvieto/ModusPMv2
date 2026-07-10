@@ -70,19 +70,44 @@ export function TakeoffHome({
 
   const noPliego = scopeStatus?.status === "no_existe";
 
-  // ── Bucle de análisis por lotes: el cliente pide "siguiente paso" hasta done ──
+  // ── Bucle de análisis por lotes: el cliente pide "siguiente paso" hasta
+  // done. Errores transitorios (red/5xx) reintentan con backoff; si otro
+  // proceso tiene el candado del paso, se espera y se re-consulta.
   async function runAnalysis(docId: string) {
     if (running) return;
     setRunning(docId);
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    let transientFails = 0;
     try {
-      for (let i = 0; i < 200; i++) {
-        const res = await fetch("/api/takeoff/scope-analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ scopeDocId: docId }),
-        });
-        const json = await res.json();
-        if (!res.ok) {
+      for (let i = 0; i < 300; i++) {
+        let json: { done?: boolean; waiting?: boolean; progress?: string; error?: string };
+        let status: number;
+        try {
+          const res = await fetch("/api/takeoff/scope-analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ scopeDocId: docId }),
+          });
+          status = res.status;
+          json = await res.json();
+        } catch {
+          status = 0; // fallo de red
+          json = {};
+        }
+        if (status === 0 || status >= 500) {
+          transientFails++;
+          if (transientFails > 3) {
+            toast.error(
+              json.error ?? "El análisis falló. Puedes continuar donde quedó.",
+            );
+            break;
+          }
+          setProgress("Reintentando…");
+          await sleep(2000 * transientFails);
+          continue;
+        }
+        transientFails = 0;
+        if (status >= 400) {
           toast.error(json.error ?? "El análisis falló.");
           break;
         }
@@ -91,9 +116,8 @@ export function TakeoffHome({
           toast.success("Pliego analizado.");
           break;
         }
+        if (json.waiting) await sleep(4000); // otro proceso tiene el candado
       }
-    } catch {
-      toast.error("Error de red durante el análisis. Puedes continuar donde quedó.");
     } finally {
       setRunning(null);
       setProgress(null);
@@ -135,15 +159,10 @@ export function TakeoffHome({
         return;
       }
 
+      // Fila PRIMERO, upload después: si el browser muere entre ambos, el
+      // cron encuentra el documento y limpia; un PDF sin fila sería huérfano.
       const id = crypto.randomUUID();
       const path = `${project.organization_id}/${project.id}/${id}/pliego.pdf`;
-      const up = await supabase.storage
-        .from("takeoff-temp")
-        .upload(path, file, { contentType: "application/pdf" });
-      if (up.error) {
-        toast.error("No se pudo subir el PDF.");
-        return;
-      }
       const { error } = await supabase.from("takeoff_scope_docs").insert({
         id,
         organization_id: project.organization_id,
@@ -155,7 +174,21 @@ export function TakeoffHome({
         created_by: currentUserId,
       });
       if (error) {
-        toast.error("No se pudo registrar el documento.");
+        // 23505 = otro upload concurrente del mismo PDF ganó el UNIQUE del hash
+        if (error.code === "23505") {
+          toast.info("Este PDF ya está registrado; se continúa con ese análisis.");
+          router.refresh();
+        } else {
+          toast.error("No se pudo registrar el documento.");
+        }
+        return;
+      }
+      const up = await supabase.storage
+        .from("takeoff-temp")
+        .upload(path, file, { contentType: "application/pdf" });
+      if (up.error) {
+        await supabase.from("takeoff_scope_docs").delete().eq("id", id);
+        toast.error("No se pudo subir el PDF.");
         return;
       }
       await supabase.from("takeoff_scope_status").upsert({

@@ -24,6 +24,24 @@ export async function extractPdfMarkdown(pdf: Uint8Array): Promise<{
 }> {
   const mupdf = await import("mupdf");
   const doc = mupdf.Document.openDocument(pdf, "application/pdf");
+  try {
+    return extractAllPages(doc);
+  } finally {
+    // Objetos WASM: liberar explícito (las instancias serverless calientes
+    // acumulan memoria si no).
+    destroyQuiet(doc);
+  }
+}
+
+/** Libera un objeto WASM de mupdf si expone destroy() (no está tipado). */
+function destroyQuiet(obj: unknown) {
+  (obj as { destroy?: () => void }).destroy?.();
+}
+
+function extractAllPages(doc: import("mupdf").Document): {
+  pages: ExtractedPage[];
+  pageCount: number;
+} {
   const pageCount = doc.countPages();
   const pages: ExtractedPage[] = [];
 
@@ -77,15 +95,23 @@ export async function renderPageJpeg(
 ): Promise<string> {
   const mupdf = await import("mupdf");
   const doc = mupdf.Document.openDocument(pdf, "application/pdf");
-  const page = doc.loadPage(pageIndex0);
-  const pix = page.toPixmap(
-    mupdf.Matrix.scale(scale, scale),
-    mupdf.ColorSpace.DeviceRGB,
-    false,
-    true,
-  );
-  const jpg = pix.asJPEG(70, false);
-  return Buffer.from(jpg).toString("base64");
+  try {
+    const page = doc.loadPage(pageIndex0);
+    const pix = page.toPixmap(
+      mupdf.Matrix.scale(scale, scale),
+      mupdf.ColorSpace.DeviceRGB,
+      false,
+      true,
+    );
+    try {
+      const jpg = pix.asJPEG(70, false);
+      return Buffer.from(jpg).toString("base64");
+    } finally {
+      destroyQuiet(pix);
+    }
+  } finally {
+    destroyQuiet(doc);
+  }
 }
 
 export type ScopeChunk = {

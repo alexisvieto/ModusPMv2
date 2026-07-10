@@ -30,7 +30,7 @@ const MAX_VISION_PAGES = 2; // páginas como imagen por fragmento (fallback visi
 const clip = (s: unknown, n: number) => String(s ?? "").slice(0, n);
 
 type JobState = {
-  phase: "chunks" | "sintesis";
+  phase: "extract" | "chunks" | "sintesis";
   chunk: number;
   total: number;
   meta: {
@@ -40,7 +40,12 @@ type JobState = {
     tender_ref?: string;
   };
   systems: string[];
+  // Candado optimista: mientras un request procesa este paso, los demás
+  // esperan. Un candado con más de STALE_MS se considera muerto (crash).
+  claimedAt?: string;
 };
+
+const STALE_MS = 3 * 60 * 1000;
 
 const CATS = [...SCOPE_TECH_CATEGORIES, ...SCOPE_RISK_CATEGORIES] as string[];
 const SYS_KEYS = SYSTEM_TYPES.map((s) => s.v) as string[];
@@ -53,6 +58,9 @@ function parseJson(text: string): Record<string, unknown> | null {
   try {
     return JSON.parse(cleaned.slice(start, end + 1));
   } catch {
+    console.warn("[takeoff] respuesta del modelo no parseable como JSON", {
+      largo: text.length,
+    });
     return null;
   }
 }
@@ -122,21 +130,73 @@ export async function POST(req: Request) {
       .eq("id", doc.id);
   };
 
-  const fail = async (msg: string) => {
-    await setProgress(msg, { status: "error" });
+  // ── Candado optimista (CAS): dos clientes con el bucle activo (doble
+  // pestaña/usuario) no deben procesar el mismo paso dos veces — sería
+  // gasto doble de opus. Cada request "reclama" el paso atómicamente;
+  // el que pierde espera y re-consulta.
+  const prior = doc.job_state as unknown as JobState | null;
+  const priorClaim = prior?.claimedAt ?? null;
+  if (priorClaim && Date.now() - Date.parse(priorClaim) < STALE_MS) {
+    return NextResponse.json({
+      done: false,
+      waiting: true,
+      progress: doc.progress ?? "Otro proceso está avanzando este análisis…",
+    });
+  }
+  const claimed: JobState = prior
+    ? { ...prior, claimedAt: new Date().toISOString() }
+    : {
+        phase: "extract",
+        chunk: 0,
+        total: 0,
+        meta: {},
+        systems: [],
+        claimedAt: new Date().toISOString(),
+      };
+  {
+    let q = supabase
+      .from("takeoff_scope_docs")
+      .update({ job_state: claimed })
+      .eq("id", doc.id);
+    if (!prior) {
+      q = q.is("job_state", null);
+    } else {
+      q = q
+        .eq("job_state->>phase", prior.phase)
+        .eq("job_state->>chunk", String(prior.chunk));
+      q = priorClaim
+        ? q.eq("job_state->>claimedAt", priorClaim)
+        : q.is("job_state->>claimedAt", null);
+    }
+    const { data: got } = await q.select("id");
+    if (!got?.length) {
+      return NextResponse.json({
+        done: false,
+        waiting: true,
+        progress: "Otro proceso está avanzando este análisis…",
+      });
+    }
+  }
+  // Estado al que se regresa si este paso falla (sin candado, para reintentar).
+  const bare: JobState | null = prior ? { ...prior, claimedAt: undefined } : null;
+
+  const fail = async (msg: string, resetState: JobState | null) => {
+    await supabase
+      .from("takeoff_scope_docs")
+      .update({ status: "error", progress: msg, job_state: resetState })
+      .eq("id", doc.id);
     return NextResponse.json({ error: msg }, { status: 500 });
   };
 
   try {
-    const state = doc.job_state as JobState | null;
-
     // ── Paso 1: extraer texto del PDF y fragmentar ──
-    if (!state) {
-      if (!doc.pdf_path) return await fail("El PDF ya no está disponible (re-súbelo).");
+    if (claimed.phase === "extract") {
+      if (!doc.pdf_path) return await fail("El PDF ya no está disponible (re-súbelo).", null);
       const { data: file } = await supabase.storage
         .from("takeoff-temp")
         .download(doc.pdf_path);
-      if (!file) return await fail("No se pudo leer el PDF del almacenamiento temporal.");
+      if (!file)
+        return await fail("No se pudo leer el PDF del almacenamiento temporal.", null);
       const bytes = new Uint8Array(await file.arrayBuffer());
       const { pages, pageCount } = await extractPdfMarkdown(bytes);
       const chunks = chunkPages(pages);
@@ -146,8 +206,14 @@ export async function POST(req: Request) {
           contentType: "application/json",
           upsert: true,
         });
-      if (up.error) return await fail("No se pudo preparar el análisis.");
+      if (up.error) return await fail("No se pudo preparar el análisis.", null);
       const scanned = pages.filter((p) => p.needsVision).length;
+      const costAviso =
+        scanned > 20
+          ? ` ⚠ ${scanned} páginas van por visión IA: el costo del análisis será mayor de lo habitual.`
+          : scanned
+            ? `, ${scanned} por visión`
+            : "";
       const nextState: JobState = {
         phase: "chunks",
         chunk: 0,
@@ -155,22 +221,21 @@ export async function POST(req: Request) {
         meta: {},
         systems: [],
       };
-      await setProgress(
-        `Texto extraído (${pageCount} páginas${scanned ? `, ${scanned} requieren visión` : ""}). Analizando con IA…`,
-        { page_count: pageCount, job_state: nextState },
-      );
-      return NextResponse.json({ done: false, progress: `Texto extraído (${pageCount} páginas). Analizando…` });
+      const progress = `Texto extraído (${pageCount} páginas${costAviso}). Analizando con IA…`;
+      await setProgress(progress, { page_count: pageCount, job_state: nextState });
+      return NextResponse.json({ done: false, progress });
     }
 
     // ── Paso 2: procesar un LOTE de fragmentos con opus (en paralelo) ──
-    if (state.phase === "chunks") {
+    if (claimed.phase === "chunks") {
       const { data: chunksFile } = await supabase.storage
         .from("takeoff-temp")
         .download(chunksPath);
-      if (!chunksFile) return await fail("Se perdió el estado del análisis (re-súbelo).");
+      if (!chunksFile)
+        return await fail("Se perdió el estado del análisis (re-súbelo).", null);
       const chunks = JSON.parse(await chunksFile.text()) as ScopeChunk[];
 
-      const batch = chunks.slice(state.chunk, state.chunk + PARALLEL_CHUNKS);
+      const batch = chunks.slice(claimed.chunk, claimed.chunk + PARALLEL_CHUNKS);
       // El fallback de visión necesita el PDF: solo se descarga si hace falta.
       let pdfBytes: Uint8Array | null = null;
       if (batch.some((c) => c.visionPages.length) && doc.pdf_path) {
@@ -222,14 +287,16 @@ export async function POST(req: Request) {
 
       // Persistir ítems del lote (dedupe por el UNIQUE de la tabla)
       const rows: Record<string, unknown>[] = [];
-      const meta = { ...state.meta };
-      const systems = new Set(state.systems);
+      const meta = { ...claimed.meta };
+      const systems = new Set(claimed.systems);
       for (const r of results) {
         if (!r) continue;
         for (const it of Array.isArray(r.items) ? (r.items as Record<string, unknown>[]) : []) {
           const category = clip(it.category, 40);
           if (!CATS.includes(category)) continue;
-          const description = clip(it.description, 500).trim();
+          // 1000 chars: suficiente holgura para que el truncado no colisione
+          // con el UNIQUE(doc, category, description) y pierda ítems.
+          const description = clip(it.description, 1000).trim();
           if (!description) continue;
           const sys = clip(it.system_type, 40);
           rows.push({
@@ -264,21 +331,22 @@ export async function POST(req: Request) {
           .from("takeoff_scope_items")
           // @ts-expect-error filas construidas dinámicamente ya validadas arriba
           .upsert(rows, { onConflict: "scope_doc_id,category,description", ignoreDuplicates: true });
-        if (insErr) return await fail("No se pudieron guardar los ítems del desglose.");
+        if (insErr)
+          return await fail("No se pudieron guardar los ítems del desglose.", bare);
       }
 
-      const nextChunk = state.chunk + batch.length;
+      const nextChunk = claimed.chunk + batch.length;
       const nextState: JobState = {
-        ...state,
+        phase: nextChunk >= claimed.total ? "sintesis" : "chunks",
+        chunk: nextChunk,
+        total: claimed.total,
         meta,
         systems: [...systems],
-        chunk: nextChunk,
-        phase: nextChunk >= state.total ? "sintesis" : "chunks",
       };
       const progress =
-        nextChunk >= state.total
+        nextChunk >= claimed.total
           ? "Fragmentos analizados. Redactando resumen ejecutivo…"
-          : `Analizando fragmentos ${nextChunk}/${state.total}…`;
+          : `Analizando fragmentos ${nextChunk}/${claimed.total}…`;
       await setProgress(progress, { job_state: nextState });
       return NextResponse.json({ done: false, progress });
     }
@@ -287,12 +355,13 @@ export async function POST(req: Request) {
     const { data: items } = await supabase
       .from("takeoff_scope_items")
       .select("category, system_type, description, severity, cost_impact")
-      .eq("scope_doc_id", doc.id);
+      .eq("scope_doc_id", doc.id)
+      .limit(5000); // el default de PostgREST (1000) truncaría pliegos enormes
     const all = items ?? [];
     const riesgos = all.filter((i) => i.severity);
-    const resumenDatos = `Título: ${state.meta.project_title ?? "—"}
-Entidad: ${state.meta.contracting_entity ?? "—"} · Ubicación: ${state.meta.location ?? "—"} · Ref.: ${state.meta.tender_ref ?? "—"}
-Sistemas: ${state.systems.join(", ") || "—"}
+    const resumenDatos = `Título: ${claimed.meta.project_title ?? "—"}
+Entidad: ${claimed.meta.contracting_entity ?? "—"} · Ubicación: ${claimed.meta.location ?? "—"} · Ref.: ${claimed.meta.tender_ref ?? "—"}
+Sistemas: ${claimed.systems.join(", ") || "—"}
 Ítems técnicos: ${all.length - riesgos.length} · Riesgos: ${riesgos.length} (altas: ${riesgos.filter((r) => r.severity === "alta").length})
 Riesgos principales:
 ${riesgos.slice(0, 25).map((r) => `- [${r.severity}] ${r.description}`).join("\n") || "—"}
@@ -326,8 +395,8 @@ ${all.filter((i) => i.category === "alcance").slice(0, 20).map((i) => `- ${i.des
       .trim();
 
     // Auto-sugerir tarjetas de sistema detectadas en el pliego
-    if (state.systems.length) {
-      const sysRows = state.systems.map((s, i) => ({
+    if (claimed.systems.length) {
+      const sysRows = claimed.systems.map((s, i) => ({
         organization_id: doc.organization_id,
         project_id: doc.project_id,
         system_type: s,
@@ -345,10 +414,10 @@ ${all.filter((i) => i.category === "alcance").slice(0, 20).map((i) => `- ${i.des
       .update({
         status: "analizado",
         analyzed_at: new Date().toISOString(),
-        project_title: state.meta.project_title ?? null,
-        contracting_entity: state.meta.contracting_entity ?? null,
-        location: state.meta.location ?? null,
-        tender_ref: state.meta.tender_ref ?? null,
+        project_title: claimed.meta.project_title ?? null,
+        contracting_entity: claimed.meta.contracting_entity ?? null,
+        location: claimed.meta.location ?? null,
+        tender_ref: claimed.meta.tender_ref ?? null,
         executive_summary: executive || null,
         progress: null,
         job_state: null,
@@ -369,7 +438,20 @@ ${all.filter((i) => i.category === "alcance").slice(0, 20).map((i) => `- ${i.des
     await supabase.storage.from("takeoff-temp").remove(toRemove);
 
     return NextResponse.json({ done: true, progress: "Análisis completado." });
-  } catch {
-    return await fail("El análisis falló. Puedes reintentarlo.");
+  } catch (err) {
+    // Log server-side para poder diagnosticar en producción (Vercel logs).
+    console.error("[takeoff] scope-analyze falló", {
+      docId: doc.id,
+      phase: claimed.phase,
+      chunk: claimed.chunk,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    const donde =
+      claimed.phase === "chunks"
+        ? `en el lote ${claimed.chunk + 1}`
+        : claimed.phase === "sintesis"
+          ? "en la síntesis"
+          : "al extraer el texto";
+    return await fail(`El análisis falló ${donde}. Puedes reintentarlo.`, bare);
   }
 }

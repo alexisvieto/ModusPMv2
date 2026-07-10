@@ -5,10 +5,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // Limpieza diaria del storage efímero (cron de Vercel): elimina los PDF de
 // análisis abandonados (>7 días sin completar). Los análisis terminados ya
 // borran su PDF al aprobar; esto cubre los que quedaron a medias.
+export const maxDuration = 300;
+
 export async function GET(req: Request) {
-  // Vercel manda "Authorization: Bearer ${CRON_SECRET}" cuando la env existe.
+  // Falla CERRADO: sin CRON_SECRET configurado, la ruta no opera (usa el
+  // service role — jamás debe quedar expuesta al público por una env faltante).
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!secret) {
+    return NextResponse.json(
+      { error: "CRON_SECRET no configurado en el entorno." },
+      { status: 500 },
+    );
+  }
+  if (req.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
@@ -40,5 +49,6 @@ export async function GET(req: Request) {
     removed++;
   }
 
+  console.log(`[takeoff] cleanup: ${removed} análisis abandonados limpiados`);
   return NextResponse.json({ ok: true, removed });
 }

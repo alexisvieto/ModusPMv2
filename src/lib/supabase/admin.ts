@@ -4,8 +4,9 @@ import type { Database } from "./database.types";
 
 // =========================================================
 // Cliente con la SERVICE ROLE KEY. Evade RLS, así que SOLO se
-// usa en código de servidor (server actions / server components)
-// y SIEMPRE detrás del gate `is_platform_admin`. Nunca se importa
+// usa en código de servidor y SIEMPRE detrás de un gate propio:
+// `is_platform_admin` en el panel /admin, o auth + tenant del
+// proyecto en las rutas de IA (gateAiRequest). Nunca se importa
 // en el cliente; la llave jamás es NEXT_PUBLIC.
 // =========================================================
 export function createAdminClient() {

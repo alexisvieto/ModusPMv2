@@ -38,11 +38,13 @@ export function IaView({
   orgId,
   config,
   isAdmin,
+  monthSpendUsd,
 }: {
   projectId: string;
   orgId: string;
   config: Config;
   isAdmin: boolean;
+  monthSpendUsd: number;
 }) {
   const enabled = config?.is_enabled !== false; // por defecto activada
 
@@ -297,7 +299,9 @@ export function IaView({
                 disabled={!isAdmin}
               />
               <p className="mt-1 text-xs text-muted-foreground/70">
-                Control de gasto mensual de IA.
+                {isAdmin
+                  ? `Gastado este mes: $${monthSpendUsd.toFixed(2)} USD.`
+                  : "Control de gasto mensual de IA."}
               </p>
             </div>
 

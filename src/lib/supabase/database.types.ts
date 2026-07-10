@@ -58,6 +58,53 @@ export type Database = {
           },
         ]
       }
+      ai_usage: {
+        Row: {
+          cost_usd: number
+          created_at: string
+          id: string
+          input_tokens: number
+          model: string
+          organization_id: string
+          output_tokens: number
+          project_id: string | null
+          route: string
+          user_id: string | null
+        }
+        Insert: {
+          cost_usd?: number
+          created_at?: string
+          id?: string
+          input_tokens?: number
+          model: string
+          organization_id: string
+          output_tokens?: number
+          project_id?: string | null
+          route: string
+          user_id?: string | null
+        }
+        Update: {
+          cost_usd?: number
+          created_at?: string
+          id?: string
+          input_tokens?: number
+          model?: string
+          organization_id?: string
+          output_tokens?: number
+          project_id?: string | null
+          route?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_exceptions: {
         Row: {
           created_at: string
@@ -1013,6 +1060,7 @@ export type Database = {
     }
     Functions: {
       clear_org_ai_key: { Args: { p_org: string }; Returns: undefined }
+      get_org_ai_key: { Args: { p_org: string }; Returns: string }
       has_org_role: {
         Args: { org: string; roles: Database["public"]["Enums"]["org_role"][] }
         Returns: boolean

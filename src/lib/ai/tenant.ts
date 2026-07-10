@@ -36,7 +36,18 @@ export async function gateAiRequest(opts: {
   route: string;
   rateMs: number;
 }): Promise<AiGate> {
-  const admin = createAdminClient();
+  // Falla limpio (no 500 opaco) si el entorno no tiene el service role.
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch {
+    return {
+      ok: false,
+      status: 500,
+      error:
+        "El servidor no tiene configurada SUPABASE_SERVICE_ROLE_KEY (necesaria para el módulo IA).",
+    };
+  }
 
   const { data: cfg } = await admin
     .from("ai_provider_configs")

@@ -6,13 +6,14 @@ import { Clock, ListChecks, Plus, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { ReportEditorSheet } from "@/components/reports/report-editor-sheet";
-import { toISODate } from "@/lib/calendar";
+import {
+  ReportEditorDialog,
+  type TaskLite,
+} from "@/components/reports/report-editor-dialog";
 import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Brand } from "@/lib/brand";
-import { cn } from "@/lib/utils";
 
 type Report = Database["public"]["Tables"]["daily_reports"]["Row"];
 type EntryRow = { description: string; quantity: number | null; unit: string | null };
@@ -25,28 +26,11 @@ type Project = {
   client_name: string | null;
 };
 
-const STATUS: Record<string, { label: string; className: string; dot: string }> = {
-  draft: {
-    label: "Borrador",
-    className: "bg-muted text-muted-foreground",
-    dot: "bg-muted-foreground/50",
-  },
-  submitted: {
-    label: "Enviado",
-    className: "bg-primary/10 text-primary",
-    dot: "bg-primary",
-  },
-  approved: {
-    label: "Aprobado",
-    className: "bg-success/10 text-success",
-    dot: "bg-success",
-  },
-};
-
 export function ReportBoard({
   project,
   reports,
   profiles,
+  tasks,
   currentUserId,
   brand,
   totalCount,
@@ -55,6 +39,7 @@ export function ReportBoard({
   project: Project;
   reports: ReportWithEntries[];
   profiles: { id: string; full_name: string | null }[];
+  tasks: TaskLite[];
   currentUserId: string | null;
   brand: Brand;
   totalCount: number;
@@ -64,7 +49,8 @@ export function ReportBoard({
   const [editing, setEditing] = useState<Report | null>(null);
   const [editingEntries, setEditingEntries] = useState<EntryRow[]>([]);
   const [open, setOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
+  // El editor se remonta en cada apertura (estado limpio por sesión de edición).
+  const [editorKey, setEditorKey] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
 
   // Reportes cargados (última página + "Cargar más"). Al refrescar el server
@@ -105,6 +91,15 @@ export function ReportBoard({
   function openReport(r: ReportWithEntries) {
     setEditing(r);
     setEditingEntries(r.daily_report_entries ?? []);
+    setEditorKey((k) => k + 1);
+    setOpen(true);
+  }
+
+  // El reporte NUEVO no se inserta en BD al abrir: se crea recién al Guardar.
+  function addReport() {
+    setEditing(null);
+    setEditingEntries([]);
+    setEditorKey((k) => k + 1);
     setOpen(true);
   }
 
@@ -127,41 +122,13 @@ export function ReportBoard({
     setRows((r) => [...r, ...(data ?? [])]);
   }
 
-  async function addReport() {
-    if (creating) return;
-    setCreating(true);
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("daily_reports")
-      .insert({
-        organization_id: project.organization_id,
-        project_id: project.id,
-        report_date: toISODate(new Date()),
-        author_id: currentUserId,
-        workforce: 0,
-        hours: 0,
-        status: "draft",
-      })
-      .select()
-      .maybeSingle();
-    setCreating(false);
-    if (error || !data) {
-      toast.error("No se pudo crear el reporte.");
-      return;
-    }
-    router.refresh();
-    setEditing(data);
-    setEditingEntries([]);
-    setOpen(true);
-  }
-
   return (
     <>
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {totalCount} {totalCount === 1 ? "reporte" : "reportes"}
         </p>
-        <Button size="sm" onClick={addReport} disabled={creating}>
+        <Button size="sm" onClick={addReport}>
           <Plus className="size-4" />
           Nuevo reporte
         </Button>
@@ -169,42 +136,30 @@ export function ReportBoard({
 
       <div className="space-y-3">
         {rows.map((r) => {
-          const sm = STATUS[r.status] ?? STATUS.draft;
           return (
             <button
               key={r.id}
               onClick={() => openReport(r)}
               className="w-full rounded-xl border bg-card p-4 text-left transition-colors hover:bg-muted/40"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-medium capitalize">
-                    {formatDate(r.report_date, {
-                      weekday: "long",
-                      day: "2-digit",
-                      month: "long",
-                    })}
+              <div className="min-w-0">
+                <p className="font-medium capitalize">
+                  {formatDate(r.report_date, {
+                    weekday: "long",
+                    day: "2-digit",
+                    month: "long",
+                  })}
+                </p>
+                {r.author_id && (
+                  <p className="text-xs text-muted-foreground">
+                    {nameOf.get(r.author_id) ?? "—"}
                   </p>
-                  {r.author_id && (
-                    <p className="text-xs text-muted-foreground">
-                      {nameOf.get(r.author_id) ?? "—"}
-                    </p>
-                  )}
-                </div>
-                <span
-                  className={cn(
-                    "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
-                    sm.className,
-                  )}
-                >
-                  <span className={cn("size-1.5 rounded-full", sm.dot)} />
-                  {sm.label}
-                </span>
+                )}
               </div>
 
-              {r.summary && (
+              {(r.ai_summary || r.summary) && (
                 <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-                  {r.summary}
+                  {r.ai_summary || r.summary}
                 </p>
               )}
 
@@ -235,7 +190,7 @@ export function ReportBoard({
         {rows.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-sm text-muted-foreground">
             Aún no hay reportes diarios.
-            <Button size="sm" onClick={addReport} disabled={creating}>
+            <Button size="sm" onClick={addReport}>
               <Plus className="size-4" />
               Crear el primero
             </Button>
@@ -258,15 +213,21 @@ export function ReportBoard({
         )}
       </div>
 
-      <ReportEditorSheet
+      <ReportEditorDialog
+        key={editorKey}
         report={editing}
         initialEntries={editingEntries}
-        project={{
-          name: project.name,
-          code: project.code,
-          client_name: project.client_name,
-        }}
-        authorName={editing?.author_id ? (nameOf.get(editing.author_id) ?? null) : null}
+        project={project}
+        tasks={tasks}
+        lastReportDate={rows[0]?.report_date ?? null}
+        authorName={
+          editing?.author_id
+            ? (nameOf.get(editing.author_id) ?? null)
+            : currentUserId
+              ? (nameOf.get(currentUserId) ?? null)
+              : null
+        }
+        currentUserId={currentUserId}
         open={open}
         onOpenChange={setOpen}
         brand={brand}

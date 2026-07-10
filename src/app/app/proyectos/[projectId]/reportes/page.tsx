@@ -27,23 +27,30 @@ export default async function ReportesPage({
 
   // Paginado: los últimos PAGE reportes; el board carga más bajo demanda.
   const PAGE = 60;
-  const [{ data: reports, count }, profiles, { data: org }] = await Promise.all([
-    supabase
-      .from("daily_reports")
-      .select("*, daily_report_entries(description, quantity, unit)", {
-        count: "exact",
-      })
-      .eq("project_id", projectId)
-      .order("report_date", { ascending: false })
-      .order("id", { ascending: false })
-      .range(0, PAGE - 1),
-    orgMemberProfiles(supabase, project.organization_id),
-    supabase
-      .from("organizations")
-      .select(ORG_BRAND_COLUMNS)
-      .eq("id", project.organization_id)
-      .maybeSingle(),
-  ]);
+  const [{ data: reports, count }, profiles, { data: org }, { data: tasks }] =
+    await Promise.all([
+      supabase
+        .from("daily_reports")
+        .select("*, daily_report_entries(description, quantity, unit)", {
+          count: "exact",
+        })
+        .eq("project_id", projectId)
+        .order("report_date", { ascending: false })
+        .order("id", { ascending: false })
+        .range(0, PAGE - 1),
+      orgMemberProfiles(supabase, project.organization_id),
+      supabase
+        .from("organizations")
+        .select(ORG_BRAND_COLUMNS)
+        .eq("id", project.organization_id)
+        .maybeSingle(),
+      // Para precargar las actividades del día desde el cronograma.
+      supabase
+        .from("tasks")
+        .select("id, wbs, name, parent_id, planned_start, planned_end, is_milestone")
+        .eq("project_id", projectId)
+        .order("wbs", { ascending: true }),
+    ]);
   const brand = brandFromOrg(org);
 
   return (
@@ -60,6 +67,7 @@ export default async function ReportesPage({
         project={project}
         reports={reports ?? []}
         profiles={profiles}
+        tasks={tasks ?? []}
         currentUserId={user?.id ?? null}
         brand={brand}
         totalCount={count ?? 0}

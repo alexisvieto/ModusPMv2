@@ -11,9 +11,11 @@ import {
 export default function ReportPdfButton({
   data,
   fileName,
+  label = "Descargar PDF",
 }: {
   data: ReportPdfData;
   fileName: string;
+  label?: string;
 }) {
   return (
     <PDFDownloadLink
@@ -24,7 +26,7 @@ export default function ReportPdfButton({
       {({ loading }) => (
         <>
           <Download className="size-4" />
-          {loading ? "Generando…" : "Descargar PDF"}
+          {loading ? "Generando…" : label}
         </>
       )}
     </PDFDownloadLink>

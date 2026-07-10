@@ -18,22 +18,14 @@ export type ReportPdfData = {
   project: { name: string; code: string | null; client_name: string | null };
   report: {
     report_date: string;
-    weather: string | null;
     workforce: number;
     hours: number;
     summary: string | null;
     progress_note: string | null;
     ai_summary: string | null;
-    status: string;
   };
   entries: Entry[];
   author: string | null;
-};
-
-const STATUS: Record<string, string> = {
-  draft: "Borrador",
-  submitted: "Enviado",
-  approved: "Aprobado",
 };
 
 // Reusa el formateador determinista del sistema (sin Intl).
@@ -71,19 +63,6 @@ const makeStyles = (P: DocPalette) =>
     },
     cellDesc: { flex: 1 },
     cellQty: { width: 90, textAlign: "right", color: P.muted },
-    aiBox: {
-      borderWidth: 1,
-      borderColor: P.orange,
-      borderRadius: 4,
-      padding: 10,
-      marginTop: 8,
-    },
-    aiLabel: {
-      color: P.orange,
-      fontFamily: "Helvetica-Bold",
-      fontSize: 9,
-      marginBottom: 3,
-    },
   });
 
 export function ReportPdfDocument({ data }: { data: ReportPdfData }) {
@@ -95,7 +74,7 @@ export function ReportPdfDocument({ data }: { data: ReportPdfData }) {
         <PdfHeader
           brand={brand}
           title="Reporte diario"
-          meta={[fmtDate(report.report_date), `Estado: ${STATUS[report.status] ?? report.status}`]}
+          meta={[fmtDate(report.report_date)]}
         />
 
         <View style={s.projectBox}>
@@ -108,20 +87,23 @@ export function ReportPdfDocument({ data }: { data: ReportPdfData }) {
 
         <View style={s.metaRow}>
           <View style={s.metaCard}>
-            <Text style={s.metaLabel}>Personal</Text>
+            <Text style={s.metaLabel}>Personal en sitio</Text>
             <Text style={s.metaValue}>{report.workforce}</Text>
           </View>
           <View style={s.metaCard}>
             <Text style={s.metaLabel}>Horas-hombre</Text>
             <Text style={s.metaValue}>{report.hours}</Text>
           </View>
-          <View style={s.metaCard}>
-            <Text style={s.metaLabel}>Clima</Text>
-            <Text style={s.metaValue}>{report.weather ?? "—"}</Text>
-          </View>
         </View>
 
-        {report.summary ? (
+        {/* El reporte redactado (IA) es el cuerpo principal del documento;
+            si no existe, cae al resumen crudo del PM. */}
+        {report.ai_summary ? (
+          <>
+            <Text style={s.section}>Reporte del día</Text>
+            <Text style={s.paragraph}>{report.ai_summary}</Text>
+          </>
+        ) : report.summary ? (
           <>
             <Text style={s.section}>Resumen del día</Text>
             <Text style={s.paragraph}>{report.summary}</Text>
@@ -147,13 +129,6 @@ export function ReportPdfDocument({ data }: { data: ReportPdfData }) {
             <Text style={s.section}>Nota de avance</Text>
             <Text style={s.paragraph}>{report.progress_note}</Text>
           </>
-        ) : null}
-
-        {report.ai_summary ? (
-          <View style={s.aiBox}>
-            <Text style={s.aiLabel}>RESUMEN IA</Text>
-            <Text style={{ lineHeight: 1.5 }}>{report.ai_summary}</Text>
-          </View>
         ) : null}
 
         <PdfFooter brand={brand} right={author ? `Elaborado por ${author}` : undefined} />

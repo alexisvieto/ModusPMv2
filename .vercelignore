@@ -1,0 +1,2 @@
+# El servicio Python del motor se despliega aparte (Railway/Fly), no en Vercel.
+takeoff-engine/

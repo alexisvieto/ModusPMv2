@@ -1,0 +1,7 @@
+# Versiones verificadas con Python 3.14 local y probadas contra ACI-03.
+# (El Dockerfile usa python:3.12-slim; estos wheels son abi3/compatibles.)
+fastapi==0.139.0
+uvicorn[standard]==0.51.0
+pymupdf==1.28.0
+httpx==0.28.1
+pydantic==2.13.4

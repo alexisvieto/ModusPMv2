@@ -1,0 +1,11 @@
+# Entorno local idéntico a producción. `docker compose up --build`.
+services:
+  takeoff-engine:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      # Mismo secreto que Next envía en el header X-Engine-Secret.
+      - ENGINE_SECRET=${ENGINE_SECRET:-dev-secret-cambiar}
+      - PORT=8080
+    restart: unless-stopped

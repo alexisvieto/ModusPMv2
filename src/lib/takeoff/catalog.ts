@@ -60,3 +60,43 @@ export const SCOPE_CATEGORY_LABEL: Record<string, string> = {
 
 export const isRiskCategory = (c: string) =>
   (SCOPE_RISK_CATEGORIES as readonly string[]).includes(c);
+
+// ── Catálogo de elementos por sistema (para el conteo de planos, F2) ──
+// element_key estable + nombre + unidad + color del marcador en el visor.
+export type ElementDef = {
+  key: string;
+  name: string;
+  unit: string; // und | m | m2
+  color: string; // color del marcador
+};
+
+export const ELEMENTS_BY_SYSTEM: Record<string, ElementDef[]> = {
+  alarma_incendio: [
+    { key: "detector_humo", name: "Detector de humo", unit: "und", color: "#EF4444" },
+    { key: "detector_temp", name: "Detector de temperatura", unit: "und", color: "#F97316" },
+    { key: "estacion_manual", name: "Estación manual", unit: "und", color: "#DC2626" },
+    { key: "bocina", name: "Bocina", unit: "und", color: "#3B82F6" },
+    { key: "estrobo", name: "Estroboscópico", unit: "und", color: "#8B5CF6" },
+    { key: "bocina_estrobo", name: "Bocina con estroboscópico", unit: "und", color: "#6366F1" },
+    { key: "modulo_monitoreo", name: "Módulo de monitoreo", unit: "und", color: "#14B8A6" },
+    { key: "modulo_control", name: "Módulo de control", unit: "und", color: "#10B981" },
+    { key: "panel", name: "Panel de control", unit: "und", color: "#1F2937" },
+    { key: "otro", name: "Otro dispositivo", unit: "und", color: "#6B7280" },
+  ],
+  cctv: [
+    { key: "camara_domo", name: "Cámara domo", unit: "und", color: "#3B82F6" },
+    { key: "camara_bala", name: "Cámara bala", unit: "und", color: "#6366F1" },
+    { key: "nvr", name: "NVR / grabador", unit: "und", color: "#1F2937" },
+    { key: "otro", name: "Otro dispositivo", unit: "und", color: "#6B7280" },
+  ],
+  cableado_estructurado: [
+    { key: "salida_datos", name: "Salida de datos", unit: "und", color: "#3B82F6" },
+    { key: "salida_doble", name: "Salida doble", unit: "und", color: "#6366F1" },
+    { key: "rack", name: "Rack / gabinete", unit: "und", color: "#1F2937" },
+    { key: "otro", name: "Otro dispositivo", unit: "und", color: "#6B7280" },
+  ],
+};
+
+export function elementsFor(systemType: string): ElementDef[] {
+  return ELEMENTS_BY_SYSTEM[systemType] ?? ELEMENTS_BY_SYSTEM.alarma_incendio;
+}

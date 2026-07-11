@@ -21,7 +21,6 @@ import { SYSTEM_LABEL, SYSTEM_TYPES } from "@/lib/takeoff/catalog";
 import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
-import { cn } from "@/lib/utils";
 
 type System = Database["public"]["Tables"]["takeoff_systems"]["Row"];
 type ScopeStatus = Database["public"]["Tables"]["takeoff_scope_status"]["Row"];
@@ -400,25 +399,26 @@ export function TakeoffHome({
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {systems.map((s) => (
-              <Card key={s.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Layers className="size-4 text-primary" />
-                      <p className="text-sm font-medium">{s.display_name}</p>
-                    </div>
-                    {s.source === "pliego" && (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                        del pliego
-                      </span>
-                    )}
+              <Link
+                key={s.id}
+                href={`/app/proyectos/${project.id}/calculo/sistema/${s.id}`}
+                className="block rounded-xl border bg-card p-4 transition-colors hover:bg-muted/40"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Layers className="size-4 text-primary" />
+                    <p className="text-sm font-medium">{s.display_name}</p>
                   </div>
-                  <p className={cn("mt-3 text-xs text-muted-foreground")}>
-                    Sin iniciar — el análisis de planos de este sistema llega en
-                    la fase 2 del módulo.
-                  </p>
-                </CardContent>
-              </Card>
+                  {s.source === "pliego" && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      del pliego
+                    </span>
+                  )}
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Entra para subir planos y contar los elementos de este sistema.
+                </p>
+              </Link>
             ))}
           </div>
         )}

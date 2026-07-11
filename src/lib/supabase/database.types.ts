@@ -1016,6 +1016,44 @@ export type Database = {
           },
         ]
       }
+      takeoff_calibration: {
+        Row: {
+          id: string
+          notes: string | null
+          organization_id: string | null
+          params: Json
+          scope: string
+          system_type: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          params?: Json
+          scope?: string
+          system_type: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          notes?: string | null
+          organization_id?: string | null
+          params?: Json
+          scope?: string
+          system_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "takeoff_calibration_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       takeoff_detections: {
         Row: {
           confidence: string
@@ -1361,8 +1399,13 @@ export type Database = {
           file_name: string | null
           id: string
           is_vector: boolean | null
+          job_error: string | null
+          legend: Json | null
           organization_id: string
           page_count: number
+          page_height: number | null
+          page_width: number | null
+          pdf_path: string | null
           processed_at: string | null
           scale_text: string | null
           sheet_number: string
@@ -1377,8 +1420,13 @@ export type Database = {
           file_name?: string | null
           id?: string
           is_vector?: boolean | null
+          job_error?: string | null
+          legend?: Json | null
           organization_id: string
           page_count?: number
+          page_height?: number | null
+          page_width?: number | null
+          pdf_path?: string | null
           processed_at?: string | null
           scale_text?: string | null
           sheet_number: string
@@ -1393,8 +1441,13 @@ export type Database = {
           file_name?: string | null
           id?: string
           is_vector?: boolean | null
+          job_error?: string | null
+          legend?: Json | null
           organization_id?: string
           page_count?: number
+          page_height?: number | null
+          page_width?: number | null
+          pdf_path?: string | null
           processed_at?: string | null
           scale_text?: string | null
           sheet_number?: string

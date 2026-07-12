@@ -32,7 +32,7 @@ export default async function AnalysisPage({
 
   const { data: system } = await supabase
     .from("takeoff_systems")
-    .select("id, display_name, system_type")
+    .select("id, display_name, system_type, legend")
     .eq("id", analysis.system_id)
     .maybeSingle();
   if (!system) notFound();

@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
   const { data: analysisRow } = await supabase
     .from("takeoff_analyses")
-    .select("system_type")
+    .select("system_type, system_id")
     .eq("id", sheet.analysis_id)
     .maybeSingle();
   if (!analysisRow) return NextResponse.json({ error: "Análisis no encontrado." }, { status: 404 });
@@ -109,11 +109,16 @@ export async function POST(req: Request) {
       }
     }
 
-    // Persiste la leyenda confirmada como el diccionario oficial de la hoja.
+    // Persiste la leyenda confirmada como diccionario oficial de la hoja Y del
+    // sistema, para que el resto de las hojas reutilicen la versión corregida.
     await supabase
       .from("takeoff_sheets")
       .update({ legend: symbols as unknown as Json })
       .eq("id", sheetId);
+    await supabase
+      .from("takeoff_systems")
+      .update({ legend: symbols as unknown as Json })
+      .eq("id", analysisRow.system_id);
 
     return NextResponse.json({ done: true, detections: result.detections.length });
   } catch (err) {

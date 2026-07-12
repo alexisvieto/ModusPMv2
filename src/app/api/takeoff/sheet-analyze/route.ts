@@ -119,7 +119,7 @@ export async function POST(req: Request) {
   const { data: sysRow } = analysisRow
     ? await supabase
         .from("takeoff_systems")
-        .select("project_id")
+        .select("project_id, legend")
         .eq("id", analysisRow.system_id)
         .maybeSingle()
     : { data: null };
@@ -127,7 +127,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Análisis no encontrado." }, { status: 404 });
   }
   const systemType = analysisRow.system_type;
+  const systemId = analysisRow.system_id;
   const projectId = sysRow.project_id;
+
+  // Diccionario de leyenda YA conocido del sistema (leído en una hoja previa).
+  // La leyenda solo viene en la primera hoja del juego; el resto lo reutiliza.
+  const systemLegend: EngineSymbol[] = Array.isArray(sysRow.legend)
+    ? (sysRow.legend as unknown as Record<string, unknown>[])
+        .map((e) => ({
+          symbol: clip(e?.symbol, 40),
+          element_key: clip(e?.element_key, 60),
+          name: clip(e?.name, 120),
+        }))
+        .filter((e) => e.symbol && e.element_key)
+    : [];
 
   const gate = await gateAiRequest({
     organizationId: sheet.organization_id,
@@ -160,26 +173,36 @@ export async function POST(req: Request) {
     if (!signed?.signedUrl) return await fail("No se pudo firmar el PDF.");
     const pdfUrl = signed.signedUrl;
 
-    // 1) Python localiza y renderiza la leyenda.
-    phase = "leyenda";
-    const legend = await engineLegend(pdfUrl, systemType);
-
-    // 2) Next lee la leyenda con visión (con su gate de presupuesto/BYOK).
-    let symbols: EngineSymbol[] = [];
-    if (legend.found && legend.image_base64) {
-      phase = "vision-leyenda";
-      const read = await readLegend(gate.apiKey, legend.image_base64, systemType);
-      symbols = read.symbols;
-      if (read.usage.input_tokens || read.usage.output_tokens) {
-        await recordAiUsage({
-          organizationId: sheet.organization_id,
-          userId: user.id,
-          projectId,
-          route: "takeoff-plano",
-          model: LEGEND_MODEL,
-          inputTokens: read.usage.input_tokens,
-          outputTokens: read.usage.output_tokens,
-        });
+    // 1-2) Diccionario de la leyenda. Si el SISTEMA ya tiene su diccionario
+    // (leído en una hoja previa) se reutiliza tal cual — sin re-leer con visión
+    // ni gastar IA. Solo la primera hoja con leyenda la lee y la guarda a nivel
+    // de sistema para todas las demás.
+    let symbols: EngineSymbol[] = systemLegend;
+    if (!symbols.length) {
+      phase = "leyenda";
+      const legend = await engineLegend(pdfUrl, systemType);
+      if (legend.found && legend.image_base64) {
+        phase = "vision-leyenda";
+        const read = await readLegend(gate.apiKey, legend.image_base64, systemType);
+        symbols = read.symbols;
+        if (read.usage.input_tokens || read.usage.output_tokens) {
+          await recordAiUsage({
+            organizationId: sheet.organization_id,
+            userId: user.id,
+            projectId,
+            route: "takeoff-plano",
+            model: LEGEND_MODEL,
+            inputTokens: read.usage.input_tokens,
+            outputTokens: read.usage.output_tokens,
+          });
+        }
+        // Persiste el diccionario a nivel de sistema para el resto de las hojas.
+        if (symbols.length) {
+          await supabase
+            .from("takeoff_systems")
+            .update({ legend: symbols as unknown as Json })
+            .eq("id", systemId);
+        }
       }
     }
 
@@ -223,6 +246,7 @@ export async function POST(req: Request) {
         page_width: result.page_width,
         page_height: result.page_height,
         legend: symbols as unknown as Json,
+        stats: result.stats as unknown as Json,
         snapshot_path: imgPath,
         processed_at: new Date().toISOString(),
         job_error: null,

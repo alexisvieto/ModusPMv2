@@ -63,7 +63,7 @@ export function VerificationViewer({
 }: {
   project: Project;
   analysis: { id: string; name: string; status: string; system_type: string };
-  system: { id: string; display_name: string; system_type: string };
+  system: { id: string; display_name: string; system_type: string; legend?: unknown };
   sheets: Sheet[];
   detections: Detection[];
   imgUrls: Record<string, string>;
@@ -122,13 +122,22 @@ export function VerificationViewer({
 
   // ── Diccionario de leyenda (checkpoint humano previo al conteo definitivo) ──
   // Editable; al recontar, el motor vuelve a contar con la leyenda confirmada.
+  // Si la hoja no trae leyenda propia (solo la 1ª hoja del juego la tiene), se
+  // usa el diccionario del SISTEMA como respaldo.
+  const seedLegend = useCallback(
+    (sheet: Sheet | null) => {
+      const own = parseLegend(sheet?.legend);
+      return own.length ? own : parseLegend(system.legend);
+    },
+    [system.legend],
+  );
   const [legendRows, setLegendRows] = useState<LegendRow[]>(() =>
-    parseLegend(activeSheet?.legend),
+    seedLegend(activeSheet),
   );
   const [prevLegendSheet, setPrevLegendSheet] = useState(activeSheetId);
   if (prevLegendSheet !== activeSheetId) {
     setPrevLegendSheet(activeSheetId);
-    setLegendRows(parseLegend(activeSheet?.legend));
+    setLegendRows(seedLegend(activeSheet));
   }
   const [showLegend, setShowLegend] = useState(true);
   const [recounting, setRecounting] = useState(false);

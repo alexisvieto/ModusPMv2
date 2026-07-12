@@ -1411,6 +1411,7 @@ export type Database = {
           sheet_number: string
           sheet_title: string | null
           snapshot_path: string | null
+          stats: Json | null
           status: string
         }
         Insert: {
@@ -1432,6 +1433,7 @@ export type Database = {
           sheet_number: string
           sheet_title?: string | null
           snapshot_path?: string | null
+          stats?: Json | null
           status?: string
         }
         Update: {
@@ -1453,6 +1455,7 @@ export type Database = {
           sheet_number?: string
           sheet_title?: string | null
           snapshot_path?: string | null
+          stats?: Json | null
           status?: string
         }
         Relationships: [
@@ -1536,6 +1539,7 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          legend: Json | null
           organization_id: string
           project_id: string
           sort_order: number
@@ -1546,6 +1550,7 @@ export type Database = {
           created_at?: string
           display_name: string
           id?: string
+          legend?: Json | null
           organization_id: string
           project_id: string
           sort_order?: number
@@ -1556,6 +1561,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          legend?: Json | null
           organization_id?: string
           project_id?: string
           sort_order?: number

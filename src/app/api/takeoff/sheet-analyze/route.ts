@@ -136,11 +136,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 500 });
   };
 
+  // Fase actual: si algo lanza, el catch guarda dónde y el mensaje real, para
+  // no depender de los logs de Vercel al depurar.
+  let phase = "inicio";
   try {
     await supabase.from("takeoff_sheets").update({ status: "procesando" }).eq("id", sheetId);
     if (!sheet.pdf_path) return await fail("El PDF de la hoja ya no está disponible.");
 
     // URL firmada del PDF: el motor Python lo descarga (nunca va en el body).
+    phase = "url-firmada";
     const { data: signed } = await supabase.storage
       .from("takeoff-temp")
       .createSignedUrl(sheet.pdf_path, 600);
@@ -148,11 +152,13 @@ export async function POST(req: Request) {
     const pdfUrl = signed.signedUrl;
 
     // 1) Python localiza y renderiza la leyenda.
+    phase = "leyenda";
     const legend = await engineLegend(pdfUrl, systemType);
 
     // 2) Next lee la leyenda con visión (con su gate de presupuesto/BYOK).
     let symbols: EngineSymbol[] = [];
     if (legend.found && legend.image_base64) {
+      phase = "vision-leyenda";
       const read = await readLegend(gate.apiKey, legend.image_base64, systemType);
       symbols = read.symbols;
       if (read.usage.input_tokens || read.usage.output_tokens) {
@@ -169,16 +175,20 @@ export async function POST(req: Request) {
     }
 
     // 3) Imagen del plano completo para el visor.
+    phase = "render";
     const render = await engineRender(pdfUrl);
     const imgPath = `${sheet.organization_id}/${projectId}/sheets/${sheetId}.jpg`;
-    await supabase.storage
+    phase = "guardar-imagen";
+    const upImg = await supabase.storage
       .from("takeoff-temp")
       .upload(imgPath, Buffer.from(render.image_base64, "base64"), {
         contentType: "image/jpeg",
         upsert: true,
       });
+    if (upImg.error) return await fail(`No se pudo guardar la imagen del plano: ${upImg.error.message}`);
 
     // 4) Python cuenta (texto + geometría + validación cruzada).
+    phase = "analisis";
     const job = await engineAnalyze(pdfUrl, systemType, symbols);
     const result = await engineWaitResult(job.id);
 
@@ -222,10 +232,10 @@ export async function POST(req: Request) {
         "El motor de cálculo no está disponible aún (configura TAKEOFF_ENGINE_URL en el servidor).",
       );
     }
-    console.error("[takeoff] sheet-analyze falló", {
-      sheetId,
-      error: err instanceof Error ? err.message : String(err),
-    });
-    return await fail("El análisis de la hoja falló. Puedes reintentarlo.");
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("[takeoff] sheet-analyze falló", { sheetId, phase, error: detail });
+    // Guardamos fase + causa real (truncada) para poder depurar sin los logs
+    // del server; el usuario ve dónde y por qué falló y puede reintentar.
+    return await fail(`Falló en «${phase}»: ${clip(detail, 240)}`);
   }
 }

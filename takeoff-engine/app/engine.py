@@ -62,11 +62,11 @@ def _transform(page: "fitz.Page"):
     return T, PW, PH
 
 
-def _circles(page, T):
+def _circles(drawings, T):
     lo, hi = PARAMS["circle_size_min_pt"], PARAMS["circle_size_max_pt"]
     rmin, rmax = PARAMS["circle_ratio"]
     out = []
-    for d in page.get_drawings():
+    for d in drawings:
         r = d.get("rect")
         if not r:
             continue
@@ -91,12 +91,12 @@ def _seg_intersection(s1, s2):
     return None
 
 
-def _xboxes(page, T):
+def _xboxes(drawings, T):
     """Cajas-con-X por intersección de diagonales opuestas ~45° (10-25pt)."""
     lo, hi = PARAMS["xdiag_len"]
     tol = PARAMS["xdiag_45_tol"]
     pos, neg = [], []  # '/' y '\'
-    for d in page.get_drawings():
+    for d in drawings:
         for it in d.get("items", []):
             if not it or it[0] != "l":
                 continue
@@ -140,6 +140,11 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
     try:
         page = doc.load_page(page_index)
         T, PW, PH = _transform(page)
+
+        # Geometría vectorial: se pide UNA sola vez y se reparte entre círculos
+        # y cajas-con-X. En planos densos (200k+ paths) pedirla dos veces duplica
+        # el pico de memoria y puede tumbar el contenedor.
+        drawings = page.get_drawings()
 
         # Texto (con índice, para rastrear consumo por token)
         words = []  # (idx, texto, x, y)
@@ -190,7 +195,7 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
         circle_symbols: set[str] = set()  # símbolos que SON detectores (círculo+letra)
 
         # ── Círculos-detector: firma + tamaño moda + letra cercana ──
-        circ = [c for c in _circles(page, T) if not excluded(c[0], c[1])]
+        circ = [c for c in _circles(drawings, T) if not excluded(c[0], c[1])]
         if circ:
             mode_size, _ = collections.Counter(c[2] for c in circ).most_common(1)[0]
             tol = mode_size * PARAMS["size_tol"]
@@ -213,7 +218,7 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
                     n_media += 1
 
         # ── Cajas-con-X (bocina/estrobo) ── (ya dedupeadas en _xboxes)
-        for (cx, cy) in _xboxes(page, T):
+        for (cx, cy) in _xboxes(drawings, T):
             if excluded(cx, cy):
                 continue
             detections.append(Detection(element_key=xbox_key, x=cx, y=cy, confidence="media", method="geometria"))

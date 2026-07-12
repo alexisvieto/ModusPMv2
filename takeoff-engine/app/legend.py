@@ -75,8 +75,13 @@ def render_full(pdf_bytes: bytes, page_index: int = 0) -> RenderResponse:
         page = doc.load_page(page_index)
         rect = page.rect
         W, H = float(rect.width) or 1.0, float(rect.height) or 1.0
-        # zoom 2x, calidad 60: legible en el visor sin pesar demasiado.
-        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+        # Zoom acotado por el lado mayor (máx ~3000px): un plano de arquitectura
+        # a 2x fijo genera un pixmap de ~100MB que puede tumbar el contenedor.
+        # El overlay usa coordenadas normalizadas, así que el tamaño absoluto en
+        # píxeles no afecta la precisión de los marcadores. Calidad 60.
+        zoom = min(2.0, 3000.0 / max(W, H))
+        zoom = max(zoom, 0.75)
+        pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False)
         jpg = pix.tobytes("jpeg", jpg_quality=60)
         return RenderResponse(
             image_base64=base64.b64encode(jpg).decode("ascii"),

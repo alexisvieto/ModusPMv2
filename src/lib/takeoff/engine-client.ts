@@ -4,7 +4,9 @@
 // header X-Engine-Secret. Los PDF se pasan por URL firmada, nunca en el body.
 // =========================================================
 
-const BASE = process.env.TAKEOFF_ENGINE_URL ?? "";
+// Sin barra final: las rutas se concatenan como `${BASE}/legend`. Una barra de
+// más en la variable de entorno produciría `//legend` y rompería el ruteo.
+const BASE = (process.env.TAKEOFF_ENGINE_URL ?? "").replace(/\/+$/, "");
 const SECRET = process.env.TAKEOFF_ENGINE_SECRET ?? "";
 
 export type EngineSymbol = { symbol: string; element_key: string; name: string };

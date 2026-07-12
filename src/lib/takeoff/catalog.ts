@@ -74,6 +74,7 @@ export const ELEMENTS_BY_SYSTEM: Record<string, ElementDef[]> = {
   alarma_incendio: [
     { key: "detector_humo", name: "Detector de humo", unit: "und", color: "#EF4444" },
     { key: "detector_temp", name: "Detector de temperatura", unit: "und", color: "#F97316" },
+    { key: "detector_gas", name: "Detector de gas", unit: "und", color: "#EAB308" },
     { key: "estacion_manual", name: "Estación manual", unit: "und", color: "#DC2626" },
     { key: "bocina", name: "Bocina", unit: "und", color: "#3B82F6" },
     { key: "estrobo", name: "Estroboscópico", unit: "und", color: "#8B5CF6" },
@@ -81,6 +82,10 @@ export const ELEMENTS_BY_SYSTEM: Record<string, ElementDef[]> = {
     { key: "modulo_monitoreo", name: "Módulo de monitoreo", unit: "und", color: "#14B8A6" },
     { key: "modulo_control", name: "Módulo de control", unit: "und", color: "#10B981" },
     { key: "panel", name: "Panel de control", unit: "und", color: "#1F2937" },
+    { key: "extintor_pqs", name: "Extintor PQS", unit: "und", color: "#B91C1C" },
+    { key: "extintor_co2", name: "Extintor CO₂", unit: "und", color: "#9333EA" },
+    { key: "extintor_k", name: "Extintor clase K", unit: "und", color: "#C026D3" },
+    { key: "tuberia_aci", name: "Tubería ACI", unit: "m", color: "#64748B" },
     { key: "otro", name: "Otro dispositivo", unit: "und", color: "#6B7280" },
   ],
   cctv: [

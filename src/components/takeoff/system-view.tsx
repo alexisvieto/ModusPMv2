@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, FileStack, Loader2, Plus, Upload } from "lucide-react";
+import { ArrowLeft, FileStack, Loader2, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -45,6 +45,47 @@ export function SystemView({
   const [showNew, setShowNew] = useState(false);
   const [pendingAnalysisId, setPendingAnalysisId] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Elimina un análisis (creado por error o fuera de alcance): borra sus
+  // objetos de storage y luego la fila (las hojas/detecciones/resultados caen
+  // por FK ON DELETE CASCADE).
+  async function deleteAnalysis(id: string, aname: string) {
+    if (
+      !window.confirm(
+        `¿Eliminar el análisis "${aname}"? Se borran sus hojas, detecciones y resultados. No se puede deshacer.`,
+      )
+    )
+      return;
+    setDeletingId(id);
+    const supabase = createClient();
+    // Rutas de storage de las hojas (PDF temporal + imagen/evidencia).
+    const { data: sheets } = await supabase
+      .from("takeoff_sheets")
+      .select("pdf_path, snapshot_path")
+      .eq("analysis_id", id);
+    const temp: string[] = [];
+    const evidence: string[] = [];
+    for (const s of sheets ?? []) {
+      if (s.pdf_path) temp.push(s.pdf_path);
+      if (s.snapshot_path) {
+        // el snapshot vive en temp (en verificación) o en evidence (aprobado)
+        temp.push(s.snapshot_path);
+        evidence.push(s.snapshot_path);
+      }
+    }
+    if (temp.length) await supabase.storage.from("takeoff-temp").remove(temp);
+    if (evidence.length) await supabase.storage.from("takeoff-evidence").remove(evidence);
+
+    const { error } = await supabase.from("takeoff_analyses").delete().eq("id", id);
+    setDeletingId(null);
+    if (error) {
+      toast.error("No se pudo eliminar el análisis.");
+      return;
+    }
+    toast.success("Análisis eliminado.");
+    router.refresh();
+  }
 
   // Crea el análisis (cabecera) y abre el selector de hojas.
   async function createAnalysis() {
@@ -197,15 +238,17 @@ export function SystemView({
             const sm = STATUS_META[a.status] ?? STATUS_META.borrador;
             const sheets = a.takeoff_sheets ?? [];
             return (
-              <Link
+              <div
                 key={a.id}
-                href={`/app/proyectos/${project.id}/calculo/analisis/${a.id}`}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card p-4 transition-colors hover:bg-muted/40"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card transition-colors hover:bg-muted/40"
               >
-                <div className="flex items-center gap-3">
-                  <FileStack className="size-4 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium">{a.name}</p>
+                <Link
+                  href={`/app/proyectos/${project.id}/calculo/analisis/${a.id}`}
+                  className="flex min-w-0 flex-1 items-center gap-3 p-4"
+                >
+                  <FileStack className="size-4 shrink-0 text-primary" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{a.name}</p>
                     <p className="text-xs text-muted-foreground">
                       {sheets.length} {sheets.length === 1 ? "hoja" : "hojas"} ·{" "}
                       {formatDate(a.created_at.slice(0, 10), {
@@ -215,16 +258,30 @@ export function SystemView({
                       })}
                     </p>
                   </div>
+                </Link>
+                <div className="flex items-center gap-1 pr-3">
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-medium",
+                      sm.cls,
+                    )}
+                  >
+                    {sm.label}
+                  </span>
+                  <button
+                    onClick={() => deleteAnalysis(a.id, a.name)}
+                    disabled={deletingId === a.id}
+                    title="Eliminar análisis"
+                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                  >
+                    {deletingId === a.id ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="size-4" />
+                    )}
+                  </button>
                 </div>
-                <span
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-xs font-medium",
-                    sm.cls,
-                  )}
-                >
-                  {sm.label}
-                </span>
-              </Link>
+              </div>
             );
           })}
         </div>

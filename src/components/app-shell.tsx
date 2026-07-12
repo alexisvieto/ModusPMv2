@@ -15,6 +15,7 @@ import {
   Info,
   LayoutDashboard,
   LayoutGrid,
+  LifeBuoy,
   ListTodo,
   LogOut,
   Menu,
@@ -336,6 +337,19 @@ export function AppShell({
 
             {/* Right cluster: presence + user */}
             <div className="flex items-center gap-3">
+              <Link
+                href="/app/ayuda"
+                title="Centro de ayuda"
+                aria-label="Ayuda"
+                className={cn(
+                  "flex size-9 items-center justify-center rounded-full border transition-colors hover:bg-muted",
+                  pathname.startsWith("/app/ayuda")
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground",
+                )}
+              >
+                <LifeBuoy className="size-4.5" />
+              </Link>
               <PunchAlerts projectId={activeProjectId} />
               <div className="hidden items-center gap-2 rounded-full border bg-card px-2.5 py-1 sm:flex">
                 <Avatar size="sm">

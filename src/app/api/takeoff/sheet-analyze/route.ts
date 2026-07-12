@@ -38,7 +38,9 @@ async function readLegend(
   systemType: string,
 ): Promise<{ symbols: EngineSymbol[]; usage: { input_tokens: number; output_tokens: number } }> {
   const elements = elementsFor(systemType);
-  const catalogList = elements.map((e) => `${e.key} = ${e.name}`).join("\n");
+  const catalogList = elements
+    .map((e) => `${e.key} = ${e.name}${e.hint ? ` [rótulo típico: ${e.hint}]` : ""}`)
+    .join("\n");
   const anthropic = new Anthropic({ apiKey });
   const msg = await anthropic.messages.create({
     model: LEGEND_MODEL,
@@ -52,12 +54,19 @@ async function readLegend(
           {
             type: "text",
             text: `Esta es la LEYENDA (cuadro de simbología) de un plano. Devuelve SOLO un objeto JSON:
-{"entries":[{"symbol":"letra/abreviatura con que se marca el dispositivo en la planta","element_key":"clave del catálogo","name":"descripción"}]}
+{"entries":[{"symbol":"letra/abreviatura con que se marca el dispositivo en la planta","element_key":"clave del catálogo","name":"descripción tal como está escrita en la leyenda"}]}
 
 Catálogo de element_key válidos (usa 'otro' si no encaja):
 ${catalogList}
 
-El "symbol" es la etiqueta de TEXTO que acompaña al dispositivo en el plano (p.ej. "P", "R", "V", "G"), no la forma gráfica. Si un símbolo no lleva letra, deja "symbol" vacío. No inventes.`,
+Reglas:
+- element_key DEBE ser una de las claves del catálogo de arriba (catálogo CERRADO). Si una fila no encaja en ninguna, usa 'otro'. Nunca inventes claves.
+- Transcribe TODAS las filas de la tabla, sin saltarte ninguna. Si hay una serie numerada (p.ej. E-1, E-2, E-3), incluye TODAS sus filas aunque se parezcan.
+- El element_key se decide por la DESCRIPCIÓN ESCRITA junto al símbolo, NO por la letra: la misma letra significa cosas distintas según el plano (p.ej. "E-1/E-2/E-3" puede ser EXTINTORES, no estroboscópicos). Lee el texto de la fila y mapéalo a ese significado.
+- Distingue detector de calor FIJO (calor_fijo) de calor VARIABLE (calor_variable) según lo diga la fila.
+- Extintores: si la descripción indica el tipo (PQS, CO₂, clase K) usa esa clave; si no, usa 'extintor'.
+- El "symbol" es la etiqueta de TEXTO con que se rotula el dispositivo en la planta (p.ej. "P", "R", "V", "G", "E-1"), no la forma gráfica. Si una fila no tiene letra/código, deja "symbol" vacío.
+- No inventes filas.`,
           },
           { type: "image", source: { type: "base64", media_type: "image/jpeg", data: imageBase64 } },
         ],

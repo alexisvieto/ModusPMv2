@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Check,
+  ChevronDown,
   Loader2,
   MousePointerClick,
   Plus,
+  RotateCw,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -34,6 +36,21 @@ type Detection = {
 type Project = { id: string; organization_id: string; name: string };
 
 const ACTIVE_STATUSES = ["detectado", "confirmado", "reclasificado", "agregado_manual"];
+
+// Fila del diccionario de leyenda (símbolo → tipo del catálogo).
+type LegendRow = { symbol: string; element_key: string; name: string };
+
+function parseLegend(j: unknown): LegendRow[] {
+  if (!Array.isArray(j)) return [];
+  return j.map((r) => {
+    const o = (r ?? {}) as Record<string, unknown>;
+    return {
+      symbol: String(o.symbol ?? ""),
+      element_key: String(o.element_key ?? "otro"),
+      name: String(o.name ?? ""),
+    };
+  });
+}
 
 export function VerificationViewer({
   project,
@@ -102,6 +119,58 @@ export function VerificationViewer({
     return m;
   }, [sheetDets]);
   const dudososCount = sheetDets.filter((d) => d.confidence !== "alta").length;
+
+  // ── Diccionario de leyenda (checkpoint humano previo al conteo definitivo) ──
+  // Editable; al recontar, el motor vuelve a contar con la leyenda confirmada.
+  const [legendRows, setLegendRows] = useState<LegendRow[]>(() =>
+    parseLegend(activeSheet?.legend),
+  );
+  const [prevLegendSheet, setPrevLegendSheet] = useState(activeSheetId);
+  if (prevLegendSheet !== activeSheetId) {
+    setPrevLegendSheet(activeSheetId);
+    setLegendRows(parseLegend(activeSheet?.legend));
+  }
+  const [showLegend, setShowLegend] = useState(true);
+  const [recounting, setRecounting] = useState(false);
+
+  function updateLegendRow(i: number, patch: Partial<LegendRow>) {
+    setLegendRows((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  }
+  function removeLegendRow(i: number) {
+    setLegendRows((rows) => rows.filter((_, j) => j !== i));
+  }
+  function addLegendRow() {
+    setLegendRows((rows) => [
+      ...rows,
+      { symbol: "", element_key: elements[0]?.key ?? "otro", name: "" },
+    ]);
+  }
+
+  async function recount() {
+    if (!activeSheet) return;
+    setRecounting(true);
+    try {
+      const res = await fetch("/api/takeoff/sheet-recount", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sheetId: activeSheet.id,
+          symbols: legendRows.filter((r) => r.symbol.trim()),
+        }),
+      });
+      const j = await res.json();
+      if (!res.ok) {
+        toast.error(j.error ?? "No se pudo recontar.");
+        return;
+      }
+      toast.success("Reconteo aplicado con la leyenda confirmada.");
+      router.refresh();
+    } catch {
+      toast.error("Error de red al recontar.");
+    } finally {
+      setRecounting(false);
+    }
+  }
 
   const visibleDets = useMemo(
     () =>
@@ -447,6 +516,71 @@ export function VerificationViewer({
 
         {/* Panel lateral */}
         <div className="flex w-72 shrink-0 flex-col overflow-y-auto border-l">
+          {/* Diccionario de leyenda: checkpoint humano. Revisar/corregir el
+              mapeo símbolo→tipo y recontar antes de verificar los marcadores. */}
+          {!isApproved && activeSheet && legendRows.length > 0 && (
+            <div className="border-b">
+              <button
+                onClick={() => setShowLegend((v) => !v)}
+                className="flex w-full items-center justify-between p-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                <span>Leyenda ({legendRows.length})</span>
+                <ChevronDown
+                  className={cn("size-4 transition-transform", showLegend ? "" : "-rotate-90")}
+                />
+              </button>
+              {showLegend && (
+                <div className="space-y-2 px-3 pb-3">
+                  <p className="text-[11px] leading-snug text-muted-foreground">
+                    Confirmá que cada símbolo esté en su tipo. Si corregís algo,
+                    pulsá <span className="font-medium">Recontar</span>.
+                  </p>
+                  <div className="space-y-1.5">
+                    {legendRows.map((row, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <input
+                          value={row.symbol}
+                          onChange={(e) => updateLegendRow(i, { symbol: e.target.value })}
+                          placeholder="símb."
+                          className="h-7 w-12 shrink-0 rounded border border-input bg-transparent px-1.5 text-xs outline-none focus-visible:border-ring"
+                        />
+                        <select
+                          value={row.element_key}
+                          onChange={(e) => updateLegendRow(i, { element_key: e.target.value })}
+                          className="h-7 min-w-0 flex-1 rounded border border-input bg-transparent px-1 text-xs outline-none focus-visible:border-ring"
+                        >
+                          {elements.map((el) => (
+                            <option key={el.key} value={el.key}>
+                              {el.name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => removeLegendRow(i)}
+                          title="Quitar fila"
+                          className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={addLegendRow} className="text-xs text-primary hover:underline">
+                    + agregar símbolo
+                  </button>
+                  <Button size="sm" className="w-full" onClick={recount} disabled={recounting}>
+                    {recounting ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <RotateCw className="size-4" />
+                    )}
+                    Recontar con esta leyenda
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="border-b p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Elementos ({sheetDets.length})

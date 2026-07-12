@@ -178,7 +178,10 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
             return False
 
         sym_map = {s.symbol.upper(): s.element_key for s in symbols if s.symbol}
-        default_circle = next((s.element_key for s in symbols if "humo" in s.name.lower()), "detector_humo")
+        # Un círculo-detector SIN letra cercana NO se asume de ningún tipo: se
+        # reporta sin clasificar (confianza media) para que el ingeniero lo
+        # resuelva. Asignar un tipo por defecto es equivocarse con confianza.
+        UNCLASSIFIED = "detector_sin_clasificar"
         xbox_key = next(
             (s.element_key for s in symbols if "estrob" in s.name.lower() or "bocina" in s.name.lower()),
             "bocina_estrobo",
@@ -214,7 +217,7 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
                     detections.append(Detection(element_key=sym_map[best[0]], x=cx, y=cy, confidence="alta", method="geometria"))
                     n_alta += 1
                 else:
-                    detections.append(Detection(element_key=default_circle, x=cx, y=cy, confidence="media", method="geometria"))
+                    detections.append(Detection(element_key=UNCLASSIFIED, x=cx, y=cy, confidence="media", method="geometria"))
                     n_media += 1
 
         # ── Cajas-con-X (bocina/estrobo) ── (ya dedupeadas en _xboxes)

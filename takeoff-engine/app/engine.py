@@ -20,6 +20,7 @@ Interfaz pura (sin UI):  count(pdf_bytes, system_type, symbols) → AnalyzeResul
 """
 from __future__ import annotations
 
+import base64
 import collections
 import math
 
@@ -74,8 +75,35 @@ def _circles(drawings, T):
         w_, h_ = abs(r.x1 - r.x0), abs(r.y1 - r.y0)
         if nc >= PARAMS["circle_curves_min"] and h_ > 0 and rmin < w_ / h_ < rmax and lo <= w_ <= hi:
             cx, cy = T((r.x0 + r.x1) / 2, (r.y0 + r.y1) / 2)
-            out.append((cx, cy, round(w_, 1)))
+            # Se conserva el rect de PÁGINA (r) para poder recortar el círculo y
+            # leer su glifo interno con visión cuando no matchea por texto.
+            out.append((cx, cy, round(w_, 1), r))
     return out
+
+
+def build_glyph_mosaic(page, entries, cols=12, cell=72, zoom=6):
+    """Compone una grilla de recortes de círculos sin clasificar, numerada, para
+    que Next la lea con visión en una sola llamada. entries: [(cx,cy,rect)]."""
+    n = len(entries)
+    if not n:
+        return None
+    rows = math.ceil(n / cols)
+    doc = fitz.open()
+    canvas = doc.new_page(width=cols * cell, height=rows * cell)
+    for i, (_cx, _cy, rect) in enumerate(entries):
+        gx, gy = (i % cols) * cell, (i // cols) * cell
+        try:
+            clip = fitz.Rect(rect.x0 - 3, rect.y0 - 3, rect.x1 + 3, rect.y1 + 3)
+            pm = page.get_pixmap(clip=clip, matrix=fitz.Matrix(zoom, zoom), alpha=False)
+            canvas.insert_image(fitz.Rect(gx + 2, gy + 14, gx + cell - 2, gy + cell - 2), pixmap=pm)
+        except Exception:
+            pass
+        canvas.insert_text((gx + 2, gy + 11), str(i), fontsize=8, color=(1, 0, 0))
+        canvas.draw_rect(fitz.Rect(gx, gy, gx + cell, gy + cell), color=(0.6, 0.6, 0.6), width=0.5)
+    out = canvas.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+    b64 = base64.b64encode(out.tobytes("jpeg", jpg_quality=80)).decode("ascii")
+    doc.close()
+    return {"image_base64": b64, "cells": [{"x": e[0], "y": e[1]} for e in entries]}
 
 
 def _seg_intersection(s1, s2):
@@ -194,6 +222,7 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
 
         detections: list[Detection] = []
         candidates: list[Candidate] = []
+        glyph_mosaic = None
         n_alta = n_media = 0
         consumed: set[int] = set()   # índices de token usados por un círculo
         circle_symbols: set[str] = set()  # símbolos que SON detectores (círculo+letra)
@@ -211,7 +240,8 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
             candidates.extend(
                 Candidate(kind="circulo", x=c[0], y=c[1], size=round(c[2], 1)) for c in disc[:300]
             )
-            for (cx, cy, _s) in det:
+            unclassified_rects = []  # (cx, cy, rect_pagina) de los círculos sin letra
+            for (cx, cy, _s, rect) in det:
                 best = (None, PARAMS["letter_dist"], -1)
                 for (i, up, lx, ly) in short_hits:
                     if i in consumed:
@@ -233,6 +263,15 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
                         signature=Signature(kind="circulo", token=None, size=mode_size),
                     ))
                     n_media += 1
+                    unclassified_rects.append((cx, cy, rect))
+
+            # Los círculos que la geometría encontró pero no clasificó por texto:
+            # se recortan y se mandan a leer su glifo interno con visión.
+            if unclassified_rects:
+                try:
+                    glyph_mosaic = build_glyph_mosaic(page, unclassified_rects[:150])
+                except Exception:
+                    glyph_mosaic = None
 
         # ── Cajas-con-X (bocina/estrobo) ── (ya dedupeadas en _xboxes)
         for (cx, cy) in _xboxes(drawings, T):
@@ -266,6 +305,7 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
         return AnalyzeResult(
             detections=detections,
             candidates=candidates,
+            glyph_mosaic=glyph_mosaic,
             is_vector=is_vector,
             page_width=PW,
             page_height=PH,

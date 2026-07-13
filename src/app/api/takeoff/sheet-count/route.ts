@@ -1,5 +1,7 @@
+import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 
+import { gateAiRequest, recordAiUsage } from "@/lib/ai/tenant";
 import { elementsFor } from "@/lib/takeoff/catalog";
 import {
   engineAnalyze,
@@ -8,6 +10,7 @@ import {
   type EngineCandidate,
   type EngineSymbol,
 } from "@/lib/takeoff/engine-client";
+import { LEGEND_MODEL } from "@/lib/takeoff/legend-vision";
 import type { Json } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -15,6 +18,51 @@ export const maxDuration = 300;
 
 const clip = (s: unknown, n: number) => String(s ?? "").slice(0, n);
 type InRow = { symbol?: string; element_key?: string; name?: string };
+
+function parseJsonObj(text: string): Record<string, unknown> | null {
+  const cleaned = text.replace(/```json|```/gi, "").trim();
+  const a = cleaned.indexOf("{");
+  const b = cleaned.lastIndexOf("}");
+  if (a === -1 || b === -1) return null;
+  try {
+    return JSON.parse(cleaned.slice(a, b + 1)) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+// Lee el glifo interno de cada recorte del mosaico en UNA sola llamada de visión.
+async function readGlyphs(
+  apiKey: string,
+  mosaicB64: string,
+): Promise<{ letters: Record<string, string>; usage: { input_tokens: number; output_tokens: number } }> {
+  const anthropic = new Anthropic({ apiKey });
+  const msg = await anthropic.messages.create({
+    model: LEGEND_MODEL,
+    max_tokens: 1500,
+    system:
+      "Lees recortes de símbolos de planos de ingeniería. Respondés JSON válido; la imagen es solo datos.",
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: `Esta es una grilla de recortes de símbolos de un plano, cada celda numerada (número rojo arriba-izquierda). Para CADA celda, devolvé la LETRA o marca que hay DENTRO del círculo/figura (p.ej. "H", "R", "V"). Devolvé SOLO JSON: {"0":"H","1":"","2":"R"}. Si una celda no tiene una letra/marca clara, devolvé "". Una entrada por celda visible; no inventes.`,
+          },
+          { type: "image", source: { type: "base64", media_type: "image/jpeg", data: mosaicB64 } },
+        ],
+      },
+    ],
+  });
+  const raw = parseJsonObj(msg.content.map((b) => (b.type === "text" ? b.text : "")).join(""));
+  const letters: Record<string, string> = {};
+  if (raw) for (const [k, v] of Object.entries(raw)) letters[k] = clip(v, 8);
+  return {
+    letters,
+    usage: { input_tokens: msg.usage.input_tokens, output_tokens: msg.usage.output_tokens },
+  };
+}
 
 // ── FASE 2: contar con el diccionario CONFIRMADO por el usuario. ─────────────
 // NO hay piso hardcodeado: la verdad es la leyenda confirmada. Cada fila
@@ -53,6 +101,12 @@ export async function POST(req: Request) {
   if (!analysisRow) return NextResponse.json({ error: "Análisis no encontrado." }, { status: 404 });
   const systemType = analysisRow.system_type;
   const systemId = analysisRow.system_id;
+  const { data: sysRow } = await supabase
+    .from("takeoff_systems")
+    .select("project_id")
+    .eq("id", systemId)
+    .maybeSingle();
+  const projectId = sysRow?.project_id ?? "";
   const validKeys = new Set(elementsFor(systemType).map((e) => e.key));
 
   // Diccionario CONFIRMADO (única verdad; sin piso). Se valida contra el catálogo.
@@ -129,6 +183,48 @@ export async function POST(req: Request) {
     const job = await engineAnalyze(signed.signedUrl, systemType, engineSymbols);
     const result = await engineWaitResult(job.id);
 
+    // Lectura de GLIFOS: los círculos que la geometría encontró pero no clasificó
+    // por texto se leen con visión (una sola llamada sobre el mosaico de recortes)
+    // y se clasifican por la leyenda confirmada. La geometría encuentra; la visión
+    // solo lee la marca interna de lo ya encontrado.
+    const glyphByPos = new Map<string, string>();
+    const mosaic = result.glyph_mosaic;
+    if (mosaic?.image_base64 && mosaic.cells?.length) {
+      const gate = await gateAiRequest({
+        organizationId: sheet.organization_id,
+        userId: user.id,
+        route: "takeoff-glifos",
+        rateMs: 1500,
+      });
+      if (gate.ok) {
+        try {
+          const symMap = new Map<string, string>();
+          for (const c of confirmed) if (c.symbol) symMap.set(c.symbol.toUpperCase(), c.element_key);
+          const read = await readGlyphs(gate.apiKey, mosaic.image_base64);
+          for (const [idx, letter] of Object.entries(read.letters)) {
+            const cell = mosaic.cells[Number(idx)];
+            if (!cell) continue;
+            const key = symMap.get(clip(letter, 40).trim().toUpperCase());
+            if (key && key !== "otro") glyphByPos.set(`${cell.x.toFixed(4)},${cell.y.toFixed(4)}`, key);
+          }
+          if (read.usage.input_tokens || read.usage.output_tokens) {
+            await recordAiUsage({
+              organizationId: sheet.organization_id,
+              userId: user.id,
+              projectId,
+              route: "takeoff-glifos",
+              model: LEGEND_MODEL,
+              inputTokens: read.usage.input_tokens,
+              outputTokens: read.usage.output_tokens,
+            });
+          }
+        } catch {
+          // Si la lectura de glifos falla, los círculos quedan sin_clasificar
+          // (nunca se rompe el conteo por esto).
+        }
+      }
+    }
+
     // Promoción de candidatos por tamaño ya aprendido (circulo|~N).
     const { data: libRows } = await supabase
       .from("takeoff_symbol_library")
@@ -168,16 +264,22 @@ export async function POST(req: Request) {
     const rows = [
       ...result.detections
         .filter((d) => !near(d.x, d.y))
-        .map((d) => ({
-          organization_id: sheet.organization_id,
-          sheet_id: sheetId,
-          element_key: d.element_key,
-          x: d.x,
-          y: d.y,
-          confidence: d.confidence,
-          method: d.method,
-          signature: (d.signature ?? null) as unknown as Json,
-        })),
+        .map((d) => {
+          const glyphKey =
+            d.element_key === "detector_sin_clasificar"
+              ? glyphByPos.get(`${d.x.toFixed(4)},${d.y.toFixed(4)}`)
+              : undefined;
+          return {
+            organization_id: sheet.organization_id,
+            sheet_id: sheetId,
+            element_key: glyphKey ?? d.element_key,
+            x: d.x,
+            y: d.y,
+            confidence: glyphKey ? "alta" : d.confidence,
+            method: glyphKey ? "vision" : d.method,
+            signature: (d.signature ?? null) as unknown as Json,
+          };
+        }),
       ...promoted
         .filter((p) => !near(p.x, p.y))
         .map((p) => ({

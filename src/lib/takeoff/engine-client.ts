@@ -36,9 +36,14 @@ export type EngineCandidate = {
   y: number;
   size: number | null;
 };
+export type EngineGlyphMosaic = {
+  image_base64: string;
+  cells: { x: number; y: number }[];
+};
 export type EngineAnalyzeResult = {
   detections: EngineDetection[];
   candidates?: EngineCandidate[];
+  glyph_mosaic?: EngineGlyphMosaic | null;
   is_vector: boolean;
   page_width: number;
   page_height: number;

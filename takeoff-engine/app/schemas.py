@@ -68,6 +68,11 @@ class Candidate(BaseModel):
 class AnalyzeResult(BaseModel):
     detections: list[Detection]
     candidates: list[Candidate] = Field(default_factory=list)
+    # Mosaico de recortes de los círculos SIN CLASIFICAR (el motor los encontró
+    # pero no pudo leer su marca por texto). Next lo manda a visión en UNA sola
+    # llamada para leer el glifo interno de cada uno y clasificarlos por la
+    # leyenda confirmada. {image_base64, cells:[{x,y}]} (cells[i] ↔ celda i).
+    glyph_mosaic: Optional[dict] = None
     is_vector: bool
     page_width: float
     page_height: float

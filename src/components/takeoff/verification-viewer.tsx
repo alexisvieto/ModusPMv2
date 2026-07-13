@@ -464,6 +464,58 @@ export function VerificationViewer({
     toast.success(`${list.length} reclasificados.`);
   }
 
+  // Centra el plano en una detección (para saltar entre dudosos).
+  function centerOn(d: Detection) {
+    const canvas = canvasRef.current;
+    const img = canvas?.querySelector("img");
+    if (!canvas || !img) return;
+    const cr = canvas.getBoundingClientRect();
+    const ir = img.getBoundingClientRect();
+    setPan((p) => ({
+      x: p.x + (cr.left + cr.width / 2 - (ir.left + d.x * ir.width)),
+      y: p.y + (cr.top + cr.height / 2 - (ir.top + d.y * ir.height)),
+    }));
+  }
+
+  // Atajos: C=confirmar, X=eliminar, A=agregar (tipo filtrado), N/P=dudoso
+  // siguiente/anterior, Esc=limpiar. Se ignoran si el foco está en un campo.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      const cur = selectedDet ? sheetDets.find((x) => x.id === selectedDet) ?? null : null;
+      if (k === "c" && cur) void confirmDet(cur);
+      else if (k === "x" && cur) void removeDet(cur);
+      else if (k === "a" && filterKey) {
+        setSelectMode(false);
+        setAddKey((v) => (v === filterKey ? null : filterKey));
+      } else if (k === "n" || k === "p") {
+        const dud = sheetDets.filter((d) => d.confidence !== "alta");
+        if (!dud.length) return;
+        const idx = dud.findIndex((d) => d.id === selectedDet);
+        const target =
+          idx === -1
+            ? dud[0]
+            : k === "n"
+              ? dud[(idx + 1) % dud.length]
+              : dud[(idx - 1 + dud.length) % dud.length];
+        setSelectedDet(target.id);
+        centerOn(target);
+        e.preventDefault();
+      } else if (e.key === "Escape") {
+        setAddKey(null);
+        setSelectMode(false);
+        clearSelection();
+        setSelectedDet(null);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheetDets, selectedDet, filterKey]);
+
   const allReady =
     sheets.length > 0 &&
     sheets.every((s) => s.status === "en_verificacion" || s.status === "aprobada");
@@ -488,6 +540,9 @@ export function VerificationViewer({
             <p className="text-xs text-muted-foreground">
               {sheets.length} {sheets.length === 1 ? "hoja" : "hojas"} · verifica y
               aprueba
+              <span className="ml-2 hidden text-muted-foreground/70 lg:inline">
+                (atajos: C confirmar · X eliminar · N/P dudosos · A agregar)
+              </span>
             </p>
           </div>
         </div>

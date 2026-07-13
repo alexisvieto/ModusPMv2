@@ -65,8 +65,9 @@ type Project = { id: string; organization_id: string; name: string };
 
 const ACTIVE_STATUSES = ["detectado", "confirmado", "reclasificado", "agregado_manual"];
 
-// Fila del diccionario de leyenda (símbolo → tipo del catálogo).
-type LegendRow = { symbol: string; element_key: string; name: string };
+// Fila del diccionario de leyenda (símbolo → tipo del catálogo). `source` indica
+// de dónde salió la sugerencia: vision | biblioteca | sugerencia | confirmado.
+type LegendRow = { symbol: string; element_key: string; name: string; source?: string };
 
 function parseLegend(j: unknown): LegendRow[] {
   if (!Array.isArray(j)) return [];
@@ -76,9 +77,17 @@ function parseLegend(j: unknown): LegendRow[] {
       symbol: String(o.symbol ?? ""),
       element_key: String(o.element_key ?? "otro"),
       name: String(o.name ?? ""),
+      source: o.source ? String(o.source) : undefined,
     };
   });
 }
+
+const SOURCE_LABEL: Record<string, { t: string; cls: string }> = {
+  vision: { t: "visión", cls: "bg-blue-500/15 text-blue-600" },
+  biblioteca: { t: "aprendido", cls: "bg-emerald-500/15 text-emerald-600" },
+  sugerencia: { t: "sugerido", cls: "bg-muted text-muted-foreground" },
+  confirmado: { t: "confirmado", cls: "bg-success/15 text-success" },
+};
 
 export function VerificationViewer({
   project,
@@ -197,11 +206,13 @@ export function VerificationViewer({
     ]);
   }
 
-  async function recount() {
+  // Confirmar la simbología y contar (fase 2). Es también el "recontar" cuando
+  // ya se contó: preserva lo tocado a mano y aplica la leyenda editada.
+  async function confirmAndCount() {
     if (!activeSheet) return;
     setRecounting(true);
     try {
-      const res = await fetch("/api/takeoff/sheet-recount", {
+      const res = await fetch("/api/takeoff/sheet-count", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -211,13 +222,13 @@ export function VerificationViewer({
       });
       const j = await res.json();
       if (!res.ok) {
-        toast.error(j.error ?? "No se pudo recontar.");
+        toast.error(j.error ?? "No se pudo contar.");
         return;
       }
-      toast.success("Reconteo aplicado con la leyenda confirmada.");
+      toast.success("Simbología confirmada — conteo aplicado.");
       router.refresh();
     } catch {
-      toast.error("Error de red al recontar.");
+      toast.error("Error de red al contar.");
     } finally {
       setRecounting(false);
     }
@@ -265,7 +276,9 @@ export function VerificationViewer({
     for (const s of pending) {
       setProcessing(s.sheet_number);
       try {
-        const res = await fetch("/api/takeoff/sheet-analyze", {
+        // Fase 1: el motor PROPONE la leyenda (no cuenta). El conteo ocurre solo
+        // tras la confirmación del usuario.
+        const res = await fetch("/api/takeoff/sheet-legend", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sheetId: s.id }),
@@ -572,6 +585,8 @@ export function VerificationViewer({
     sheets.length > 0 &&
     sheets.every((s) => s.status === "en_verificacion" || s.status === "aprobada");
   const isApproved = analysis.status === "aprobado";
+  // La hoja está en la FASE DE CONFIRMACIÓN de la leyenda (aún no se contó).
+  const needsConfirm = activeSheet?.status === "leyenda";
 
   const imgUrl = activeSheet ? imgUrls[activeSheet.id] : null;
 
@@ -783,6 +798,13 @@ export function VerificationViewer({
               );
             })()}
 
+          {/* Fase de confirmación: el plano aún no se contó. */}
+          {needsConfirm && (
+            <div className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full border bg-background/95 px-3 py-1.5 text-center text-xs font-medium text-primary shadow">
+              Revisá y confirmá la simbología (panel derecho) para contar →
+            </div>
+          )}
+
           {/* Modo selección en bloque */}
           <div className="absolute left-3 top-3 flex flex-col items-start gap-1">
             <button
@@ -888,12 +910,12 @@ export function VerificationViewer({
           {/* Diccionario de leyenda: checkpoint humano. Revisar/corregir el
               mapeo símbolo→tipo y recontar antes de verificar los marcadores. */}
           {!isApproved && activeSheet && legendRows.length > 0 && (
-            <div className="border-b">
+            <div className={cn("border-b", needsConfirm && "bg-primary/5")}>
               <button
                 onClick={() => setShowLegend((v) => !v)}
                 className="flex w-full items-center justify-between p-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
               >
-                <span>Leyenda ({legendRows.length})</span>
+                <span>{needsConfirm ? "Confirmá la simbología" : "Leyenda"} ({legendRows.length})</span>
                 <ChevronDown
                   className={cn("size-4 transition-transform", showLegend ? "" : "-rotate-90")}
                 />
@@ -901,49 +923,58 @@ export function VerificationViewer({
               {showLegend && (
                 <div className="space-y-2 px-3 pb-3">
                   <p className="text-[11px] leading-snug text-muted-foreground">
-                    Confirmá que cada símbolo esté en su tipo. Si corregís algo,
-                    pulsá <span className="font-medium">Recontar</span>.
+                    {needsConfirm
+                      ? "El motor propuso esta simbología. Revisá cada fila, corregí o agregá lo que falte, y confirmá para contar. Nada se cuenta sin confirmar."
+                      : "Símbolo → tipo con que se contó. Si corregís algo, volvé a contar."}
                   </p>
                   <div className="space-y-1.5">
-                    {legendRows.map((row, i) => (
-                      <div key={i} className="flex items-center gap-1.5">
-                        <input
-                          value={row.symbol}
-                          onChange={(e) => updateLegendRow(i, { symbol: e.target.value })}
-                          placeholder="símb."
-                          className="h-7 w-12 shrink-0 rounded border border-input bg-transparent px-1.5 text-xs outline-none focus-visible:border-ring"
-                        />
-                        <select
-                          value={row.element_key}
-                          onChange={(e) => updateLegendRow(i, { element_key: e.target.value })}
-                          className="h-7 min-w-0 flex-1 rounded border border-input bg-transparent px-1 text-xs outline-none focus-visible:border-ring"
-                        >
-                          {elements.map((el) => (
-                            <option key={el.key} value={el.key}>
-                              {el.name}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => removeLegendRow(i)}
-                          title="Quitar fila"
-                          className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      </div>
-                    ))}
+                    {legendRows.map((row, i) => {
+                      const src = row.source ? SOURCE_LABEL[row.source] : null;
+                      return (
+                        <div key={i} className="flex items-center gap-1.5">
+                          <input
+                            value={row.symbol}
+                            onChange={(e) => updateLegendRow(i, { symbol: e.target.value })}
+                            placeholder="símb."
+                            className="h-7 w-12 shrink-0 rounded border border-input bg-transparent px-1.5 text-xs outline-none focus-visible:border-ring"
+                          />
+                          <select
+                            value={row.element_key}
+                            onChange={(e) => updateLegendRow(i, { element_key: e.target.value })}
+                            className="h-7 min-w-0 flex-1 rounded border border-input bg-transparent px-1 text-xs outline-none focus-visible:border-ring"
+                          >
+                            {elements.map((el) => (
+                              <option key={el.key} value={el.key}>
+                                {el.name}
+                              </option>
+                            ))}
+                          </select>
+                          {src && (
+                            <span className={cn("shrink-0 rounded px-1 py-0.5 text-[9px] font-medium", src.cls)}>
+                              {src.t}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => removeLegendRow(i)}
+                            title="Quitar fila"
+                            className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                   <button onClick={addLegendRow} className="text-xs text-primary hover:underline">
                     + agregar símbolo
                   </button>
-                  <Button size="sm" className="w-full" onClick={recount} disabled={recounting}>
+                  <Button size="sm" className="w-full" onClick={confirmAndCount} disabled={recounting}>
                     {recounting ? (
                       <Loader2 className="size-4 animate-spin" />
                     ) : (
                       <RotateCw className="size-4" />
                     )}
-                    Recontar con esta leyenda
+                    {needsConfirm ? "Confirmar y contar" : "Volver a contar"}
                   </Button>
                 </div>
               )}

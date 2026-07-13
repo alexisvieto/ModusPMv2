@@ -27,10 +27,13 @@ type InEvent = {
 
 const clip = (s: unknown, n: number) => String(s ?? "").slice(0, n);
 
-// Clave de firma para matching en la biblioteca: kind|token (p.ej. circulo|P).
+// Clave de firma para matching en la biblioteca: kind|token (p.ej. circulo|P,
+// texto|E-1). REQUIERE token: una firma sin token (círculo pelado, caja-X) no
+// tiene con qué distinguirse de otra igual, así que NO se aprende (evita que la
+// biblioteca se llene de reglas ambiguas tipo "circulo|" que no se pueden aplicar).
 function sigKey(sig: Sig): string | null {
-  if (!sig || !sig.kind) return null;
-  return `${sig.kind}|${clip(sig.token ?? "", 40).toUpperCase()}`;
+  if (!sig || !sig.kind || !sig.token) return null;
+  return `${sig.kind}|${clip(sig.token, 40).toUpperCase()}`;
 }
 
 export async function POST(req: Request) {

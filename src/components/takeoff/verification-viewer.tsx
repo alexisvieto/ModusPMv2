@@ -542,6 +542,19 @@ export function VerificationViewer({
     }));
   }
 
+  // Revisión guiada: salta al primer dudoso y centra. Con N/P se recorre el resto
+  // y con C/X/reclasificar se resuelve cada uno sin soltar el teclado.
+  function startGuidedReview() {
+    const dud = sheetDets.filter((d) => d.confidence !== "alta");
+    if (!dud.length) {
+      toast("No hay dudosos en esta hoja.");
+      return;
+    }
+    setOnlyDudosos(true);
+    setSelectedDet(dud[0].id);
+    centerOn(dud[0]);
+  }
+
   // Atajos: C=confirmar, X=eliminar, A=agregar (tipo filtrado), N/P=dudoso
   // siguiente/anterior, Esc=limpiar. Se ignoran si el foco está en un campo.
   useEffect(() => {
@@ -711,6 +724,7 @@ export function VerificationViewer({
                     }}
                     className="absolute -translate-x-1/2 -translate-y-1/2"
                     style={{ left: `${d.x * 100}%`, top: `${d.y * 100}%` }}
+                    title={`${el?.name ?? d.element_key} · ${d.confidence}${d.method ? ` · ${d.method}` : ""}`}
                   >
                     <span
                       className={cn(
@@ -1005,6 +1019,14 @@ export function VerificationViewer({
             >
               Mostrar descartados ({candidates.length})
             </button>
+            {dudososCount > 0 && (
+              <button
+                onClick={startGuidedReview}
+                className="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-2 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                Revisar dudosos guiado (N/P para avanzar)
+              </button>
+            )}
           </div>
 
           <div className="flex-1 p-2">

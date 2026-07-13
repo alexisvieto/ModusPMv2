@@ -63,7 +63,7 @@ Reglas OBLIGATORIAS:
 - Devuelve una fila de salida por CADA fila visible de la leyenda. El número de entries DEBE coincidir con el número de filas de la tabla. PROHIBIDO devolver entries vacío o parcial.
 - Válvula de escape: si una fila no mapea con seguridad a una clave del catálogo, devuélvela IGUAL con element_key='otro' y su descripción textual. Nunca omitas una fila por no saber su tipo.
 - element_key debe ser una clave del catálogo de arriba, o 'otro'. No inventes claves.
-- El tipo se decide por la DESCRIPCIÓN ESCRITA, no por la letra: la misma letra significa cosas distintas según el plano (p.ej. "E-1/E-2/E-3" puede ser EXTINTORES, no estroboscópicos).
+- El tipo se decide EXCLUSIVAMENTE por la DESCRIPCIÓN ESCRITA en la fila, nunca por la letra ni por convenciones previas. La misma letra significa cosas distintas según el plano: si la fila dice "Estroboscópico" es estrobo; si dice "Extintor" es extintor; aunque compartan prefijo (E-1, E-2, E-3 pueden ser tipos distintos). No asumas.
 - Incluye TODAS las filas de una serie numerada (E-1, E-2, E-3…). Distingue calor FIJO (calor_fijo) de VARIABLE (calor_variable). Extintores: usa el tipo (PQS/CO₂/clase K) si la fila lo dice; si no, 'extintor'.
 - "symbol" es la letra/código de rotulado (P, R, V, G, E-1…). Si una fila no lleva letra, deja "symbol" vacío pero incluye la fila.`;
   const anthropic = new Anthropic({ apiKey });

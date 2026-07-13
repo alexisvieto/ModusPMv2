@@ -84,7 +84,7 @@ export const ELEMENTS_BY_SYSTEM: Record<string, ElementDef[]> = {
     { key: "bocina", name: "Bocina", unit: "und", color: "#3B82F6" },
     { key: "estrobo", name: "Estroboscópico", unit: "und", color: "#8B5CF6" },
     { key: "bocina_estrobo", name: "Bocina con estroboscópico", unit: "und", color: "#6366F1" },
-    { key: "extintor", name: "Extintor", unit: "und", color: "#F43F5E", hint: "E-1/E-2/E-3" },
+    { key: "extintor", name: "Extintor", unit: "und", color: "#F43F5E" },
     { key: "extintor_pqs", name: "Extintor PQS", unit: "und", color: "#B91C1C" },
     { key: "extintor_co2", name: "Extintor CO₂", unit: "und", color: "#9333EA" },
     { key: "extintor_k", name: "Extintor clase K", unit: "und", color: "#C026D3" },

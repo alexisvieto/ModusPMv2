@@ -84,7 +84,7 @@ export const ELEMENTS_BY_SYSTEM: Record<string, ElementDef[]> = {
     { key: "bocina", name: "Bocina", unit: "und", color: "#3B82F6" },
     { key: "estrobo", name: "Estroboscópico", unit: "und", color: "#8B5CF6" },
     { key: "bocina_estrobo", name: "Bocina con estroboscópico", unit: "und", color: "#6366F1" },
-    { key: "extintor", name: "Extintor", unit: "und", color: "#F43F5E" },
+    { key: "extintor", name: "Extintor", unit: "und", color: "#F43F5E", hint: "E-1/E-2/E-3" },
     { key: "extintor_pqs", name: "Extintor PQS", unit: "und", color: "#B91C1C" },
     { key: "extintor_co2", name: "Extintor CO₂", unit: "und", color: "#9333EA" },
     { key: "extintor_k", name: "Extintor clase K", unit: "und", color: "#C026D3" },
@@ -115,4 +115,21 @@ export const ELEMENTS_BY_SYSTEM: Record<string, ElementDef[]> = {
 
 export function elementsFor(systemType: string): ElementDef[] {
   return ELEMENTS_BY_SYSTEM[systemType] ?? ELEMENTS_BY_SYSTEM.alarma_incendio;
+}
+
+// Capa determinística: los rótulos estándar del catálogo (P/R/V/G/ACI/E-x…)
+// como diccionario base símbolo→tipo. Se aplica SIEMPRE en el conteo — la letra
+// junto al símbolo es evidencia determinística que vale aunque la visión falle.
+// La leyenda leída (visión) refina/añade encima de este piso.
+export function legendDefaults(
+  systemType: string,
+): { symbol: string; element_key: string; name: string }[] {
+  const out: { symbol: string; element_key: string; name: string }[] = [];
+  for (const e of elementsFor(systemType)) {
+    if (!e.hint) continue;
+    for (const tok of e.hint.split("/").map((t) => t.trim()).filter(Boolean)) {
+      out.push({ symbol: tok, element_key: e.key, name: e.name });
+    }
+  }
+  return out;
 }

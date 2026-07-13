@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 
 import { gateAiRequest, recordAiUsage } from "@/lib/ai/tenant";
-import { elementsFor } from "@/lib/takeoff/catalog";
+import { elementsFor, legendDefaults } from "@/lib/takeoff/catalog";
 import {
   engineAnalyze,
   engineLegend,
@@ -173,18 +173,18 @@ export async function POST(req: Request) {
     if (!signed?.signedUrl) return await fail("No se pudo firmar el PDF.");
     const pdfUrl = signed.signedUrl;
 
-    // 1-2) Diccionario de la leyenda. Si el SISTEMA ya tiene su diccionario
-    // (leído en una hoja previa) se reutiliza tal cual — sin re-leer con visión
-    // ni gastar IA. Solo la primera hoja con leyenda la lee y la guarda a nivel
-    // de sistema para todas las demás.
-    let symbols: EngineSymbol[] = systemLegend;
-    if (!symbols.length) {
+    // Diccionario LEÍDO (aprendido): del sistema si ya existe (reutilizado en la
+    // hoja previa), o de la visión de la leyenda. La leyenda solo viene en la 1ª
+    // hoja del juego; el resto la reutiliza.
+    let readSymbols: EngineSymbol[] = systemLegend;
+    const reused = readSymbols.length > 0;
+    if (!reused) {
       phase = "leyenda";
       const legend = await engineLegend(pdfUrl, systemType);
       if (legend.found && legend.image_base64) {
         phase = "vision-leyenda";
         const read = await readLegend(gate.apiKey, legend.image_base64, systemType);
-        symbols = read.symbols;
+        readSymbols = read.symbols;
         if (read.usage.input_tokens || read.usage.output_tokens) {
           await recordAiUsage({
             organizationId: sheet.organization_id,
@@ -196,15 +196,33 @@ export async function POST(req: Request) {
             outputTokens: read.usage.output_tokens,
           });
         }
-        // Persiste el diccionario a nivel de sistema para el resto de las hojas.
-        if (symbols.length) {
-          await supabase
-            .from("takeoff_systems")
-            .update({ legend: symbols as unknown as Json })
-            .eq("id", systemId);
-        }
       }
     }
+
+    // CAPA DETERMINÍSTICA: los rótulos estándar del catálogo (P/R/V/G/ACI/E-x…)
+    // se aplican SIEMPRE. La letra junto al símbolo es evidencia determinística
+    // que vale aunque la visión falle; la leyenda leída la refina/añade encima.
+    const dict = new Map<string, EngineSymbol>();
+    for (const d of legendDefaults(systemType)) dict.set(d.symbol.toUpperCase(), d);
+    for (const s of readSymbols) if (s.symbol) dict.set(s.symbol.toUpperCase(), s);
+    const symbols = [...dict.values()];
+
+    // El diccionario LEÍDO (no el piso) se guarda a nivel de sistema solo si de
+    // verdad se leyó algo nuevo — así una hoja siguiente puede reintentar la
+    // visión en vez de heredar un piso vacío.
+    if (!reused && readSymbols.length) {
+      await supabase
+        .from("takeoff_systems")
+        .update({ legend: readSymbols as unknown as Json })
+        .eq("id", systemId);
+    }
+
+    // Regla: si la leyenda NO se pudo leer (ni reutilizar), se marca VISIBLE. El
+    // conteo sigue con el mapeo estándar, pero nunca en silencio.
+    const legendWarning =
+      reused || readSymbols.length > 0
+        ? null
+        : "No se pudo leer la leyenda del plano. Se aplicó el mapeo estándar (P/R/V/G/ACI). Revisá el panel Leyenda, cargala manualmente y Recontá.";
 
     // 3) Imagen del plano completo para el visor.
     phase = "render";
@@ -249,7 +267,7 @@ export async function POST(req: Request) {
         stats: result.stats as unknown as Json,
         snapshot_path: imgPath,
         processed_at: new Date().toISOString(),
-        job_error: null,
+        job_error: legendWarning,
       })
       .eq("id", sheetId);
 

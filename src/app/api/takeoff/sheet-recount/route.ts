@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { elementsFor } from "@/lib/takeoff/catalog";
+import { elementsFor, legendDefaults } from "@/lib/takeoff/catalog";
 import {
   engineAnalyze,
   engineWaitResult,
@@ -61,13 +61,20 @@ export async function POST(req: Request) {
   // fuera del catálogo cae en 'otro'. Así el diccionario editado no puede
   // introducir tipos inválidos.
   const validKeys = new Set(elementsFor(systemType).map((e) => e.key));
-  const symbols: EngineSymbol[] = (Array.isArray(body?.symbols) ? body!.symbols : [])
+  const edited: EngineSymbol[] = (Array.isArray(body?.symbols) ? body!.symbols : [])
     .map((e) => ({
       symbol: clip(e.symbol, 40),
       element_key: validKeys.has(String(e.element_key)) ? String(e.element_key) : "otro",
       name: clip(e.name, 120),
     }))
     .filter((e) => e.symbol);
+
+  // Capa determinística SIEMPRE (P/R/V/G/ACI/E-x…), con las ediciones del
+  // ingeniero por encima. El mapeo por letra es independiente del diccionario.
+  const dict = new Map<string, EngineSymbol>();
+  for (const d of legendDefaults(systemType)) dict.set(d.symbol.toUpperCase(), d);
+  for (const s of edited) dict.set(s.symbol.toUpperCase(), s);
+  const symbols = [...dict.values()];
 
   try {
     // URL firmada del PDF (sigue en el bucket temporal hasta aprobar).

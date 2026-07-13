@@ -12,6 +12,7 @@ import {
   Plus,
   RotateCw,
   Trash2,
+  TriangleAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -525,6 +526,14 @@ export function VerificationViewer({
 
         {/* Panel lateral */}
         <div className="flex w-72 shrink-0 flex-col overflow-y-auto border-l">
+          {/* Aviso: la leyenda no se pudo leer (se contó con el mapeo estándar).
+              Nunca se degrada en silencio. */}
+          {activeSheet?.job_error && !isApproved && (
+            <div className="flex items-start gap-2 border-b bg-warning/10 p-3 text-xs text-warning">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+              <span>{activeSheet.job_error}</span>
+            </div>
+          )}
           {/* Diccionario de leyenda: checkpoint humano. Revisar/corregir el
               mapeo símbolo→tipo y recontar antes de verificar los marcadores. */}
           {!isApproved && activeSheet && legendRows.length > 0 && (

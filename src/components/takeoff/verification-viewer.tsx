@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  BoxSelect,
   Check,
   ChevronDown,
   Loader2,
@@ -13,6 +14,7 @@ import {
   RotateCw,
   Trash2,
   TriangleAlert,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -107,6 +109,14 @@ export function VerificationViewer({
   const [filterKey, setFilterKey] = useState<string | null>(null);
   const [onlyDudosos, setOnlyDudosos] = useState(false);
   const [addKey, setAddKey] = useState<string | null>(null); // tipo activo para agregar
+
+  // Selección en bloque (rectángulo sobre el plano) → acciones masivas por el
+  // escritor batch. Coordenadas normalizadas 0-1 (comparten espacio con marcadores).
+  const [selectMode, setSelectMode] = useState(false);
+  const [selRect, setSelRect] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selStartRef = useRef<{ x: number; y: number } | null>(null);
+  const selRectRef = useRef<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
 
   // Zoom/pan
   const [zoom, setZoom] = useState(1);
@@ -343,17 +353,48 @@ export function VerificationViewer({
     }
   }
 
-  // Zoom/pan handlers
+  // Punto de pantalla → coordenadas normalizadas 0-1 del plano (respeta zoom/pan).
+  function pointToNorm(clientX: number, clientY: number): { x: number; y: number } | null {
+    const img = canvasRef.current?.querySelector("img");
+    if (!img) return null;
+    const r = img.getBoundingClientRect();
+    return { x: (clientX - r.left) / r.width, y: (clientY - r.top) / r.height };
+  }
+
+  // Zoom/pan/selección handlers
   function onWheel(e: React.WheelEvent) {
     e.preventDefault();
     setZoom((z) => Math.min(6, Math.max(0.5, z - e.deltaY * 0.0015)));
   }
   function onPointerDown(e: React.PointerEvent) {
     if (addKey) return; // en modo agregar el clic coloca, no arrastra
+    if (selectMode) {
+      const p = pointToNorm(e.clientX, e.clientY);
+      if (!p) return;
+      selStartRef.current = p;
+      selRectRef.current = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+      setSelRect(selRectRef.current);
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      return;
+    }
     dragRef.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   }
   function onPointerMove(e: React.PointerEvent) {
+    if (selectMode && selStartRef.current) {
+      const p = pointToNorm(e.clientX, e.clientY);
+      if (!p) return;
+      const s = selStartRef.current;
+      const rect = {
+        x0: Math.min(s.x, p.x),
+        y0: Math.min(s.y, p.y),
+        x1: Math.max(s.x, p.x),
+        y1: Math.max(s.y, p.y),
+      };
+      selRectRef.current = rect;
+      setSelRect(rect);
+      return;
+    }
     if (!dragRef.current) return;
     setPan({
       x: dragRef.current.px + (e.clientX - dragRef.current.x),
@@ -361,18 +402,66 @@ export function VerificationViewer({
     });
   }
   function onPointerUp() {
+    if (selectMode && selStartRef.current) {
+      const rect = selRectRef.current;
+      selStartRef.current = null;
+      selRectRef.current = null;
+      setSelRect(null);
+      if (rect && rect.x1 - rect.x0 + (rect.y1 - rect.y0) > 0.01) {
+        const ids = new Set(
+          sheetDets
+            .filter((d) => d.x >= rect.x0 && d.x <= rect.x1 && d.y >= rect.y0 && d.y <= rect.y1)
+            .map((d) => d.id),
+        );
+        setSelectedIds(ids);
+      }
+      return;
+    }
     dragRef.current = null;
   }
 
   function onCanvasClick(e: React.MouseEvent) {
-    if (!addKey || !canvasRef.current) return;
-    const img = canvasRef.current.querySelector("img");
-    if (!img) return;
-    const r = img.getBoundingClientRect();
-    const nx = (e.clientX - r.left) / r.width;
-    const ny = (e.clientY - r.top) / r.height;
-    if (nx < 0 || nx > 1 || ny < 0 || ny > 1) return;
-    void addAt(nx, ny);
+    if (!addKey) return;
+    const p = pointToNorm(e.clientX, e.clientY);
+    if (!p || p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1) return;
+    void addAt(p.x, p.y);
+  }
+
+  // ── Acciones masivas sobre la selección (consumen el escritor batch) ──
+  function selectedList() {
+    return sheetDets.filter((d) => selectedIds.has(d.id));
+  }
+  function clearSelection() {
+    setSelectedIds(new Set());
+    setSelRect(null);
+  }
+  async function bulkConfirm() {
+    const list = selectedList();
+    list.forEach((d) => patchLocal(d.id, { status: "confirmado", confidence: "alta" }));
+    clearSelection();
+    await sendCorrections(list.map((d) => ({ action: "confirmar", detectionId: d.id })));
+    toast.success(`${list.length} confirmados.`);
+  }
+  async function bulkDelete() {
+    const list = selectedList();
+    list.forEach((d) => patchLocal(d.id, { status: "eliminado" }));
+    clearSelection();
+    await sendCorrections(list.map((d) => ({ action: "eliminar", detectionId: d.id })));
+    toast.success(`${list.length} eliminados.`);
+  }
+  async function bulkReclass(key: string) {
+    const list = selectedList();
+    list.forEach((d) =>
+      patchLocal(d.id, {
+        status: "reclasificado",
+        element_key: key,
+        original_key: d.original_key ?? d.element_key,
+        confidence: "alta",
+      }),
+    );
+    clearSelection();
+    await sendCorrections(list.map((d) => ({ action: "reclasificar", detectionId: d.id, toKey: key })));
+    toast.success(`${list.length} reclasificados.`);
   }
 
   const allReady =
@@ -453,7 +542,7 @@ export function VerificationViewer({
           ref={canvasRef}
           className={cn(
             "relative min-w-0 flex-1 overflow-hidden bg-neutral-900",
-            addKey ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing",
+            addKey || selectMode ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing",
           )}
           onWheel={onWheel}
           onPointerDown={onPointerDown}
@@ -479,6 +568,7 @@ export function VerificationViewer({
               {visibleDets.map((d) => {
                 const el = elByKey.get(d.element_key);
                 const sel = selectedDet === d.id;
+                const inSel = selectedIds.has(d.id);
                 return (
                   <button
                     key={d.id}
@@ -499,13 +589,29 @@ export function VerificationViewer({
                         height: sel ? 18 : 12,
                         background: (el?.color ?? "#6B7280") + "cc",
                         borderColor: el?.color ?? "#6B7280",
-                        // borde punteado para confianza no-alta
-                        boxShadow: sel ? "0 0 0 3px rgba(255,255,255,.6)" : "none",
+                        // borde punteado para confianza no-alta; anillo azul si está seleccionado
+                        boxShadow: sel
+                          ? "0 0 0 3px rgba(255,255,255,.6)"
+                          : inSel
+                            ? "0 0 0 2px #3b82f6"
+                            : "none",
                       }}
                     />
                   </button>
                 );
               })}
+              {/* Rectángulo de selección en curso (coords normalizadas). */}
+              {selRect && (
+                <div
+                  className="pointer-events-none absolute border-2 border-primary bg-primary/10"
+                  style={{
+                    left: `${selRect.x0 * 100}%`,
+                    top: `${selRect.y0 * 100}%`,
+                    width: `${(selRect.x1 - selRect.x0) * 100}%`,
+                    height: `${(selRect.y1 - selRect.y0) * 100}%`,
+                  }}
+                />
+              )}
             </div>
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-white/60">
@@ -541,6 +647,53 @@ export function VerificationViewer({
                 </div>
               );
             })()}
+
+          {/* Modo selección en bloque */}
+          <div className="absolute left-3 top-3">
+            <button
+              onClick={() => {
+                const next = !selectMode;
+                setSelectMode(next);
+                setAddKey(null);
+                if (!next) clearSelection();
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs shadow transition-colors",
+                selectMode ? "bg-primary text-primary-foreground" : "bg-background/90 hover:bg-muted",
+              )}
+            >
+              <BoxSelect className="size-3.5" />
+              {selectMode ? "Seleccionando…" : "Seleccionar"}
+            </button>
+          </div>
+
+          {/* Barra de acciones masivas sobre la selección */}
+          {selectedIds.size > 0 && (
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 flex-wrap items-center gap-1.5 rounded-lg border bg-background/95 p-1.5 shadow-lg backdrop-blur">
+              <span className="px-1.5 text-xs font-medium">{selectedIds.size} sel.</span>
+              <Button size="sm" variant="ghost" onClick={bulkConfirm}>
+                <Check className="size-4 text-success" /> Confirmar
+              </Button>
+              <select
+                className="h-8 rounded-md border border-input bg-transparent px-2 text-xs"
+                value=""
+                onChange={(e) => e.target.value && bulkReclass(e.target.value)}
+              >
+                <option value="">Reclasificar…</option>
+                {elements.map((el) => (
+                  <option key={el.key} value={el.key}>
+                    {el.name}
+                  </option>
+                ))}
+              </select>
+              <Button size="sm" variant="ghost" onClick={bulkDelete}>
+                <Trash2 className="size-4 text-destructive" /> Eliminar
+              </Button>
+              <button onClick={clearSelection} title="Limpiar" className="rounded p-1 hover:bg-muted">
+                <X className="size-4" />
+              </button>
+            </div>
+          )}
 
           {/* Controles de zoom */}
           <div className="absolute right-3 top-3 flex flex-col overflow-hidden rounded-md border bg-background/90 text-sm shadow">
@@ -665,7 +818,10 @@ export function VerificationViewer({
                     filtered={filterKey === el.key}
                     adding={addKey === el.key}
                     onFilter={() => setFilterKey((k) => (k === el.key ? null : el.key))}
-                    onAdd={() => setAddKey((k) => (k === el.key ? null : el.key))}
+                    onAdd={() => {
+                      setSelectMode(false);
+                      setAddKey((k) => (k === el.key ? null : el.key));
+                    }}
                   />
                 );
               })}

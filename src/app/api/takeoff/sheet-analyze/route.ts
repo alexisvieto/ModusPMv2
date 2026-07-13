@@ -231,16 +231,35 @@ export async function POST(req: Request) {
     const usefulRows = readSymbols.filter((s) => s.symbol && s.element_key !== "otro").length;
     const legendOk = reused || usefulRows >= 3;
 
-    // Diccionario efectivo = Capa 1 (piso) ⊕ Capa 2 (leído). La visión enriquece
-    // pero NO degrada un mapeo específico del piso con un 'otro'.
+    // Diccionario efectivo = Capa 1 (piso) ⊕ Capa 2 (leído) ⊕ Capa 3 (biblioteca).
     const dict = new Map<string, EngineSymbol>();
+    // Capa 1: piso determinístico.
     for (const d of legendDefaults(systemType)) dict.set(d.symbol.toUpperCase(), d);
+    // Capa 2: leyenda leída (enriquece; no degrada el piso con un 'otro').
     for (const s of readSymbols) {
       if (!s.symbol) continue;
       const k = s.symbol.toUpperCase();
       const base = dict.get(k);
       if (base && base.element_key !== "otro" && s.element_key === "otro") continue;
       dict.set(k, s);
+    }
+    // Capa 3: symbol_library (firmas confirmadas por humanos, org + global) —
+    // AUTORIDAD MÁXIMA: sobrescribe piso y visión para los símbolos que cubre.
+    // Es el mecanismo de aprendizaje: lo corregido una vez se aplica solo.
+    const { data: libRows } = await supabase
+      .from("takeoff_symbol_library")
+      .select("sig_key, element_key, element_name")
+      .eq("system_type", systemType)
+      .in("scope", ["org", "global"]);
+    const catKeys = new Set(elementsFor(systemType).map((e) => e.key));
+    for (const r of libRows ?? []) {
+      const token = String(r.sig_key ?? "").split("|")[1] ?? "";
+      if (!token || !catKeys.has(r.element_key)) continue;
+      dict.set(token.toUpperCase(), {
+        symbol: token,
+        element_key: r.element_key,
+        name: r.element_name ?? r.element_key,
+      });
     }
     const symbols = [...dict.values()];
 

@@ -69,11 +69,26 @@ export async function POST(req: Request) {
     }))
     .filter((e) => e.symbol);
 
-  // Capa determinística SIEMPRE (P/R/V/G/ACI/E-x…), con las ediciones del
-  // ingeniero por encima. El mapeo por letra es independiente del diccionario.
+  // Diccionario efectivo = piso (capa 1) ⊕ ediciones del ingeniero ⊕
+  // symbol_library (capa 3, lo aprendido). La biblioteca re-aplica lo que ya
+  // corregiste, para que el reconteo NO devuelva a dudosos lo que enseñaste.
   const dict = new Map<string, EngineSymbol>();
   for (const d of legendDefaults(systemType)) dict.set(d.symbol.toUpperCase(), d);
   for (const s of edited) dict.set(s.symbol.toUpperCase(), s);
+  const { data: libRows } = await supabase
+    .from("takeoff_symbol_library")
+    .select("sig_key, element_key, element_name")
+    .eq("system_type", systemType)
+    .in("scope", ["org", "global"]);
+  for (const r of libRows ?? []) {
+    const token = String(r.sig_key ?? "").split("|")[1] ?? "";
+    if (!token || !validKeys.has(r.element_key)) continue;
+    dict.set(token.toUpperCase(), {
+      symbol: token,
+      element_key: r.element_key,
+      name: r.element_name ?? r.element_key,
+    });
+  }
   const symbols = [...dict.values()];
 
   try {
@@ -89,16 +104,30 @@ export async function POST(req: Request) {
     const job = await engineAnalyze(signed.signedUrl, systemType, symbols);
     const result = await engineWaitResult(job.id);
 
-    // Reemplaza SOLO las detecciones automáticas sin tocar (status 'detectado').
-    // Se preservan las que el ingeniero ya confirmó, reclasificó, agregó o eliminó.
+    // Detecciones ya TOCADAS por el humano: se conservan, y sus posiciones sirven
+    // para NO reinsertar un duplicado encima (ese era el bug: lo corregido volvía
+    // a aparecer como dudoso al lado de su copia fresca).
+    const { data: kept } = await supabase
+      .from("takeoff_detections")
+      .select("x, y")
+      .eq("sheet_id", sheetId)
+      .in("status", ["reclasificado", "confirmado", "agregado_manual"]);
+    const keptPts = (kept ?? []).map((k) => ({ x: Number(k.x), y: Number(k.y) }));
+    const DEDUP = 0.008; // distancia normalizada para considerar "el mismo" marcador
+    const near = (x: number, y: number) =>
+      keptPts.some((p) => Math.abs(p.x - x) < DEDUP && Math.abs(p.y - y) < DEDUP);
+
+    // Se borran solo las automáticas sin tocar; las tocadas por el humano quedan.
     await supabase
       .from("takeoff_detections")
       .delete()
       .eq("sheet_id", sheetId)
       .eq("status", "detectado");
 
-    if (result.detections.length) {
-      const rows = result.detections.map((d) => ({
+    // Se reinsertan las frescas EXCEPTO donde el humano ya corrigió (sin duplicar).
+    const fresh = result.detections.filter((d) => !near(d.x, d.y));
+    if (fresh.length) {
+      const rows = fresh.map((d) => ({
         organization_id: sheet.organization_id,
         sheet_id: sheetId,
         element_key: d.element_key,
@@ -128,7 +157,7 @@ export async function POST(req: Request) {
       .update({ legend: symbols as unknown as Json })
       .eq("id", analysisRow.system_id);
 
-    return NextResponse.json({ done: true, detections: result.detections.length });
+    return NextResponse.json({ done: true, detections: fresh.length, kept: keptPts.length });
   } catch (err) {
     if (err instanceof EngineUnavailable) {
       return NextResponse.json(

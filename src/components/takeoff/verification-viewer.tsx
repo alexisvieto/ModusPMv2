@@ -631,7 +631,18 @@ export function VerificationViewer({
                     key={d.id}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedDet(sel ? null : d.id);
+                      // En modo Seleccionar, el click agrega/quita el marcador de
+                      // la selección (para acciones en bloque). Si no, abre el menú.
+                      if (selectMode) {
+                        setSelectedIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(d.id)) next.delete(d.id);
+                          else next.add(d.id);
+                          return next;
+                        });
+                      } else {
+                        setSelectedDet(sel ? null : d.id);
+                      }
                     }}
                     className="absolute -translate-x-1/2 -translate-y-1/2"
                     style={{ left: `${d.x * 100}%`, top: `${d.y * 100}%` }}

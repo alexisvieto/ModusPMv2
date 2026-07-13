@@ -1054,6 +1054,63 @@ export type Database = {
           },
         ]
       }
+      takeoff_correction_events: {
+        Row: {
+          action: string
+          batch_id: string | null
+          created_at: string
+          created_by: string | null
+          detection_id: string | null
+          from_key: string | null
+          id: string
+          organization_id: string
+          sheet_id: string
+          signature: Json | null
+          to_key: string | null
+        }
+        Insert: {
+          action: string
+          batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          detection_id?: string | null
+          from_key?: string | null
+          id?: string
+          organization_id: string
+          sheet_id: string
+          signature?: Json | null
+          to_key?: string | null
+        }
+        Update: {
+          action?: string
+          batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          detection_id?: string | null
+          from_key?: string | null
+          id?: string
+          organization_id?: string
+          sheet_id?: string
+          signature?: Json | null
+          to_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_corr_sheet"
+            columns: ["sheet_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "takeoff_sheets"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "takeoff_correction_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       takeoff_detections: {
         Row: {
           confidence: string
@@ -1065,6 +1122,7 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           sheet_id: string
+          signature: Json | null
           status: string
           x: number
           y: number
@@ -1079,6 +1137,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           sheet_id: string
+          signature?: Json | null
           status?: string
           x: number
           y: number
@@ -1093,6 +1152,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           sheet_id?: string
+          signature?: Json | null
           status?: string
           x?: number
           y?: number
@@ -1486,6 +1546,7 @@ export type Database = {
           promoted_from: string | null
           sample_png: string | null
           scope: string
+          sig_key: string | null
           signature: Json
           source_firm: string | null
           system_type: string
@@ -1502,6 +1563,7 @@ export type Database = {
           promoted_from?: string | null
           sample_png?: string | null
           scope?: string
+          sig_key?: string | null
           signature: Json
           source_firm?: string | null
           system_type: string
@@ -1518,6 +1580,7 @@ export type Database = {
           promoted_from?: string | null
           sample_png?: string | null
           scope?: string
+          sig_key?: string | null
           signature?: Json
           source_firm?: string | null
           system_type?: string

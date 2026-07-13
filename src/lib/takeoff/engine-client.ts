@@ -17,12 +17,18 @@ const BASE = normalizeBase(process.env.TAKEOFF_ENGINE_URL ?? "");
 const SECRET = process.env.TAKEOFF_ENGINE_SECRET ?? "";
 
 export type EngineSymbol = { symbol: string; element_key: string; name: string };
+export type EngineSignature = {
+  kind: "circulo" | "caja_x" | "texto";
+  token: string | null;
+  size: number | null;
+};
 export type EngineDetection = {
   element_key: string;
   x: number;
   y: number;
   confidence: "alta" | "media" | "baja";
   method: "texto" | "geometria" | "vision" | "manual";
+  signature?: EngineSignature | null;
 };
 export type EngineAnalyzeResult = {
   detections: EngineDetection[];

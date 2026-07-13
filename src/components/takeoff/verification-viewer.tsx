@@ -18,7 +18,6 @@ import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { elementsFor, type ElementDef } from "@/lib/takeoff/catalog";
-import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
 
@@ -60,7 +59,6 @@ export function VerificationViewer({
   sheets: initialSheets,
   detections: initialDetections,
   imgUrls,
-  currentUserId,
 }: {
   project: Project;
   analysis: { id: string; name: string; status: string; system_type: string };
@@ -227,61 +225,60 @@ export function VerificationViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Acciones sobre detecciones ──
-  async function patchDet(id: string, patch: Partial<Detection>) {
+  // ── Acciones sobre detecciones (todas pasan por el escritor BATCH) ──
+  // El visor actualiza el estado local optimista y persiste vía el único
+  // endpoint de correcciones (que además aprende en symbol_library y registra
+  // el evento). Individual = lote de 1; propagación/lasso = lote de N.
+  async function sendCorrections(events: unknown[]) {
+    try {
+      const res = await fetch("/api/takeoff/corrections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ events }),
+      });
+      if (!res.ok) {
+        toast.error("No se pudo guardar la corrección.");
+        router.refresh();
+      }
+    } catch {
+      toast.error("Error de red al guardar.");
+      router.refresh();
+    }
+  }
+  function patchLocal(id: string, patch: Partial<Detection>) {
     setDets((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
-    const supabase = createClient();
-    await supabase
-      .from("takeoff_detections")
-      .update({ ...patch, reviewed_by: currentUserId, reviewed_at: new Date().toISOString() })
-      .eq("id", id);
   }
 
   const [selectedDet, setSelectedDet] = useState<string | null>(null);
 
   async function confirmDet(d: Detection) {
-    await patchDet(d.id, { status: "confirmado", confidence: "alta" });
+    patchLocal(d.id, { status: "confirmado", confidence: "alta" });
     setSelectedDet(null);
+    await sendCorrections([{ action: "confirmar", detectionId: d.id }]);
   }
   async function removeDet(d: Detection) {
-    await patchDet(d.id, { status: "eliminado" });
+    patchLocal(d.id, { status: "eliminado" });
     setSelectedDet(null);
+    await sendCorrections([{ action: "eliminar", detectionId: d.id }]);
   }
   async function reclassDet(d: Detection, key: string) {
-    await patchDet(d.id, {
+    patchLocal(d.id, {
       status: "reclasificado",
       element_key: key,
       original_key: d.original_key ?? d.element_key,
       confidence: "alta",
     });
     setSelectedDet(null);
+    await sendCorrections([{ action: "reclasificar", detectionId: d.id, toKey: key }]);
   }
 
-  // ── Agregar detección al hacer clic en el plano ──
+  // ── Agregar detección al hacer clic en el plano (vía escritor batch) ──
   async function addAt(nx: number, ny: number) {
     if (!addKey || !activeSheet) return;
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("takeoff_detections")
-      .insert({
-        organization_id: project.organization_id,
-        sheet_id: activeSheet.id,
-        element_key: addKey,
-        x: nx,
-        y: ny,
-        confidence: "alta",
-        method: "manual",
-        status: "agregado_manual",
-        reviewed_by: currentUserId,
-        reviewed_at: new Date().toISOString(),
-      })
-      .select("id, sheet_id, element_key, x, y, confidence, method, status, original_key")
-      .maybeSingle();
-    if (error || !data) {
-      toast.error("No se pudo agregar el elemento.");
-      return;
-    }
-    setDets((prev) => [...prev, data]);
+    await sendCorrections([
+      { action: "agregar", sheetId: activeSheet.id, x: nx, y: ny, toKey: addKey },
+    ]);
+    router.refresh();
   }
 
   // ── Aprobar el análisis: consolida resultados, snapshot, borra PDFs ──

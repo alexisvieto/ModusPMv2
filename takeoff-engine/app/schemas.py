@@ -35,12 +35,23 @@ class AnalyzeRequest(BaseModel):
     page_index: int = 0
 
 
+class Signature(BaseModel):
+    """Firma geométrica de una detección: base para agrupar por similitud y
+    para aprender en symbol_library. kind = tipo de evidencia; token = letra o
+    texto asociado; size = tamaño en pt (círculos)."""
+
+    kind: Literal["circulo", "caja_x", "texto"]
+    token: Optional[str] = None
+    size: Optional[float] = None
+
+
 class Detection(BaseModel):
     element_key: str
     x: float  # centro normalizado 0-1
     y: float
     confidence: Literal["alta", "media", "baja"]
     method: Literal["texto", "geometria", "vision", "manual"]
+    signature: Optional[Signature] = None
 
 
 class AnalyzeResult(BaseModel):

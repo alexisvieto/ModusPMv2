@@ -287,6 +287,7 @@ export async function POST(req: Request) {
         y: d.y,
         confidence: d.confidence,
         method: d.method,
+        signature: (d.signature ?? null) as unknown as Json,
       }));
       const { error: detErr } = await supabase.from("takeoff_detections").insert(rows);
       if (detErr) return await fail("No se pudieron guardar las detecciones.");

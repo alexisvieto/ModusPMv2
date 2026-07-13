@@ -25,7 +25,7 @@ import math
 
 import fitz  # PyMuPDF
 
-from .schemas import AnalyzeResult, Detection, Symbol
+from .schemas import AnalyzeResult, Detection, Signature, Symbol
 
 PARAMS = {
     "circle_curves_min": 3,
@@ -214,17 +214,26 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
                 if best[0]:
                     consumed.add(best[2])
                     circle_symbols.add(best[0])
-                    detections.append(Detection(element_key=sym_map[best[0]], x=cx, y=cy, confidence="alta", method="geometria"))
+                    detections.append(Detection(
+                        element_key=sym_map[best[0]], x=cx, y=cy, confidence="alta", method="geometria",
+                        signature=Signature(kind="circulo", token=best[0], size=mode_size),
+                    ))
                     n_alta += 1
                 else:
-                    detections.append(Detection(element_key=UNCLASSIFIED, x=cx, y=cy, confidence="media", method="geometria"))
+                    detections.append(Detection(
+                        element_key=UNCLASSIFIED, x=cx, y=cy, confidence="media", method="geometria",
+                        signature=Signature(kind="circulo", token=None, size=mode_size),
+                    ))
                     n_media += 1
 
         # ── Cajas-con-X (bocina/estrobo) ── (ya dedupeadas en _xboxes)
         for (cx, cy) in _xboxes(drawings, T):
             if excluded(cx, cy):
                 continue
-            detections.append(Detection(element_key=xbox_key, x=cx, y=cy, confidence="media", method="geometria"))
+            detections.append(Detection(
+                element_key=xbox_key, x=cx, y=cy, confidence="media", method="geometria",
+                signature=Signature(kind="caja_x"),
+            ))
             n_media += 1
 
         # ── Etiquetas de texto puras: tokens que casan con un símbolo que NO
@@ -239,7 +248,10 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
                 and len(t) <= PARAMS["text_max_len"]
                 and not excluded(x, y)
             ):
-                detections.append(Detection(element_key=sym_map[up], x=x, y=y, confidence="alta", method="texto"))
+                detections.append(Detection(
+                    element_key=sym_map[up], x=x, y=y, confidence="alta", method="texto",
+                    signature=Signature(kind="texto", token=up),
+                ))
                 n_alta += 1
 
         is_vector = char_count > 40 or len(circ) > 20

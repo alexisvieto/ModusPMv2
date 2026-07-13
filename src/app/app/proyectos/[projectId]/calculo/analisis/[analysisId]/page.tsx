@@ -45,7 +45,7 @@ export default async function AnalysisPage({
       .order("sheet_number", { ascending: true }),
     supabase
       .from("takeoff_detections")
-      .select("id, sheet_id, element_key, x, y, confidence, method, status, original_key")
+      .select("id, sheet_id, element_key, x, y, confidence, method, status, original_key, signature")
       .in(
         "sheet_id",
         (
@@ -80,7 +80,14 @@ export default async function AnalysisPage({
         }}
         system={system}
         sheets={sheets ?? []}
-        detections={detections ?? []}
+        detections={(detections ?? []).map((d) => ({
+          ...d,
+          signature: d.signature as unknown as {
+            kind: string;
+            token: string | null;
+            size: number | null;
+          } | null,
+        }))}
         imgUrls={imgUrls}
         currentUserId={user?.id ?? null}
       />

@@ -263,6 +263,25 @@ export async function POST(req: Request) {
     }
     const symbols = [...dict.values()];
 
+    // Estampado de capa por detección (auditoría): para cada token clasificado,
+    // qué capa ganó — biblioteca (capa 3) o visión (capa 2). Lo determinístico
+    // (capa 1) conserva su método del motor (texto/geometria).
+    const libTokens = new Set(
+      (libRows ?? [])
+        .map((r) => (String(r.sig_key ?? "").split("|")[1] ?? "").toUpperCase())
+        .filter(Boolean),
+    );
+    const visionTokens = new Set(
+      readSymbols.filter((s) => s.symbol && s.element_key !== "otro").map((s) => s.symbol.toUpperCase()),
+    );
+    const layerFor = (tok: string | null | undefined): string | null => {
+      const u = (tok ?? "").toUpperCase();
+      if (!u) return null;
+      if (libTokens.has(u)) return "biblioteca";
+      if (visionTokens.has(u)) return "vision";
+      return null;
+    };
+
     // El diccionario LEÍDO (capa 2, no el piso) se guarda a nivel de sistema solo
     // si la lectura fue exitosa — así una hoja siguiente puede reintentar la
     // visión en vez de heredar un piso vacío.
@@ -305,7 +324,7 @@ export async function POST(req: Request) {
         x: d.x,
         y: d.y,
         confidence: d.confidence,
-        method: d.method,
+        method: layerFor(d.signature?.token) ?? d.method,
         signature: (d.signature ?? null) as unknown as Json,
       }));
       const { error: detErr } = await supabase.from("takeoff_detections").insert(rows);

@@ -22,6 +22,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
 
 type Sheet = Database["public"]["Tables"]["takeoff_sheets"]["Row"];
+type Sig = { kind: string; token: string | null; size: number | null } | null;
 type Detection = {
   id: string;
   sheet_id: string;
@@ -32,7 +33,15 @@ type Detection = {
   method: string | null;
   status: string;
   original_key: string | null;
+  signature: Sig;
 };
+
+// Dos detecciones son "de la misma firma" si comparten tipo de evidencia y token
+// (p.ej. texto|E-1). Base de la propagación por similitud.
+function sameSig(a: Sig, b: Sig): boolean {
+  if (!a || !b || !a.token || !b.token) return false;
+  return a.kind === b.kind && a.token.toUpperCase() === b.token.toUpperCase();
+}
 type Project = { id: string; organization_id: string; name: string };
 
 const ACTIVE_STATUSES = ["detectado", "confirmado", "reclasificado", "agregado_manual"];
@@ -270,6 +279,38 @@ export function VerificationViewer({
     });
     setSelectedDet(null);
     await sendCorrections([{ action: "reclasificar", detectionId: d.id, toKey: key }]);
+    // Propagación por similitud: ofrecer aplicar la misma corrección a las
+    // detecciones SIN tocar que comparten firma. Cada una aprende en la biblioteca.
+    const similar = sheetDets.filter(
+      (x) =>
+        x.id !== d.id &&
+        x.status === "detectado" &&
+        x.element_key !== key &&
+        sameSig(x.signature, d.signature),
+    );
+    if (similar.length) {
+      toast(`${similar.length} con firma similar (${d.signature?.token}).`, {
+        action: {
+          label: `Reclasificar los ${similar.length}`,
+          onClick: () => void propagateReclass(similar, key),
+        },
+      });
+    }
+  }
+
+  async function propagateReclass(dets: Detection[], key: string) {
+    dets.forEach((x) =>
+      patchLocal(x.id, {
+        status: "reclasificado",
+        element_key: key,
+        original_key: x.original_key ?? x.element_key,
+        confidence: "alta",
+      }),
+    );
+    await sendCorrections(
+      dets.map((x) => ({ action: "reclasificar", detectionId: x.id, toKey: key })),
+    );
+    toast.success(`${dets.length} reclasificados por firma similar.`);
   }
 
   // ── Agregar detección al hacer clic en el plano (vía escritor batch) ──

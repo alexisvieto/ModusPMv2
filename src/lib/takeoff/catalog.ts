@@ -97,19 +97,19 @@ export const ELEMENTS_BY_SYSTEM: Record<string, ElementDef[]> = {
     { key: "modulo_as", name: "Detección por aspiración (ASD)", unit: "und", color: "#22D3EE", hint: "AS" },
     { key: "tuberia_aci", name: "Tubería ACI", unit: "m", color: "#64748B", hint: "ACI" },
     { key: "detector_sin_clasificar", name: "Detector sin clasificar", unit: "und", color: "#94A3B8" },
-    { key: "otro", name: "Otro dispositivo", unit: "und", color: "#6B7280" },
+    { key: "otro", name: "Otro dispositivo", unit: "und", color: "#D2691E" },
   ],
   cctv: [
     { key: "camara_domo", name: "Cámara domo", unit: "und", color: "#3B82F6" },
     { key: "camara_bala", name: "Cámara bala", unit: "und", color: "#6366F1" },
     { key: "nvr", name: "NVR / grabador", unit: "und", color: "#1F2937" },
-    { key: "otro", name: "Otro dispositivo", unit: "und", color: "#6B7280" },
+    { key: "otro", name: "Otro dispositivo", unit: "und", color: "#D2691E" },
   ],
   cableado_estructurado: [
     { key: "salida_datos", name: "Salida de datos", unit: "und", color: "#3B82F6" },
     { key: "salida_doble", name: "Salida doble", unit: "und", color: "#6366F1" },
     { key: "rack", name: "Rack / gabinete", unit: "und", color: "#1F2937" },
-    { key: "otro", name: "Otro dispositivo", unit: "und", color: "#6B7280" },
+    { key: "otro", name: "Otro dispositivo", unit: "und", color: "#D2691E" },
   ],
 };
 

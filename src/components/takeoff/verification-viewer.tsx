@@ -368,7 +368,8 @@ export function VerificationViewer({
   }
   function onPointerDown(e: React.PointerEvent) {
     if (addKey) return; // en modo agregar el clic coloca, no arrastra
-    if (selectMode) {
+    // Selección por rectángulo: en modo "Seleccionar" O con Shift presionado.
+    if (selectMode || e.shiftKey) {
       const p = pointToNorm(e.clientX, e.clientY);
       if (!p) return;
       selStartRef.current = p;
@@ -381,7 +382,8 @@ export function VerificationViewer({
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   }
   function onPointerMove(e: React.PointerEvent) {
-    if (selectMode && selStartRef.current) {
+    // Si hay una selección en curso (por modo o por Shift), se prioriza.
+    if (selStartRef.current) {
       const p = pointToNorm(e.clientX, e.clientY);
       if (!p) return;
       const s = selStartRef.current;
@@ -402,7 +404,7 @@ export function VerificationViewer({
     });
   }
   function onPointerUp() {
-    if (selectMode && selStartRef.current) {
+    if (selStartRef.current) {
       const rect = selRectRef.current;
       selStartRef.current = null;
       selRectRef.current = null;
@@ -596,7 +598,7 @@ export function VerificationViewer({
         <div
           ref={canvasRef}
           className={cn(
-            "relative min-w-0 flex-1 overflow-hidden bg-neutral-900",
+            "relative min-w-0 flex-1 touch-none overflow-hidden bg-neutral-900 select-none",
             addKey || selectMode ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing",
           )}
           onWheel={onWheel}
@@ -704,7 +706,7 @@ export function VerificationViewer({
             })()}
 
           {/* Modo selección en bloque */}
-          <div className="absolute left-3 top-3">
+          <div className="absolute left-3 top-3 flex flex-col items-start gap-1">
             <button
               onClick={() => {
                 const next = !selectMode;
@@ -718,8 +720,11 @@ export function VerificationViewer({
               )}
             >
               <BoxSelect className="size-3.5" />
-              {selectMode ? "Seleccionando…" : "Seleccionar"}
+              {selectMode ? "Seleccionando — arrastrá un rectángulo" : "Seleccionar en bloque"}
             </button>
+            <span className="rounded bg-background/80 px-1.5 py-0.5 text-[10px] text-muted-foreground shadow">
+              Tip: mantené <b>Shift</b> y arrastrá para seleccionar sin activar el modo
+            </span>
           </div>
 
           {/* Barra de acciones masivas sobre la selección */}

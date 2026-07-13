@@ -225,8 +225,11 @@ export async function POST(req: Request) {
       }
     }
 
-    // ¿La lectura fue exitosa? (reutilizada, o ≥ MIN filas).
-    const legendOk = reused || readSymbols.length >= MIN_LEGEND_ROWS;
+    // Éxito REAL de la lectura = reutilizada, o mapeó ≥3 símbolos a tipos
+    // CONCRETOS del catálogo (no todo 'otro'). Una lectura de N filas todas
+    // 'otro' significa que la visión leyó ruido (no la tabla) y NO es válida.
+    const usefulRows = readSymbols.filter((s) => s.symbol && s.element_key !== "otro").length;
+    const legendOk = reused || usefulRows >= 3;
 
     // Diccionario efectivo = Capa 1 (piso) ⊕ Capa 2 (leído). La visión enriquece
     // pero NO degrada un mapeo específico del piso con un 'otro'.
@@ -255,7 +258,7 @@ export async function POST(req: Request) {
     // conteo sigue con la capa 1 (mapeo estándar) — útil pero degradado, y lo dice.
     const legendWarning = legendOk
       ? null
-      : "No se pudo leer la leyenda del plano. Se contó con el mapeo estándar (capa 1: P/R/V/G/ACI/E-x). Revisá el panel Leyenda, cargala manualmente y Recontá.";
+      : "No se pudo leer la leyenda del plano. Se contó con el mapeo estándar (capa 1: P/R/V/G/ACI/módulos); los símbolos específicos del proyecto (p.ej. E-1/E-2/E-3) pueden quedar como 'otro'. Revisá el panel Leyenda, cargala manualmente y Recontá.";
 
     // 3) Imagen del plano completo para el visor.
     phase = "render";

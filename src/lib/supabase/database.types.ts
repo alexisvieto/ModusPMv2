@@ -1454,6 +1454,7 @@ export type Database = {
       takeoff_sheets: {
         Row: {
           analysis_id: string
+          candidates: Json | null
           error_detail: string | null
           file_hash: string
           file_name: string | null
@@ -1476,6 +1477,7 @@ export type Database = {
         }
         Insert: {
           analysis_id: string
+          candidates?: Json | null
           error_detail?: string | null
           file_hash: string
           file_name?: string | null
@@ -1498,6 +1500,7 @@ export type Database = {
         }
         Update: {
           analysis_id?: string
+          candidates?: Json | null
           error_detail?: string | null
           file_hash?: string
           file_name?: string | null

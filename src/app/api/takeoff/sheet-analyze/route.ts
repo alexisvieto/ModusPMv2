@@ -9,6 +9,7 @@ import {
   engineRender,
   engineWaitResult,
   EngineUnavailable,
+  type EngineCandidate,
   type EngineSymbol,
 } from "@/lib/takeoff/engine-client";
 import type { Json } from "@/lib/supabase/database.types";
@@ -316,8 +317,28 @@ export async function POST(req: Request) {
     const job = await engineAnalyze(pdfUrl, systemType, symbols);
     const result = await engineWaitResult(job.id);
 
-    if (result.detections.length) {
-      const rows = result.detections.map((d) => ({
+    // Capa 3 sobre CANDIDATOS descartados: un círculo de tamaño ya ENSEÑADO
+    // (firma circulo|~N en la biblioteca) se promueve a detección con el tipo
+    // aprendido; el resto queda como candidato para rescate manual. Así lo que
+    // rescataste una vez, la próxima el motor lo detecta solo.
+    const circleLib = new Map<number, string>();
+    for (const r of libRows ?? []) {
+      const m = /^circulo\|~(\d+)$/.exec(String(r.sig_key ?? ""));
+      if (m && catKeys.has(r.element_key)) circleLib.set(Number(m[1]), r.element_key);
+    }
+    const promoted: { element_key: string; x: number; y: number; size: number | null }[] = [];
+    const remainingCands: EngineCandidate[] = [];
+    for (const c of result.candidates ?? []) {
+      const learned =
+        c.kind === "circulo" && typeof c.size === "number"
+          ? circleLib.get(Math.round(c.size)) ?? null
+          : null;
+      if (learned) promoted.push({ element_key: learned, x: c.x, y: c.y, size: c.size });
+      else remainingCands.push(c);
+    }
+
+    const rows = [
+      ...result.detections.map((d) => ({
         organization_id: sheet.organization_id,
         sheet_id: sheetId,
         element_key: d.element_key,
@@ -326,7 +347,19 @@ export async function POST(req: Request) {
         confidence: d.confidence,
         method: layerFor(d.signature?.token) ?? d.method,
         signature: (d.signature ?? null) as unknown as Json,
-      }));
+      })),
+      ...promoted.map((p) => ({
+        organization_id: sheet.organization_id,
+        sheet_id: sheetId,
+        element_key: p.element_key,
+        x: p.x,
+        y: p.y,
+        confidence: "alta",
+        method: "biblioteca",
+        signature: { kind: "circulo", token: null, size: p.size } as unknown as Json,
+      })),
+    ];
+    if (rows.length) {
       const { error: detErr } = await supabase.from("takeoff_detections").insert(rows);
       if (detErr) return await fail("No se pudieron guardar las detecciones.");
     }
@@ -340,6 +373,7 @@ export async function POST(req: Request) {
         page_height: result.page_height,
         legend: symbols as unknown as Json,
         stats: result.stats as unknown as Json,
+        candidates: remainingCands as unknown as Json,
         snapshot_path: imgPath,
         processed_at: new Date().toISOString(),
         job_error: legendWarning,

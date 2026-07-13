@@ -27,13 +27,17 @@ type InEvent = {
 
 const clip = (s: unknown, n: number) => String(s ?? "").slice(0, n);
 
-// Clave de firma para matching en la biblioteca: kind|token (p.ej. circulo|P,
-// texto|E-1). REQUIERE token: una firma sin token (círculo pelado, caja-X) no
-// tiene con qué distinguirse de otra igual, así que NO se aprende (evita que la
-// biblioteca se llene de reglas ambiguas tipo "circulo|" que no se pueden aplicar).
+// Clave de firma para matching en la biblioteca. Con token: kind|token (p.ej.
+// texto|E-1, circulo|P). Un círculo SIN letra pero con tamaño distintivo se
+// distingue por su tamaño: circulo|~<pt> (así un extintor de otro diámetro sí se
+// puede aprender). Sin token ni tamaño (caja-X, círculo sin tamaño) NO se aprende.
 function sigKey(sig: Sig): string | null {
-  if (!sig || !sig.kind || !sig.token) return null;
-  return `${sig.kind}|${clip(sig.token, 40).toUpperCase()}`;
+  if (!sig || !sig.kind) return null;
+  if (sig.token) return `${sig.kind}|${clip(sig.token, 40).toUpperCase()}`;
+  if (sig.kind === "circulo" && typeof sig.size === "number" && sig.size > 0) {
+    return `circulo|~${Math.round(sig.size)}`;
+  }
+  return null;
 }
 
 export async function POST(req: Request) {

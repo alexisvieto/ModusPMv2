@@ -44,6 +44,23 @@ function sameSig(a: Sig, b: Sig): boolean {
   if (!a || !b || !a.token || !b.token) return false;
   return a.kind === b.kind && a.token.toUpperCase() === b.token.toUpperCase();
 }
+
+// Candidato descartado por el motor (geometría vista pero no clasificada).
+type Candidate = { kind: string; x: number; y: number; size: number | null };
+function parseCandidates(j: unknown): Candidate[] {
+  if (!Array.isArray(j)) return [];
+  return j
+    .map((r) => {
+      const o = (r ?? {}) as Record<string, unknown>;
+      return {
+        kind: String(o.kind ?? "circulo"),
+        x: Number(o.x),
+        y: Number(o.y),
+        size: o.size == null ? null : Number(o.size),
+      };
+    })
+    .filter((c) => Number.isFinite(c.x) && Number.isFinite(c.y));
+}
 type Project = { id: string; organization_id: string; name: string };
 
 const ACTIVE_STATUSES = ["detectado", "confirmado", "reclasificado", "agregado_manual"];
@@ -117,6 +134,13 @@ export function VerificationViewer({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const selStartRef = useRef<{ x: number; y: number } | null>(null);
   const selRectRef = useRef<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+
+  // Candidatos descartados: el motor los vio pero no los clasificó. Toggle para
+  // mostrarlos y rescatarlos (nunca se ocultan en silencio).
+  const [showCandidates, setShowCandidates] = useState(false);
+  const [rescuing, setRescuing] = useState<Candidate | null>(null);
+  const [rescuedKeys, setRescuedKeys] = useState<Set<string>>(new Set());
+  const candKey = (c: Candidate) => `${c.x.toFixed(4)},${c.y.toFixed(4)}`;
 
   // Zoom/pan
   const [zoom, setZoom] = useState(1);
@@ -197,6 +221,32 @@ export function VerificationViewer({
     } finally {
       setRecounting(false);
     }
+  }
+
+  // Candidatos visibles en la hoja activa (los ya rescatados se ocultan local).
+  const candidates = useMemo(
+    () => parseCandidates(activeSheet?.candidates).filter((c) => !rescuedKeys.has(candKey(c))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeSheet?.candidates, rescuedKeys, activeSheetId],
+  );
+
+  // Rescatar un candidato: lo agrega como detección con su firma (para aprender)
+  // vía el escritor batch. Se oculta de la capa de descartados.
+  async function rescueAs(c: Candidate, key: string) {
+    if (!activeSheet) return;
+    setRescuedKeys((prev) => new Set(prev).add(candKey(c)));
+    setRescuing(null);
+    await sendCorrections([
+      {
+        action: "agregar",
+        sheetId: activeSheet.id,
+        x: c.x,
+        y: c.y,
+        toKey: key,
+        signature: { kind: c.kind, token: null, size: c.size },
+      },
+    ]);
+    router.refresh();
   }
 
   const visibleDets = useMemo(
@@ -680,6 +730,23 @@ export function VerificationViewer({
                   }}
                 />
               )}
+              {/* Candidatos descartados (toggle): geometría vista pero no
+                  clasificada. Click para rescatar. */}
+              {showCandidates &&
+                candidates.map((c, i) => (
+                  <button
+                    key={`cand-${i}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRescuing(c);
+                    }}
+                    className="absolute -translate-x-1/2 -translate-y-1/2"
+                    style={{ left: `${c.x * 100}%`, top: `${c.y * 100}%` }}
+                    title={`Candidato ${c.size ?? "?"}pt — click para rescatar`}
+                  >
+                    <span className="block size-3.5 rounded-full border-2 border-dashed border-amber-300 bg-amber-300/20" />
+                  </button>
+                ))}
             </div>
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-white/60">
@@ -761,6 +828,28 @@ export function VerificationViewer({
                 <Trash2 className="size-4 text-destructive" /> Eliminar
               </Button>
               <button onClick={clearSelection} title="Limpiar" className="rounded p-1 hover:bg-muted">
+                <X className="size-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Menú de rescate de un candidato descartado */}
+          {rescuing && (
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-lg border bg-background/95 p-1.5 shadow-lg backdrop-blur">
+              <span className="px-1.5 text-xs">Rescatar como:</span>
+              <select
+                className="h-8 rounded-md border border-input bg-transparent px-2 text-xs"
+                value=""
+                onChange={(e) => e.target.value && rescueAs(rescuing, e.target.value)}
+              >
+                <option value="">Elegí tipo…</option>
+                {elements.map((el) => (
+                  <option key={el.key} value={el.key}>
+                    {el.name}
+                  </option>
+                ))}
+              </select>
+              <button onClick={() => setRescuing(null)} className="rounded p-1 hover:bg-muted">
                 <X className="size-4" />
               </button>
             </div>
@@ -873,6 +962,17 @@ export function VerificationViewer({
               )}
             >
               Ver solo dudosos ({dudososCount})
+            </button>
+            <button
+              onClick={() => setShowCandidates((v) => !v)}
+              className={cn(
+                "mt-1.5 w-full rounded-md border px-2 py-1.5 text-left text-xs font-medium transition-colors",
+                showCandidates
+                  ? "border-amber-400 bg-amber-400/10 text-amber-600"
+                  : "hover:bg-muted",
+              )}
+            >
+              Mostrar descartados ({candidates.length})
             </button>
           </div>
 

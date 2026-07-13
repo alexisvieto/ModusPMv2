@@ -54,8 +54,20 @@ class Detection(BaseModel):
     signature: Optional[Signature] = None
 
 
+class Candidate(BaseModel):
+    """Geometría que el motor vio pero NO clasificó (círculo de tamaño distinto a
+    la moda, etc.). Se muestra en el visor para rescatarla — nunca se descarta en
+    silencio."""
+
+    kind: Literal["circulo", "caja"]
+    x: float  # centro normalizado 0-1
+    y: float
+    size: Optional[float] = None
+
+
 class AnalyzeResult(BaseModel):
     detections: list[Detection]
+    candidates: list[Candidate] = Field(default_factory=list)
     is_vector: bool
     page_width: float
     page_height: float

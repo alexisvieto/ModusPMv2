@@ -30,8 +30,15 @@ export type EngineDetection = {
   method: "texto" | "geometria" | "vision" | "manual";
   signature?: EngineSignature | null;
 };
+export type EngineCandidate = {
+  kind: "circulo" | "caja";
+  x: number;
+  y: number;
+  size: number | null;
+};
 export type EngineAnalyzeResult = {
   detections: EngineDetection[];
+  candidates?: EngineCandidate[];
   is_vector: boolean;
   page_width: number;
   page_height: number;

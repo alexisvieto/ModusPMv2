@@ -25,7 +25,7 @@ import math
 
 import fitz  # PyMuPDF
 
-from .schemas import AnalyzeResult, Detection, Signature, Symbol
+from .schemas import AnalyzeResult, Candidate, Detection, Signature, Symbol
 
 PARAMS = {
     "circle_curves_min": 3,
@@ -193,6 +193,7 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
                       if t.upper() in sym_map and len(t) == 1 and not excluded(x, y)]
 
         detections: list[Detection] = []
+        candidates: list[Candidate] = []
         n_alta = n_media = 0
         consumed: set[int] = set()   # índices de token usados por un círculo
         circle_symbols: set[str] = set()  # símbolos que SON detectores (círculo+letra)
@@ -203,6 +204,13 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
             mode_size, _ = collections.Counter(c[2] for c in circ).most_common(1)[0]
             tol = mode_size * PARAMS["size_tol"]
             det = _dedup_norm([c for c in circ if abs(c[2] - mode_size) <= tol])
+            # Candidatos descartados: círculos válidos de tamaño DISTINTO a la moda
+            # (el motor los vio pero no los contó). Nunca se ocultan — se rescatan
+            # en el visor. Cap para no devolver ruido masivo.
+            disc = _dedup_norm([c for c in circ if abs(c[2] - mode_size) > tol])
+            candidates.extend(
+                Candidate(kind="circulo", x=c[0], y=c[1], size=round(c[2], 1)) for c in disc[:300]
+            )
             for (cx, cy, _s) in det:
                 best = (None, PARAMS["letter_dist"], -1)
                 for (i, up, lx, ly) in short_hits:
@@ -257,6 +265,7 @@ def count(pdf_bytes: bytes, system_type: str, symbols: list[Symbol], page_index:
         is_vector = char_count > 40 or len(circ) > 20
         return AnalyzeResult(
             detections=detections,
+            candidates=candidates,
             is_vector=is_vector,
             page_width=PW,
             page_height=PH,

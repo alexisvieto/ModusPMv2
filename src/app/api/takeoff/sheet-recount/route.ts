@@ -150,7 +150,10 @@ export async function POST(req: Request) {
     // sistema, para que el resto de las hojas reutilicen la versión corregida.
     await supabase
       .from("takeoff_sheets")
-      .update({ legend: symbols as unknown as Json })
+      .update({
+        legend: symbols as unknown as Json,
+        candidates: (result.candidates ?? []) as unknown as Json,
+      })
       .eq("id", sheetId);
     await supabase
       .from("takeoff_systems")

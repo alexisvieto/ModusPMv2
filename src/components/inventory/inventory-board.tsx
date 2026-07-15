@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   AlertTriangle,
+  Boxes,
   Download,
   Package,
   Plus,
@@ -56,6 +57,9 @@ export function InventoryBoard({
   const [cat, setCat] = useState("");
   const [status, setStatus] = useState("");
   const [loc, setLoc] = useState("");
+  const [spareOpen, setSpareOpen] = useState(false);
+  const [spareModel, setSpareModel] = useState("");
+  const [spareQty, setSpareQty] = useState("");
 
   const taskById = useMemo(() => {
     const m = new Map<string, TaskOpt>();
@@ -99,13 +103,65 @@ export function InventoryBoard({
 
   const kpis = useMemo(() => {
     const by = (s: string) => items.filter((it) => it.status === s).length;
+    const spareU = items
+      .filter((it) => it.status === "spare")
+      .reduce((s, it) => s + Number(it.quantity), 0);
     return {
       total: items.length,
       instalado: by("instalado"),
       por_recibir: by("por_recibir"),
+      spare: spareU,
       incidencias: by("faltante") + by("defectuoso"),
     };
   }, [items]);
+
+  // Ítems normales vs spare (los spare van en una sección aparte al final).
+  const filteredNormal = useMemo(
+    () => filtered.filter((it) => it.status !== "spare"),
+    [filtered],
+  );
+  const filteredSpare = useMemo(
+    () => filtered.filter((it) => it.status === "spare"),
+    [filtered],
+  );
+
+  // Modelos disponibles para marcar spare (no-spare), con cantidad instalada.
+  const spareModels = useMemo(() => {
+    const m = new Map<string, { description: string; product: string; qty: number }>();
+    for (const it of items) {
+      if (it.status === "spare") continue;
+      const key = `${it.description}||${it.product_number ?? ""}`;
+      const e = m.get(key) ?? { description: it.description, product: it.product_number ?? "", qty: 0 };
+      e.qty += Number(it.quantity);
+      m.set(key, e);
+    }
+    return [...m.entries()]
+      .map(([key, v]) => ({ key, ...v }))
+      .sort((a, b) => a.description.localeCompare(b.description));
+  }, [items]);
+
+  async function submitSpare() {
+    const m = spareModels.find((x) => x.key === spareModel);
+    const qty = Number(spareQty);
+    if (!m) return toast.error("Elegí un ítem.");
+    if (!qty || qty <= 0) return toast.error("Cantidad inválida.");
+    if (qty > m.qty) return toast.error(`Solo hay ${m.qty} disponibles de ese ítem.`);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("inventory_mark_spare", {
+      p_project: project.id,
+      p_description: m.description,
+      p_product: m.product,
+      p_qty: qty,
+    });
+    if (error) {
+      toast.error("No se pudo marcar el spare.");
+      return;
+    }
+    toast.success(`${qty} u de "${m.description}" a spare.`);
+    setSpareModel("");
+    setSpareQty("");
+    router.refresh();
+  }
 
   function openItem(it: Item) {
     setEditing(it);
@@ -356,9 +412,10 @@ export function InventoryBoard({
       }
     }
 
-    // ── Filas de datos (zebra) ──
-    filtered.forEach((it, idx) => {
-      const r = ws.getRow(7 + idx);
+    // ── Filas de datos (zebra) ── Instalados primero; luego sección SPARE. ──
+    let rowIdx = 7;
+    const writeItem = (it: Item, zebra: boolean) => {
+      const r = ws.getRow(rowIdx);
       const vals: (string | number)[] = [
         it.equipment_name ?? "",
         it.description,
@@ -381,7 +438,7 @@ export function InventoryBoard({
         paint(r.getCell(i + 1), {
           v,
           font: { name: FONT, size: 10, color: { argb: TEXT } },
-          fill: idx % 2 === 1 ? ZEBRA : undefined,
+          fill: zebra ? ZEBRA : undefined,
           align: {
             vertical: "middle",
             horizontal: i === 7 ? "center" : "left",
@@ -391,10 +448,27 @@ export function InventoryBoard({
         });
       });
       r.height = 16;
-    });
+      rowIdx++;
+    };
+
+    filteredNormal.forEach((it, i) => writeItem(it, i % 2 === 1));
+
+    if (filteredSpare.length) {
+      // Encabezado de la sección SPARE (repuestos para el cliente).
+      ws.mergeCells(rowIdx, 1, rowIdx, 16);
+      paint(ws.getCell(rowIdx, 1), {
+        v: "SPARE — Repuestos disponibles",
+        font: { name: FONT_BLACK, size: 11, bold: true, color: { argb: NAVY } },
+        fill: "FFEFF3F8",
+        align: { vertical: "middle" },
+      });
+      ws.getRow(rowIdx).height = 20;
+      rowIdx++;
+      filteredSpare.forEach((it, i) => writeItem(it, i % 2 === 1));
+    }
 
     // ── Pie de página (gris oscuro, texto blanco) con franja naranja ──
-    const lastRow = 6 + filtered.length;
+    const lastRow = rowIdx - 1;
     const stripe = lastRow + 1;
     ws.mergeCells(stripe, 1, stripe, 16);
     ws.getRow(stripe).height = 5;
@@ -434,13 +508,104 @@ export function InventoryBoard({
     URL.revokeObjectURL(url);
   }
 
+  const renderRow = (it: Item) => {
+    const sm = INV_STATUS[it.status];
+    const task = it.task_id ? taskById.get(it.task_id) : null;
+    return (
+      <tr
+        key={it.id}
+        onClick={() => openItem(it)}
+        className="cursor-pointer border-b last:border-b-0 transition-colors hover:bg-muted/40"
+      >
+        <td className="px-3 py-2">
+          <div className="font-medium">{it.description}</div>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+            {it.equipment_name && (
+              <span className="font-mono font-semibold text-primary">{it.equipment_name}</span>
+            )}
+            {it.product_number && <span>{it.product_number}</span>}
+            {task && <span className="rounded bg-primary/10 px-1 font-mono text-primary">{task.wbs}</span>}
+          </div>
+        </td>
+        <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{it.serial_number || "—"}</td>
+        <td className="px-3 py-2 text-muted-foreground">{it.brand_model || "—"}</td>
+        <td className="px-3 py-2 text-muted-foreground">{INV_CATEGORY[it.category]}</td>
+        <td className="px-3 py-2 text-right tabular-nums">{formatNumber(Number(it.quantity), 0)}</td>
+        <td className="px-3 py-2">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
+              sm.className,
+            )}
+          >
+            <span className={cn("size-1.5 rounded-full", sm.dot)} />
+            {sm.label}
+          </span>
+        </td>
+        <td className="px-3 py-2 text-muted-foreground">
+          {it.rack_position && (
+            <span className="block font-mono text-xs text-foreground">{it.rack_position}</span>
+          )}
+          <span className="text-xs">{INV_LOCATION[it.location]}</span>
+        </td>
+        <td className="px-3 py-2 text-muted-foreground">{it.supplier || "—"}</td>
+      </tr>
+    );
+  };
+
+  const renderCard = (it: Item) => {
+    const sm = INV_STATUS[it.status];
+    const task = it.task_id ? taskById.get(it.task_id) : null;
+    return (
+      <button
+        key={it.id}
+        onClick={() => openItem(it)}
+        className="flex w-full flex-col gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/40 active:bg-muted"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="font-medium">{it.description}</div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+              {it.equipment_name && (
+                <span className="font-mono font-semibold text-primary">{it.equipment_name}</span>
+              )}
+              {it.product_number && <span>{it.product_number}</span>}
+              {task && <span className="rounded bg-primary/10 px-1 font-mono text-primary">{task.wbs}</span>}
+            </div>
+          </div>
+          <span
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
+              sm.className,
+            )}
+          >
+            <span className={cn("size-1.5 rounded-full", sm.dot)} />
+            {sm.label}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+          <CellField label="Serial" value={it.serial_number || "—"} mono />
+          <CellField label="Cant." value={formatNumber(Number(it.quantity), 0)} />
+          <CellField label="Marca / Modelo" value={it.brand_model || "—"} />
+          <CellField label="Categoría" value={INV_CATEGORY[it.category]} />
+          <CellField
+            label="Ubicación"
+            value={`${it.rack_position ? it.rack_position + " · " : ""}${INV_LOCATION[it.location]}`}
+          />
+          <CellField label="Proveedor" value={it.supplier || "—"} />
+        </div>
+      </button>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Kpi label="Total de ítems" value={kpis.total} icon={<Package className="size-4 text-muted-foreground" />} />
         <Kpi label="Instalados" value={kpis.instalado} valueClass="text-success" />
         <Kpi label="Por recibir" value={kpis.por_recibir} valueClass="text-warning" />
+        <Kpi label="Spare (u)" value={kpis.spare} valueClass="text-primary" icon={<Boxes className="size-4 text-primary" />} />
         <Kpi
           label="Incidencias"
           value={kpis.incidencias}
@@ -497,6 +662,10 @@ export function InventoryBoard({
                 <Download className="size-4" />
                 Excel
               </Button>
+              <Button size="sm" variant="outline" onClick={() => setSpareOpen(true)}>
+                <Boxes className="size-4" />
+                Spare
+              </Button>
               <Button size="sm" variant="outline" onClick={addItem}>
                 <Plus className="size-4" />
                 Ítem
@@ -520,68 +689,21 @@ export function InventoryBoard({
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((it) => {
-                  const sm = INV_STATUS[it.status];
-                  const task = it.task_id ? taskById.get(it.task_id) : null;
-                  return (
-                    <tr
-                      key={it.id}
-                      onClick={() => openItem(it)}
-                      className="cursor-pointer border-b last:border-b-0 transition-colors hover:bg-muted/40"
-                    >
-                      <td className="px-3 py-2">
-                        <div className="font-medium">{it.description}</div>
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                          {it.equipment_name && (
-                            <span className="font-mono font-semibold text-primary">
-                              {it.equipment_name}
-                            </span>
-                          )}
-                          {it.product_number && <span>{it.product_number}</span>}
-                          {task && (
-                            <span className="rounded bg-primary/10 px-1 font-mono text-primary">
-                              {task.wbs}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
-                        {it.serial_number || "—"}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {it.brand_model || "—"}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {INV_CATEGORY[it.category]}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums">
-                        {formatNumber(Number(it.quantity), 0)}
-                      </td>
-                      <td className="px-3 py-2">
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
-                            sm.className,
-                          )}
-                        >
-                          <span className={cn("size-1.5 rounded-full", sm.dot)} />
-                          {sm.label}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {it.rack_position && (
-                          <span className="block font-mono text-xs text-foreground">
-                            {it.rack_position}
-                          </span>
-                        )}
-                        <span className="text-xs">{INV_LOCATION[it.location]}</span>
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {it.supplier || "—"}
+                {filteredNormal.map(renderRow)}
+                {filteredSpare.length > 0 && (
+                  <>
+                    <tr className="bg-primary/5">
+                      <td
+                        colSpan={8}
+                        className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-primary"
+                      >
+                        <Boxes className="mr-1.5 inline size-3.5" />
+                        Spare — repuestos para el cliente
                       </td>
                     </tr>
-                  );
-                })}
+                    {filteredSpare.map(renderRow)}
+                  </>
+                )}
                 {filtered.length === 0 && (
                   <tr>
                     <td colSpan={8} className="px-3 py-12 text-center text-sm text-muted-foreground">
@@ -595,59 +717,16 @@ export function InventoryBoard({
 
           {/* Tarjetas (móvil) */}
           <div className="divide-y md:hidden">
-            {filtered.map((it) => {
-              const sm = INV_STATUS[it.status];
-              const task = it.task_id ? taskById.get(it.task_id) : null;
-              return (
-                <button
-                  key={it.id}
-                  onClick={() => openItem(it)}
-                  className="flex w-full flex-col gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/40 active:bg-muted"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-medium">{it.description}</div>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                        {it.equipment_name && (
-                          <span className="font-mono font-semibold text-primary">
-                            {it.equipment_name}
-                          </span>
-                        )}
-                        {it.product_number && <span>{it.product_number}</span>}
-                        {task && (
-                          <span className="rounded bg-primary/10 px-1 font-mono text-primary">
-                            {task.wbs}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <span
-                      className={cn(
-                        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
-                        sm.className,
-                      )}
-                    >
-                      <span className={cn("size-1.5 rounded-full", sm.dot)} />
-                      {sm.label}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-                    <CellField label="Serial" value={it.serial_number || "—"} mono />
-                    <CellField
-                      label="Cant."
-                      value={formatNumber(Number(it.quantity), 0)}
-                    />
-                    <CellField label="Marca / Modelo" value={it.brand_model || "—"} />
-                    <CellField label="Categoría" value={INV_CATEGORY[it.category]} />
-                    <CellField
-                      label="Ubicación"
-                      value={`${it.rack_position ? it.rack_position + " · " : ""}${INV_LOCATION[it.location]}`}
-                    />
-                    <CellField label="Proveedor" value={it.supplier || "—"} />
-                  </div>
-                </button>
-              );
-            })}
+            {filteredNormal.map(renderCard)}
+            {filteredSpare.length > 0 && (
+              <>
+                <div className="bg-primary/5 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                  <Boxes className="mr-1.5 inline size-3.5" />
+                  Spare — repuestos
+                </div>
+                {filteredSpare.map(renderCard)}
+              </>
+            )}
             {filtered.length === 0 && (
               <div className="px-4 py-12 text-center text-sm text-muted-foreground">
                 Sin ítems que coincidan con el filtro.
@@ -670,6 +749,59 @@ export function InventoryBoard({
         onOpenChange={setScanOpen}
         onCreateNew={createWithBarcode}
       />
+
+      {/* Diálogo: marcar unidades de un ítem como spare */}
+      {spareOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setSpareOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-xl border bg-background p-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-1 flex items-center gap-2">
+              <Boxes className="size-4 text-primary" />
+              <h3 className="font-semibold">Marcar spare</h3>
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Elegí el ítem y cuántas unidades quedan como repuesto. Se restan de lo
+              instalado y aparecen en la sección Spare (para el cliente).
+            </p>
+            <label className="text-xs font-medium text-muted-foreground">Ítem</label>
+            <select
+              value={spareModel}
+              onChange={(e) => setSpareModel(e.target.value)}
+              className="mb-3 mt-1 h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring"
+            >
+              <option value="">Elegí un ítem…</option>
+              {spareModels.map((m) => (
+                <option key={m.key} value={m.key}>
+                  {m.description}
+                  {m.product ? ` · ${m.product}` : ""} — {m.qty} disp.
+                </option>
+              ))}
+            </select>
+            <label className="text-xs font-medium text-muted-foreground">Cantidad spare</label>
+            <input
+              type="number"
+              min={1}
+              value={spareQty}
+              onChange={(e) => setSpareQty(e.target.value)}
+              placeholder="Ej. 5"
+              className="mb-4 mt-1 h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setSpareOpen(false)}>
+                Cerrar
+              </Button>
+              <Button onClick={submitSpare} disabled={!spareModel || !spareQty}>
+                Marcar spare
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

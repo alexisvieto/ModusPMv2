@@ -28,6 +28,11 @@ export const INV_STATUS: Record<
     className: "bg-destructive/10 text-destructive",
     dot: "bg-destructive",
   },
+  spare: {
+    label: "Spare",
+    className: "bg-primary/10 text-primary",
+    dot: "bg-primary",
+  },
 };
 
 export const INV_LOCATION: Record<Loc, string> = {

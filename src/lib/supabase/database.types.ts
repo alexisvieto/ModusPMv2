@@ -1832,6 +1832,10 @@ export type Database = {
         Args: { p_project_id: string; p_rows: Json }
         Returns: number
       }
+      inventory_mark_spare: {
+        Args: { p_project: string; p_description: string; p_product: string; p_qty: number }
+        Returns: undefined
+      }
       is_org_member: { Args: { org: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       save_report_entries: {
@@ -1867,7 +1871,12 @@ export type Database = {
         | "repuesto"
         | "consumible"
       inventory_location: "en_proyecto" | "en_galera"
-      inventory_status: "por_recibir" | "instalado" | "faltante" | "defectuoso"
+      inventory_status:
+        | "por_recibir"
+        | "instalado"
+        | "faltante"
+        | "defectuoso"
+        | "spare"
       org_role: "owner" | "admin" | "project_manager" | "member" | "viewer"
       project_status:
         | "planning"
@@ -2025,7 +2034,7 @@ export const Constants = {
         "consumible",
       ],
       inventory_location: ["en_proyecto", "en_galera"],
-      inventory_status: ["por_recibir", "instalado", "faltante", "defectuoso"],
+      inventory_status: ["por_recibir", "instalado", "faltante", "defectuoso", "spare"],
       org_role: ["owner", "admin", "project_manager", "member", "viewer"],
       project_status: [
         "planning",

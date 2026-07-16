@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
-import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, Copy, Pencil, Plus, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -45,10 +45,12 @@ export function FatsatBoard({
   project,
   initialPruebas,
   brand,
+  sources,
 }: {
   project: Project;
   initialPruebas: Prueba[];
   brand: Brand;
+  sources: { id: string; name: string; count: number }[];
 }) {
   const router = useRouter();
   const [pruebas, setPruebas] = useState<Prueba[]>(initialPruebas);
@@ -56,6 +58,28 @@ export function FatsatBoard({
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Protocol | null>(null);
   const [newItem, setNewItem] = useState<Record<string, string>>({});
+  const [cloneOpen, setCloneOpen] = useState(false);
+  const [cloneSource, setCloneSource] = useState("");
+  const [cloning, setCloning] = useState(false);
+
+  async function cloneFrom() {
+    if (!cloneSource) return;
+    setCloning(true);
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("fatsat_clone_protocols", {
+      p_source: cloneSource,
+      p_target: project.id,
+    });
+    setCloning(false);
+    if (error) {
+      toast.error("No se pudieron clonar las pruebas.");
+      return;
+    }
+    toast.success(`${data ?? 0} prueba(s) clonada(s).`);
+    setCloneOpen(false);
+    setCloneSource("");
+    router.refresh();
+  }
 
   // Resync con los datos del servidor tras crear/editar/eliminar (ajuste de
   // estado en render — patrón recomendado por React, sin efecto).
@@ -257,16 +281,24 @@ export function FatsatBoard({
             </button>
           ))}
         </div>
-        <Button
-          size="sm"
-          onClick={() => {
-            setEditing(null);
-            setFormOpen(true);
-          }}
-        >
-          <Plus className="size-4" />
-          Agregar
-        </Button>
+        <div className="flex items-center gap-2">
+          {sources.length > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setCloneOpen(true)}>
+              <Copy className="size-4" />
+              Clonar de…
+            </Button>
+          )}
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditing(null);
+              setFormOpen(true);
+            }}
+          >
+            <Plus className="size-4" />
+            Agregar
+          </Button>
+        </div>
       </div>
 
       {/* Secciones */}
@@ -444,6 +476,52 @@ export function FatsatBoard({
         open={formOpen}
         onOpenChange={setFormOpen}
       />
+
+      {/* Diálogo: clonar pruebas ATP de otro proyecto de la organización */}
+      {cloneOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setCloneOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-xl border bg-background p-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-1 flex items-center gap-2">
+              <Copy className="size-4 text-primary" />
+              <h3 className="font-semibold">Clonar pruebas de otro proyecto</h3>
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Copia los protocolos (con sus puntos) de otro proyecto de la
+              organización como plantilla fresca — en borrador y sin resultados.
+              No se toca el proyecto de origen.
+            </p>
+            <label className="text-xs font-medium text-muted-foreground">
+              Proyecto de origen
+            </label>
+            <select
+              value={cloneSource}
+              onChange={(e) => setCloneSource(e.target.value)}
+              className="mb-4 mt-1 h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring"
+            >
+              <option value="">Elegí un proyecto…</option>
+              {sources.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} — {s.count} prueba{s.count === 1 ? "" : "s"}
+                </option>
+              ))}
+            </select>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setCloneOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={cloneFrom} disabled={!cloneSource || cloning}>
+                {cloning ? "Clonando…" : "Clonar"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

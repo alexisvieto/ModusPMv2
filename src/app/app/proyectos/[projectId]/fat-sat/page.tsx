@@ -35,6 +35,22 @@ export default async function FatSatPage({
   ]);
   const brand = brandFromOrg(org);
 
+  // Proyectos de la misma organización (≠ actual) que tienen pruebas: origen
+  // posible para clonar sus protocolos ATP a este proyecto.
+  const { data: srcRows } = await supabase
+    .from("projects")
+    .select("id, name, fatsat_protocols(count)")
+    .eq("organization_id", project.organization_id)
+    .neq("id", projectId)
+    .order("name", { ascending: true });
+  const sources = (srcRows ?? [])
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      count: (p.fatsat_protocols?.[0]?.count as number | undefined) ?? 0,
+    }))
+    .filter((p) => p.count > 0);
+
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6 md:p-8">
       <div>
@@ -48,6 +64,7 @@ export default async function FatSatPage({
         project={project}
         initialPruebas={pruebas ?? []}
         brand={brand}
+        sources={sources}
       />
     </div>
   );

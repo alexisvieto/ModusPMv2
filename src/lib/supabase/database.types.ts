@@ -1828,6 +1828,10 @@ export type Database = {
         Args: { org: string; roles: Database["public"]["Enums"]["org_role"][] }
         Returns: boolean
       }
+      fatsat_clone_protocols: {
+        Args: { p_source: string; p_target: string }
+        Returns: number
+      }
       import_cost_entries: {
         Args: { p_project_id: string; p_rows: Json }
         Returns: number

@@ -1840,6 +1840,16 @@ export type Database = {
         Args: { p_project: string; p_description: string; p_product: string; p_qty: number }
         Returns: undefined
       }
+      inventory_use_spare: {
+        Args: {
+          p_project: string
+          p_description: string
+          p_product: string
+          p_qty: number
+          p_note?: string
+        }
+        Returns: undefined
+      }
       is_org_member: { Args: { org: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       save_report_entries: {

@@ -11,6 +11,7 @@ import {
   Plus,
   ScanLine,
   Search,
+  Undo2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,10 @@ export function InventoryBoard({
   const [spareOpen, setSpareOpen] = useState(false);
   const [spareModel, setSpareModel] = useState("");
   const [spareQty, setSpareQty] = useState("");
+  const [useOpen, setUseOpen] = useState(false);
+  const [useModel, setUseModel] = useState("");
+  const [useQty, setUseQty] = useState("");
+  const [useNote, setUseNote] = useState("");
 
   const taskById = useMemo(() => {
     const m = new Map<string, TaskOpt>();
@@ -140,6 +145,21 @@ export function InventoryBoard({
       .sort((a, b) => a.description.localeCompare(b.description));
   }, [items]);
 
+  // Modelos que HAY en spare, con unidades disponibles: origen para "Usar spare".
+  const usableSpare = useMemo(() => {
+    const m = new Map<string, { description: string; product: string; qty: number }>();
+    for (const it of items) {
+      if (it.status !== "spare") continue;
+      const key = `${it.description}||${it.product_number ?? ""}`;
+      const e = m.get(key) ?? { description: it.description, product: it.product_number ?? "", qty: 0 };
+      e.qty += Number(it.quantity);
+      m.set(key, e);
+    }
+    return [...m.entries()]
+      .map(([key, v]) => ({ key, ...v }))
+      .sort((a, b) => a.description.localeCompare(b.description));
+  }, [items]);
+
   async function submitSpare() {
     const m = spareModels.find((x) => x.key === spareModel);
     const qty = Number(spareQty);
@@ -160,6 +180,32 @@ export function InventoryBoard({
     toast.success(`${qty} u de "${m.description}" a spare.`);
     setSpareModel("");
     setSpareQty("");
+    router.refresh();
+  }
+
+  async function submitUseSpare() {
+    const m = usableSpare.find((x) => x.key === useModel);
+    const qty = Number(useQty);
+    if (!m) return toast.error("Elegí un repuesto.");
+    if (!qty || qty <= 0) return toast.error("Cantidad inválida.");
+    if (qty > m.qty) return toast.error(`Solo hay ${m.qty} en spare de ese ítem.`);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("inventory_use_spare", {
+      p_project: project.id,
+      p_description: m.description,
+      p_product: m.product,
+      p_qty: qty,
+      p_note: useNote.trim() || undefined,
+    });
+    if (error) {
+      toast.error("No se pudo usar el spare.");
+      return;
+    }
+    toast.success(`${qty} u de "${m.description}" a instalado.`);
+    setUseModel("");
+    setUseQty("");
+    setUseNote("");
+    setUseOpen(false);
     router.refresh();
   }
 
@@ -666,6 +712,12 @@ export function InventoryBoard({
                 <Boxes className="size-4" />
                 Spare
               </Button>
+              {usableSpare.length > 0 && (
+                <Button size="sm" variant="outline" onClick={() => setUseOpen(true)}>
+                  <Undo2 className="size-4" />
+                  Usar spare
+                </Button>
+              )}
               <Button size="sm" variant="outline" onClick={addItem}>
                 <Plus className="size-4" />
                 Ítem
@@ -797,6 +849,69 @@ export function InventoryBoard({
               </Button>
               <Button onClick={submitSpare} disabled={!spareModel || !spareQty}>
                 Marcar spare
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Diálogo: usar un repuesto (spare → instalado) con nota opcional */}
+      {useOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setUseOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-xl border bg-background p-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-1 flex items-center gap-2">
+              <Undo2 className="size-4 text-primary" />
+              <h3 className="font-semibold">Usar spare</h3>
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Toma unidades de un repuesto y las regresa a instalado. Se descuentan de
+              la sección Spare. La nota es opcional (para trazabilidad, si aplica).
+            </p>
+            <label className="text-xs font-medium text-muted-foreground">Repuesto</label>
+            <select
+              value={useModel}
+              onChange={(e) => setUseModel(e.target.value)}
+              className="mb-3 mt-1 h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring"
+            >
+              <option value="">Elegí un repuesto…</option>
+              {usableSpare.map((m) => (
+                <option key={m.key} value={m.key}>
+                  {m.description}
+                  {m.product ? ` · ${m.product}` : ""} — {m.qty} en spare
+                </option>
+              ))}
+            </select>
+            <label className="text-xs font-medium text-muted-foreground">Cantidad a usar</label>
+            <input
+              type="number"
+              min={1}
+              value={useQty}
+              onChange={(e) => setUseQty(e.target.value)}
+              placeholder="Ej. 1"
+              className="mb-3 mt-1 h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring"
+            />
+            <label className="text-xs font-medium text-muted-foreground">
+              Nota <span className="font-normal">(opcional)</span>
+            </label>
+            <input
+              type="text"
+              value={useNote}
+              onChange={(e) => setUseNote(e.target.value)}
+              placeholder="Ej. Reemplazo de switch defectuoso rack A3"
+              className="mb-4 mt-1 h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setUseOpen(false)}>
+                Cerrar
+              </Button>
+              <Button onClick={submitUseSpare} disabled={!useModel || !useQty}>
+                Usar spare
               </Button>
             </div>
           </div>

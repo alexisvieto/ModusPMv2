@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { IaView } from "@/components/ia/ia-view";
+import { brandFromOrg, ORG_BRAND_COLUMNS, type OrgBranding } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function IaPage({
@@ -25,22 +26,30 @@ export default async function IaPage({
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
   ).toISOString();
 
-  const [{ data: cfg }, { data: isAdmin }, { data: usage }] = await Promise.all([
-    supabase
-      .from("ai_provider_configs")
-      .select("provider, model, monthly_budget_usd, is_enabled, api_key_set")
-      .eq("organization_id", project.organization_id)
-      .maybeSingle(),
-    supabase.rpc("has_org_role", {
-      org: project.organization_id,
-      roles: ["owner", "admin"],
-    }),
-    supabase
-      .from("ai_usage")
-      .select("cost_usd")
-      .eq("organization_id", project.organization_id)
-      .gte("created_at", monthStart),
-  ]);
+  const [{ data: cfg }, { data: isAdmin }, { data: usage }, { data: org }] =
+    await Promise.all([
+      supabase
+        .from("ai_provider_configs")
+        .select("provider, model, monthly_budget_usd, is_enabled, api_key_set")
+        .eq("organization_id", project.organization_id)
+        .maybeSingle(),
+      supabase.rpc("has_org_role", {
+        org: project.organization_id,
+        roles: ["owner", "admin"],
+      }),
+      supabase
+        .from("ai_usage")
+        .select("cost_usd")
+        .eq("organization_id", project.organization_id)
+        .gte("created_at", monthStart),
+      supabase
+        .from("organizations")
+        .select(ORG_BRAND_COLUMNS)
+        .eq("id", project.organization_id)
+        .maybeSingle(),
+    ]);
+
+  const brand = brandFromOrg(org as OrgBranding | null);
 
   const monthSpendUsd = (usage ?? []).reduce(
     (a, r) => a + Number(r.cost_usd ?? 0),
@@ -63,6 +72,8 @@ export default async function IaPage({
         config={cfg ?? null}
         isAdmin={!!isAdmin}
         monthSpendUsd={monthSpendUsd}
+        brand={brand}
+        project={{ name: project.name, code: project.code }}
       />
     </div>
   );

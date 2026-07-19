@@ -14,6 +14,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { saveAiConfig, saveAiKey, clearAiKey } from "@/components/ia/actions";
+import { AnalysisPdfButton } from "@/components/ia/analysis-pdf-button";
+import { type Brand } from "@/lib/brand";
+import { formatDate } from "@/lib/format";
 
 type Config = {
   provider: string;
@@ -39,12 +42,16 @@ export function IaView({
   config,
   isAdmin,
   monthSpendUsd,
+  brand,
+  project,
 }: {
   projectId: string;
   orgId: string;
   config: Config;
   isAdmin: boolean;
   monthSpendUsd: number;
+  brand: Brand;
+  project: { name: string; code: string | null };
 }) {
   const enabled = config?.is_enabled !== false; // por defecto activada
 
@@ -142,14 +149,33 @@ export function IaView({
                 </p>
               </div>
             </div>
-            <Button onClick={generate} disabled={loading || !enabled} size="sm">
-              {loading ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Sparkles className="size-4" />
+            <div className="flex flex-wrap items-center gap-2">
+              {analysis && !loading && (
+                <AnalysisPdfButton
+                  data={{
+                    brand,
+                    project,
+                    generatedAt: formatDate(new Date(), {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    }),
+                    analysis,
+                  }}
+                  fileName={`Analisis-IA-${(project.code || project.name)
+                    .replace(/[^\w-]+/g, "_")
+                    .slice(0, 40)}.pdf`}
+                />
               )}
-              {analysis ? "Regenerar" : "Generar análisis"}
-            </Button>
+              <Button onClick={generate} disabled={loading || !enabled} size="sm">
+                {loading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Sparkles className="size-4" />
+                )}
+                {analysis ? "Regenerar" : "Generar análisis"}
+              </Button>
+            </div>
           </div>
 
           {!enabled && (

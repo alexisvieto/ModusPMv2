@@ -31,6 +31,11 @@ export default async function AppLayout({
 
   const { data: isPlatformAdmin } = await supabase.rpc("is_platform_admin");
 
+  // Super-admin de plataforma SIN organización propia: su lugar es /admin, no
+  // /app (que quedaría vacío). Así `alexisvieto@` cae directo en el panel y
+  // no se confunde con un miembro de tenant.
+  if (isPlatformAdmin && !membership) redirect("/admin");
+
   let org: (OrgBranding & { id: string; slug: string }) | null = null;
   if (membership) {
     const { data } = await supabase

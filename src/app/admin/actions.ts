@@ -23,6 +23,9 @@ type OrgInput = {
   address: string;
   logoUrl: string;
   exportCredit: boolean;
+  seatLimit: number | null;
+  pricePerSeat: number;
+  billable: boolean;
 };
 
 type UserInput = {
@@ -94,6 +97,9 @@ export async function createOrganization(
       address: clean(input.address),
       logo_url: clean(input.logoUrl),
       export_credit: input.exportCredit,
+      seat_limit: normalizeSeatLimit(input.seatLimit),
+      price_per_seat: normalizePrice(input.pricePerSeat),
+      billable: input.billable,
     })
     .select("id")
     .maybeSingle();
@@ -101,6 +107,109 @@ export async function createOrganization(
 
   revalidatePath("/admin");
   return { ok: true, orgId: data.id };
+}
+
+/** Tope de asientos: entero ≥ 0, o null (sin tope). */
+function normalizeSeatLimit(v: number | null): number | null {
+  if (v === null || !Number.isFinite(v)) return null;
+  return Math.max(0, Math.floor(v));
+}
+
+/** Precio por asiento: número ≥ 0 con 2 decimales. */
+function normalizePrice(v: number): number {
+  if (!Number.isFinite(v) || v < 0) return 0;
+  return Math.round(v * 100) / 100;
+}
+
+/** Cuenta los asientos activos (facturables) de una empresa. */
+async function countActiveSeats(
+  admin: ReturnType<typeof createAdminClient>,
+  organizationId: string,
+): Promise<number> {
+  const { count } = await admin
+    .from("organization_members")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organizationId)
+    .eq("status", "active");
+  return count ?? 0;
+}
+
+/** Edita el plan de facturación de una empresa (tope, precio, facturable). */
+export async function updateOrgBilling(input: {
+  organizationId: string;
+  seatLimit: number | null;
+  pricePerSeat: number;
+  billable: boolean;
+}): Promise<{ ok: boolean; error?: string }> {
+  const gate = await requirePlatformAdmin();
+  if (!gate.ok) return { ok: false, error: gate.error };
+
+  const admin = createAdminClient();
+  const seatLimit = normalizeSeatLimit(input.seatLimit);
+
+  // No dejar el tope por debajo de los asientos ya activos: sería mentir el reporte.
+  if (seatLimit !== null) {
+    const active = await countActiveSeats(admin, input.organizationId);
+    if (seatLimit < active) {
+      return {
+        ok: false,
+        error: `La empresa ya tiene ${active} asiento(s) activo(s); el tope no puede ser menor. Suspende usuarios primero.`,
+      };
+    }
+  }
+
+  const { error } = await admin
+    .from("organizations")
+    .update({
+      seat_limit: seatLimit,
+      price_per_seat: normalizePrice(input.pricePerSeat),
+      billable: input.billable,
+    })
+    .eq("id", input.organizationId);
+  if (error) return { ok: false, error: "No se pudo actualizar el plan." };
+
+  revalidatePath("/admin");
+  return { ok: true };
+}
+
+/** Suspende o reactiva un asiento. Suspender = sin acceso y no factura. */
+export async function setMemberStatus(input: {
+  organizationId: string;
+  userId: string;
+  status: "active" | "suspended";
+}): Promise<{ ok: boolean; error?: string }> {
+  const gate = await requirePlatformAdmin();
+  if (!gate.ok) return { ok: false, error: gate.error };
+
+  const admin = createAdminClient();
+
+  // Reactivar cuenta contra el tope, igual que crear.
+  if (input.status === "active") {
+    const { data: org } = await admin
+      .from("organizations")
+      .select("seat_limit")
+      .eq("id", input.organizationId)
+      .maybeSingle();
+    if (org?.seat_limit !== null && org?.seat_limit !== undefined) {
+      const active = await countActiveSeats(admin, input.organizationId);
+      if (active >= org.seat_limit) {
+        return {
+          ok: false,
+          error: `Esta empresa usó sus ${org.seat_limit} asiento(s). Súbele el tope para reactivar a alguien.`,
+        };
+      }
+    }
+  }
+
+  const { error } = await admin
+    .from("organization_members")
+    .update({ status: input.status })
+    .eq("organization_id", input.organizationId)
+    .eq("user_id", input.userId);
+  if (error) return { ok: false, error: "No se pudo cambiar el estado." };
+
+  revalidatePath("/admin");
+  return { ok: true };
 }
 
 /** Contraseña temporal robusta (base64url). Se muestra una sola vez al admin. */
@@ -125,10 +234,21 @@ export async function createUserForOrg(
 
   const { data: org } = await admin
     .from("organizations")
-    .select("id")
+    .select("id, seat_limit")
     .eq("id", input.organizationId)
     .maybeSingle();
   if (!org) return { ok: false, error: "Empresa no encontrada." };
+
+  // Tope de asientos: no crear más usuarios activos de los contratados.
+  if (org.seat_limit !== null) {
+    const active = await countActiveSeats(admin, input.organizationId);
+    if (active >= org.seat_limit) {
+      return {
+        ok: false,
+        error: `Esta empresa usó sus ${org.seat_limit} asiento(s). Súbele el tope para agregar más usuarios.`,
+      };
+    }
+  }
 
   const tempPassword = generateTempPassword();
   const { data: created, error: createErr } = await admin.auth.admin.createUser({

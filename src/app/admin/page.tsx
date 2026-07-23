@@ -20,11 +20,13 @@ export default async function AdminPage() {
     await Promise.all([
       admin
         .from("organizations")
-        .select("id, name, slug, legal_name, created_at")
+        .select(
+          "id, name, slug, legal_name, created_at, seat_limit, price_per_seat, billing_currency, billable",
+        )
         .order("created_at", { ascending: true }),
       admin
         .from("organization_members")
-        .select("organization_id, user_id, role"),
+        .select("organization_id, user_id, role, status"),
       admin.from("profiles").select("id, full_name"),
       admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     ]);
@@ -42,11 +44,16 @@ export default async function AdminPage() {
     slug: o.slug,
     legalName: o.legal_name,
     createdAt: o.created_at,
+    seatLimit: o.seat_limit,
+    pricePerSeat: Number(o.price_per_seat ?? 0),
+    billingCurrency: o.billing_currency,
+    billable: o.billable,
     members: (members ?? [])
       .filter((m) => m.organization_id === o.id)
       .map((m) => ({
         userId: m.user_id,
         role: m.role,
+        status: m.status === "suspended" ? "suspended" : "active",
         email: emailById.get(m.user_id) ?? "",
         fullName: nameById.get(m.user_id) ?? "",
       })),

@@ -600,6 +600,7 @@ export type Database = {
           id: string
           organization_id: string
           role: Database["public"]["Enums"]["org_role"]
+          status: string
           user_id: string
         }
         Insert: {
@@ -607,6 +608,7 @@ export type Database = {
           id?: string
           organization_id: string
           role?: Database["public"]["Enums"]["org_role"]
+          status?: string
           user_id: string
         }
         Update: {
@@ -614,6 +616,7 @@ export type Database = {
           id?: string
           organization_id?: string
           role?: Database["public"]["Enums"]["org_role"]
+          status?: string
           user_id?: string
         }
         Relationships: [
@@ -629,6 +632,8 @@ export type Database = {
       organizations: {
         Row: {
           address: string | null
+          billable: boolean
+          billing_currency: string
           brand_accent: string | null
           brand_dark: string | null
           brand_primary: string | null
@@ -641,13 +646,17 @@ export type Database = {
           legal_name: string | null
           logo_url: string | null
           name: string
+          price_per_seat: number
           report_footer: string | null
+          seat_limit: number | null
           slug: string
           updated_at: string
           website: string | null
         }
         Insert: {
           address?: string | null
+          billable?: boolean
+          billing_currency?: string
           brand_accent?: string | null
           brand_dark?: string | null
           brand_primary?: string | null
@@ -660,13 +669,17 @@ export type Database = {
           legal_name?: string | null
           logo_url?: string | null
           name: string
+          price_per_seat?: number
           report_footer?: string | null
+          seat_limit?: number | null
           slug: string
           updated_at?: string
           website?: string | null
         }
         Update: {
           address?: string | null
+          billable?: boolean
+          billing_currency?: string
           brand_accent?: string | null
           brand_dark?: string | null
           brand_primary?: string | null
@@ -679,7 +692,9 @@ export type Database = {
           legal_name?: string | null
           logo_url?: string | null
           name?: string
+          price_per_seat?: number
           report_footer?: string | null
+          seat_limit?: number | null
           slug?: string
           updated_at?: string
           website?: string | null

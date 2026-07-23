@@ -48,6 +48,9 @@ export function OrgCreateSheet({
   const [address, setAddress] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [exportCredit, setExportCredit] = useState(true);
+  const [seatLimit, setSeatLimit] = useState("");
+  const [pricePerSeat, setPricePerSeat] = useState("");
+  const [billable, setBillable] = useState(true);
   const [saving, setSaving] = useState(false);
 
   // Limpia el formulario al abrir (ajuste de estado en render, sin efecto).
@@ -68,6 +71,9 @@ export function OrgCreateSheet({
       setAddress("");
       setLogoUrl("");
       setExportCredit(true);
+      setSeatLimit("");
+      setPricePerSeat("");
+      setBillable(true);
       setSaving(false);
     }
   }
@@ -80,6 +86,16 @@ export function OrgCreateSheet({
   async function save() {
     if (!name.trim()) {
       toast.error("Ponle un nombre a la empresa.");
+      return;
+    }
+    const limit = seatLimit.trim() === "" ? null : Number(seatLimit);
+    if (limit !== null && (!Number.isFinite(limit) || limit < 0)) {
+      toast.error("El tope de asientos debe ser un número (o vacío = sin tope).");
+      return;
+    }
+    const price = pricePerSeat.trim() === "" ? 0 : Number(pricePerSeat);
+    if (!Number.isFinite(price) || price < 0) {
+      toast.error("El precio por asiento debe ser un número ≥ 0.");
       return;
     }
     setSaving(true);
@@ -96,6 +112,9 @@ export function OrgCreateSheet({
       address,
       logoUrl,
       exportCredit,
+      seatLimit: limit,
+      pricePerSeat: price,
+      billable,
     });
     setSaving(false);
     if (!res.ok) {
@@ -209,6 +228,43 @@ export function OrgCreateSheet({
                 onChange={(e) => setAddress(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-3 rounded-md border p-3">
+            <Label className="text-xs font-medium text-muted-foreground">
+              Plan de facturación
+            </Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="o-seats">Tope de asientos</Label>
+                <Input
+                  id="o-seats"
+                  inputMode="numeric"
+                  placeholder="Sin tope"
+                  value={seatLimit}
+                  onChange={(e) => setSeatLimit(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="o-price">Precio/asiento/mes (US$)</Label>
+                <Input
+                  id="o-price"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  value={pricePerSeat}
+                  onChange={(e) => setPricePerSeat(e.target.value)}
+                />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={billable}
+                onChange={(e) => setBillable(e.target.checked)}
+                className="size-4 rounded border-input"
+              />
+              Entra al reporte de facturación
+            </label>
           </div>
 
           <label className="flex items-center gap-2 text-sm">

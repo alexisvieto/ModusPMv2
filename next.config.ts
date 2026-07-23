@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // mupdf es WASM: no debe pasar por el bundler del servidor.
   serverExternalPackages: ["mupdf"],
+  // Sube el logo del tenant (hasta 2 MB) por Server Action; el default es 1 MB.
+  experimental: { serverActions: { bodySizeLimit: "2mb" } },
   // Headers de seguridad para todas las rutas (A-05 del security review).
   // Sin CSP por ahora: requiere afinarse para Next (inline) + recharts + la
   // inyección white-label; se deja para post-demo.

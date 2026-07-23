@@ -345,7 +345,8 @@ export function InventoryBoard({
           fr.onerror = reject;
           fr.readAsDataURL(blob);
         });
-        const imgId = wb.addImage({ base64, extension: "png" });
+        const extension = blob.type === "image/jpeg" ? "jpeg" : "png";
+        const imgId = wb.addImage({ base64, extension });
         // Logo 1101×320 → 280×81 px (conserva proporción)
         ws.addImage(imgId, {
           tl: { col: 0, row: 0 },

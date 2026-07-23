@@ -639,10 +639,12 @@ export type Database = {
           brand_primary: string | null
           company_tax_id: string | null
           contact_email: string | null
+          contact_name: string | null
           contact_phone: string | null
           created_at: string
           export_credit: boolean
           id: string
+          industry: string | null
           legal_name: string | null
           logo_url: string | null
           name: string
@@ -662,10 +664,12 @@ export type Database = {
           brand_primary?: string | null
           company_tax_id?: string | null
           contact_email?: string | null
+          contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
           export_credit?: boolean
           id?: string
+          industry?: string | null
           legal_name?: string | null
           logo_url?: string | null
           name: string
@@ -685,10 +689,12 @@ export type Database = {
           brand_primary?: string | null
           company_tax_id?: string | null
           contact_email?: string | null
+          contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
           export_credit?: boolean
           id?: string
+          industry?: string | null
           legal_name?: string | null
           logo_url?: string | null
           name?: string

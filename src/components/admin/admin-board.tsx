@@ -40,6 +40,7 @@ export type OrgRow = {
   name: string;
   slug: string;
   legalName: string | null;
+  industry: string | null;
   createdAt: string;
   seatLimit: number | null;
   pricePerSeat: number;
@@ -200,6 +201,7 @@ export function AdminBoard({ orgs }: { orgs: OrgRow[] }) {
                       <SeatBadge org={o} seats={seats} />
                     </div>
                     <p className="mt-0.5 text-xs text-muted-foreground">
+                      {o.industry ? `${o.industry} · ` : ""}
                       {o.legalName ? `${o.legalName} · ` : ""}creada{" "}
                       {formatDate(new Date(o.createdAt))}
                     </p>

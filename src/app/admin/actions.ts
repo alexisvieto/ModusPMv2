@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { INDUSTRIES, type Industry } from "@/lib/org-options";
 import type { Database } from "@/lib/supabase/database.types";
 
 type Role = Database["public"]["Enums"]["org_role"];
@@ -14,6 +15,8 @@ type OrgInput = {
   name: string;
   legalName: string;
   slug: string;
+  industry: string;
+  contactName: string;
   brandPrimary: string;
   brandAccent: string;
   brandDark: string;
@@ -88,6 +91,10 @@ export async function createOrganization(
       name,
       slug,
       legal_name: clean(input.legalName),
+      industry: INDUSTRIES.includes(input.industry as Industry)
+        ? (input.industry as Industry)
+        : null,
+      contact_name: clean(input.contactName),
       brand_primary: clean(input.brandPrimary),
       brand_accent: clean(input.brandAccent),
       brand_dark: clean(input.brandDark),
@@ -107,6 +114,47 @@ export async function createOrganization(
 
   revalidatePath("/admin");
   return { ok: true, orgId: data.id };
+}
+
+/**
+ * Sube el logo de una organización al bucket público `org-logos` y devuelve
+ * su URL pública. Solo super-admin. PNG/JPEG hasta 2 MB (los reportes lo
+ * incrustan tal cual; SVG no sirve para el Excel).
+ */
+export async function uploadOrgLogo(
+  form: FormData,
+): Promise<{ ok: boolean; error?: string; url?: string }> {
+  const gate = await requirePlatformAdmin();
+  if (!gate.ok) return { ok: false, error: gate.error };
+
+  const file = form.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "No se recibió el archivo." };
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    return { ok: false, error: "El logo no debe pesar más de 2 MB." };
+  }
+  const ext =
+    file.type === "image/png"
+      ? "png"
+      : file.type === "image/jpeg"
+        ? "jpg"
+        : null;
+  if (!ext) {
+    return { ok: false, error: "Formato no válido. Usa PNG o JPEG." };
+  }
+
+  const admin = createAdminClient();
+  // Nombre único sin depender de Date/Math (no disponibles): bytes aleatorios.
+  const path = `${randomBytes(16).toString("hex")}.${ext}`;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const { error } = await admin.storage
+    .from("org-logos")
+    .upload(path, bytes, { contentType: file.type, upsert: false });
+  if (error) return { ok: false, error: "No se pudo subir el logo." };
+
+  const { data } = admin.storage.from("org-logos").getPublicUrl(path);
+  return { ok: true, url: data.publicUrl };
 }
 
 /** Tope de asientos: entero ≥ 0, o null (sin tope). */

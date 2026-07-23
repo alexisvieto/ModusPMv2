@@ -21,7 +21,7 @@ export default async function AdminPage() {
       admin
         .from("organizations")
         .select(
-          "id, name, slug, legal_name, created_at, seat_limit, price_per_seat, billing_currency, billable",
+          "id, name, slug, legal_name, industry, created_at, seat_limit, price_per_seat, billing_currency, billable",
         )
         .order("created_at", { ascending: true }),
       admin
@@ -43,6 +43,7 @@ export default async function AdminPage() {
     name: o.name,
     slug: o.slug,
     legalName: o.legal_name,
+    industry: o.industry,
     createdAt: o.created_at,
     seatLimit: o.seat_limit,
     pricePerSeat: Number(o.price_per_seat ?? 0),

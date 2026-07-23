@@ -11,6 +11,7 @@ export type Brand = {
   website: string | null;
   email: string | null;
   phone: string | null;
+  contactName: string | null; // persona de contacto
   address: string | null;
   logoUrl: string | null;
   exportCredit: boolean; // muestra el crédito discreto "by Nexera" en exportables
@@ -25,6 +26,7 @@ export const DEFAULT_BRAND: Brand = {
   website: null,
   email: null,
   phone: null,
+  contactName: null,
   address: null,
   logoUrl: null,
   exportCredit: true,
@@ -40,6 +42,7 @@ export type OrgBranding = {
   logo_url: string | null;
   website: string | null;
   contact_email: string | null;
+  contact_name: string | null;
   contact_phone: string | null;
   address: string | null;
   export_credit: boolean | null;
@@ -61,6 +64,7 @@ export function brandFromOrg(org: OrgBranding | null | undefined): Brand {
     website: org.website,
     email: org.contact_email,
     phone: org.contact_phone,
+    contactName: org.contact_name,
     address: org.address,
     logoUrl: safeLogo(org.logo_url),
     exportCredit: org.export_credit ?? true,
@@ -74,4 +78,4 @@ export function brandInitial(brand: Brand): string {
 
 /** Columnas a seleccionar de `organizations` para construir el Brand. */
 export const ORG_BRAND_COLUMNS =
-  "name, legal_name, brand_primary, brand_accent, brand_dark, logo_url, website, contact_email, contact_phone, address, export_credit";
+  "name, legal_name, brand_primary, brand_accent, brand_dark, logo_url, website, contact_email, contact_name, contact_phone, address, export_credit";

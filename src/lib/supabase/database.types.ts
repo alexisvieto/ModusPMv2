@@ -594,6 +594,502 @@ export type Database = {
           },
         ]
       }
+      nexus_catalog: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          description: string
+          division_id: string | null
+          id: string
+          manufacturer: string | null
+          notes: string | null
+          organization_id: string
+          unit: string
+          unit_price: number
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          description: string
+          division_id?: string | null
+          id?: string
+          manufacturer?: string | null
+          notes?: string | null
+          organization_id: string
+          unit?: string
+          unit_price?: number
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          description?: string
+          division_id?: string | null
+          id?: string
+          manufacturer?: string | null
+          notes?: string | null
+          organization_id?: string
+          unit?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_catalog_category_id_organization_id_fkey"
+            columns: ["category_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_categories"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "nexus_catalog_division_id_organization_id_fkey"
+            columns: ["division_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_divisions"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "nexus_catalog_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          division_id: string
+          id: string
+          is_default: boolean
+          name: string
+          organization_id: string
+          sort_order: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          division_id: string
+          id?: string
+          is_default?: boolean
+          name: string
+          organization_id: string
+          sort_order?: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          division_id?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          organization_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_categories_division_id_organization_id_fkey"
+            columns: ["division_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_divisions"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "nexus_categories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_divisions: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_divisions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_estimate_categories: {
+        Row: {
+          category_id: string | null
+          collapsed: boolean
+          color: string | null
+          created_at: string
+          duracion: number
+          estimate_id: string
+          id: string
+          name: string
+          organization_id: string
+          paralelo: boolean
+          sort_order: number
+        }
+        Insert: {
+          category_id?: string | null
+          collapsed?: boolean
+          color?: string | null
+          created_at?: string
+          duracion?: number
+          estimate_id: string
+          id?: string
+          name: string
+          organization_id: string
+          paralelo?: boolean
+          sort_order?: number
+        }
+        Update: {
+          category_id?: string | null
+          collapsed?: boolean
+          color?: string | null
+          created_at?: string
+          duracion?: number
+          estimate_id?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          paralelo?: boolean
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_estimate_categories_estimate_id_organization_id_fkey"
+            columns: ["estimate_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_estimates"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "nexus_estimate_categories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_estimate_items: {
+        Row: {
+          created_at: string
+          description: string
+          estimate_category_id: string
+          id: string
+          kind: string
+          manufacturer: string | null
+          organization_id: string
+          qty: number
+          sort_order: number
+          unit: string
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          estimate_category_id: string
+          id?: string
+          kind?: string
+          manufacturer?: string | null
+          organization_id: string
+          qty?: number
+          sort_order?: number
+          unit?: string
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          estimate_category_id?: string
+          id?: string
+          kind?: string
+          manufacturer?: string | null
+          organization_id?: string
+          qty?: number
+          sort_order?: number
+          unit?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_estimate_items_estimate_category_id_organization_id_fkey"
+            columns: ["estimate_category_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_estimate_categories"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "nexus_estimate_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_estimate_labor: {
+        Row: {
+          created_at: string
+          daily_rate: number
+          dias: number
+          estimate_category_id: string
+          id: string
+          organization_id: string
+          personas: number
+          profile_id: string | null
+          profile_name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          daily_rate: number
+          dias?: number
+          estimate_category_id: string
+          id?: string
+          organization_id: string
+          personas?: number
+          profile_id?: string | null
+          profile_name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          daily_rate?: number
+          dias?: number
+          estimate_category_id?: string
+          id?: string
+          organization_id?: string
+          personas?: number
+          profile_id?: string | null
+          profile_name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_estimate_labor_estimate_category_id_organization_id_fkey"
+            columns: ["estimate_category_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_estimate_categories"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "nexus_estimate_labor_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nexus_estimate_labor_profile_id_organization_id_fkey"
+            columns: ["profile_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_labor_profiles"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      nexus_estimates: {
+        Row: {
+          client_name: string | null
+          created_at: string
+          division_id: string | null
+          elaborated_by: string | null
+          elaborated_user_id: string | null
+          estimate_date: string
+          id: string
+          name: string
+          odoo_code: string | null
+          organization_id: string
+          params: Json
+          status: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          client_name?: string | null
+          created_at?: string
+          division_id?: string | null
+          elaborated_by?: string | null
+          elaborated_user_id?: string | null
+          estimate_date?: string
+          id?: string
+          name: string
+          odoo_code?: string | null
+          organization_id: string
+          params?: Json
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          client_name?: string | null
+          created_at?: string
+          division_id?: string | null
+          elaborated_by?: string | null
+          elaborated_user_id?: string | null
+          estimate_date?: string
+          id?: string
+          name?: string
+          odoo_code?: string | null
+          organization_id?: string
+          params?: Json
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_estimates_division_id_organization_id_fkey"
+            columns: ["division_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "nexus_divisions"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "nexus_estimates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_labor_profiles: {
+        Row: {
+          created_at: string
+          daily_rate: number
+          id: string
+          name: string
+          organization_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          daily_rate?: number
+          id?: string
+          name: string
+          organization_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          daily_rate?: number
+          id?: string
+          name?: string
+          organization_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_labor_profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_odoo_config: {
+        Row: {
+          api_key_set: boolean
+          db: string | null
+          default_product_id: number | null
+          is_enabled: boolean
+          login: string | null
+          organization_id: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          api_key_set?: boolean
+          db?: string | null
+          default_product_id?: number | null
+          is_enabled?: boolean
+          login?: string | null
+          organization_id: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          api_key_set?: boolean
+          db?: string | null
+          default_product_id?: number | null
+          is_enabled?: boolean
+          login?: string | null
+          organization_id?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_odoo_config_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_settings: {
+        Row: {
+          financiamiento: number
+          ind_campo: number
+          ind_oficina: number
+          itbms: number
+          organization_id: string
+          updated_at: string
+          utilidad: number
+        }
+        Insert: {
+          financiamiento?: number
+          ind_campo?: number
+          ind_oficina?: number
+          itbms?: number
+          organization_id: string
+          updated_at?: string
+          utilidad?: number
+        }
+        Update: {
+          financiamiento?: number
+          ind_campo?: number
+          ind_oficina?: number
+          itbms?: number
+          organization_id?: string
+          updated_at?: string
+          utilidad?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -1833,7 +2329,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_write: { Args: { org: string }; Returns: boolean }
       clear_org_ai_key: { Args: { p_org: string }; Returns: undefined }
+      clear_org_odoo_key: { Args: { p_org: string }; Returns: undefined }
       cost_summary: {
         Args: { p_project_id: string }
         Returns: {
@@ -1844,41 +2342,56 @@ export type Database = {
           n: number
         }[]
       }
-      get_org_ai_key: { Args: { p_org: string }; Returns: string }
-      has_org_role: {
-        Args: { org: string; roles: Database["public"]["Enums"]["org_role"][] }
-        Returns: boolean
-      }
       fatsat_clone_protocols: {
         Args: { p_source: string; p_target: string }
         Returns: number
+      }
+      get_org_ai_key: { Args: { p_org: string }; Returns: string }
+      get_org_odoo_key: { Args: { p_org: string }; Returns: string }
+      has_org_role: {
+        Args: { org: string; roles: Database["public"]["Enums"]["org_role"][] }
+        Returns: boolean
       }
       import_cost_entries: {
         Args: { p_project_id: string; p_rows: Json }
         Returns: number
       }
       inventory_mark_spare: {
-        Args: { p_project: string; p_description: string; p_product: string; p_qty: number }
+        Args: {
+          p_description: string
+          p_product: string
+          p_project: string
+          p_qty: number
+        }
         Returns: undefined
       }
       inventory_use_spare: {
         Args: {
-          p_project: string
           p_description: string
-          p_product: string
-          p_qty: number
           p_note?: string
+          p_product: string
+          p_project: string
+          p_qty: number
         }
         Returns: undefined
       }
       is_org_member: { Args: { org: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
+      nexus_save_estimate: {
+        Args: { p_categories: Json; p_estimate: string; p_header: Json }
+        Returns: undefined
+      }
+      nexus_seed_org_defaults: { Args: { p_org: string }; Returns: undefined }
       save_report_entries: {
         Args: { p_entries: Json; p_report_id: string }
         Returns: undefined
       }
       set_baseline: { Args: { p_project_id: string }; Returns: undefined }
       set_org_ai_key: {
+        Args: { p_key: string; p_org: string }
+        Returns: undefined
+      }
+      set_org_odoo_key: {
         Args: { p_key: string; p_org: string }
         Returns: undefined
       }
@@ -2069,7 +2582,13 @@ export const Constants = {
         "consumible",
       ],
       inventory_location: ["en_proyecto", "en_galera"],
-      inventory_status: ["por_recibir", "instalado", "faltante", "defectuoso", "spare"],
+      inventory_status: [
+        "por_recibir",
+        "instalado",
+        "faltante",
+        "defectuoso",
+        "spare",
+      ],
       org_role: ["owner", "admin", "project_manager", "member", "viewer"],
       project_status: [
         "planning",

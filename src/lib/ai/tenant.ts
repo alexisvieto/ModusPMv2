@@ -142,7 +142,9 @@ export async function recordAiUsage(opts: {
       output_tokens: opts.outputTokens,
       cost_usd: costUsd(opts.model, opts.inputTokens, opts.outputTokens),
     });
-  } catch {
-    // El registro de gasto no debe tumbar una respuesta ya generada.
+  } catch (err) {
+    // El registro de gasto no debe tumbar una respuesta ya generada, pero
+    // sí se loguea: si falla persistente, el control de presupuesto se ciega.
+    console.error("[recordAiUsage] no se pudo registrar el uso de IA:", err);
   }
 }

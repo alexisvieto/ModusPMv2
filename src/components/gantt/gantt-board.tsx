@@ -223,7 +223,7 @@ export function GanttBoard({
 
   async function addPhase() {
     const supabase = createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("tasks")
       .insert({
         organization_id: project.organization_id,
@@ -238,6 +238,10 @@ export function GanttBoard({
       })
       .select()
       .maybeSingle();
+    if (error) {
+      toast.error("No se pudo crear la fase. Intenta de nuevo.");
+      return;
+    }
     router.refresh();
     if (data) openEditor(data);
   }
@@ -245,7 +249,7 @@ export function GanttBoard({
   async function addTask(phase: Task) {
     const supabase = createClient();
     const kids = childrenOf.get(phase.id) ?? [];
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("tasks")
       .insert({
         organization_id: project.organization_id,
@@ -264,6 +268,10 @@ export function GanttBoard({
       })
       .select()
       .maybeSingle();
+    if (error) {
+      toast.error("No se pudo crear la tarea. Intenta de nuevo.");
+      return;
+    }
     router.refresh();
     if (data) openEditor(data);
   }

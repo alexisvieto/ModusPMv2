@@ -28,6 +28,18 @@ export async function POST(req: Request) {
   if (!analysis)
     return NextResponse.json({ error: "Análisis no encontrado." }, { status: 404 });
 
+  // Aprobar es destructivo (consolida resultados, mueve evidencia, borra PDFs):
+  // admin-gating real en el servidor, no solo RLS de miembro.
+  const { data: canApprove } = await supabase.rpc("has_org_role", {
+    org: analysis.organization_id,
+    roles: ["owner", "admin"],
+  });
+  if (!canApprove)
+    return NextResponse.json(
+      { error: "Solo un administrador puede aprobar el análisis." },
+      { status: 403 },
+    );
+
   const { data: sheets } = await supabase
     .from("takeoff_sheets")
     .select("id, pdf_path, snapshot_path")

@@ -319,6 +319,7 @@ export async function POST(req: Request) {
     }
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[takeoff] sheet-count falló", { sheetId, error: detail });
-    return NextResponse.json({ error: `El conteo falló: ${clip(detail, 200)}` }, { status: 500 });
+    // Mensaje genérico al cliente: el detalle (traceback/URL interna) solo en logs.
+    return NextResponse.json({ error: "El conteo falló. Podés reintentarlo." }, { status: 500 });
   }
 }

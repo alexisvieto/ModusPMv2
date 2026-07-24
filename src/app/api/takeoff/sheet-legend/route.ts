@@ -130,7 +130,10 @@ export async function POST(req: Request) {
         contentType: "image/jpeg",
         upsert: true,
       });
-    if (upImg.error) return await fail(`No se pudo guardar la imagen del plano: ${upImg.error.message}`);
+    if (upImg.error) {
+      console.error("[takeoff] sheet-legend guardar-imagen", { sheetId, error: upImg.error.message });
+      return await fail("No se pudo guardar la imagen del plano.");
+    }
 
     // 3) Diccionario PROPUESTO (todo editable en la confirmación):
     //    convenciones (sugerencia) → biblioteca (aprendido) → visión (este plano).
@@ -177,6 +180,7 @@ export async function POST(req: Request) {
     }
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[takeoff] sheet-legend falló", { sheetId, phase, error: detail });
-    return await fail(`Falló en «${phase}»: ${clip(detail, 240)}`);
+    // Mensaje genérico al cliente/job_error: el detalle (traceback/URL interna) solo en logs.
+    return await fail("El procesamiento de la hoja falló. Podés reintentarlo.");
   }
 }

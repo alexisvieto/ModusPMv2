@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { InventoryBoard } from "@/components/inventory/inventory-board";
 import { brandFromOrg, ORG_BRAND_COLUMNS } from "@/lib/brand";
+import { stripIloSecrets } from "@/lib/inventory";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function InventarioPage({
@@ -41,11 +42,7 @@ export default async function InventarioPage({
 
   // Seguridad: no difundir las credenciales iLO en el listado (irían a cada
   // cliente). El editor y el export las cargan bajo demanda por ítem.
-  const safeItems = (items ?? []).map((it) => ({
-    ...it,
-    ilo_password: null,
-    ilo_license: null,
-  }));
+  const safeItems = stripIloSecrets(items ?? []);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6 md:p-8">

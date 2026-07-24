@@ -60,3 +60,14 @@ export const CATEGORY_OPTIONS = (Object.keys(INV_CATEGORY) as Cat[]).map((v) => 
   v,
   l: INV_CATEGORY[v],
 }));
+
+/**
+ * Seguridad: nunca difundir las credenciales iLO (password/licencia) en el
+ * listado que se manda al cliente — irían a cada browser. El editor y el export
+ * las cargan bajo demanda por ítem. Devuelve una copia; no muta la entrada.
+ */
+export function stripIloSecrets<
+  T extends { ilo_password: string | null; ilo_license: string | null },
+>(items: T[]): T[] {
+  return items.map((it) => ({ ...it, ilo_password: null, ilo_license: null }));
+}

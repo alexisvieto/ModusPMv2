@@ -195,14 +195,22 @@ export function AppShell({
         <Link
           href="/app"
           onClick={onNavigate}
+          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <LayoutGrid className="size-4" />
+          Portal
+        </Link>
+        <Link
+          href="/app/inicio"
+          onClick={onNavigate}
           className={cn(
             "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-            pathname === "/app"
+            pathname === "/app/inicio"
               ? "bg-primary/10 font-medium text-primary"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
         >
-          <LayoutGrid className="size-4" />
+          <FolderKanban className="size-4" />
           Proyectos
         </Link>
 

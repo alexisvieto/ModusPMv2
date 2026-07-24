@@ -1,0 +1,69 @@
+import { redirect } from "next/navigation";
+
+import { AppShell } from "@/components/app-shell";
+import { brandFromOrg, ORG_BRAND_COLUMNS, type OrgBranding } from "@/lib/brand";
+import { createClient } from "@/lib/supabase/server";
+
+// Chrome del módulo PM (Modus PM). Envuelve /app/inicio, /app/proyectos/* y
+// /app/ayuda con el AppShell. El route group (pm) es invisible en la URL: las
+// rutas del PM no cambian.
+export default async function PmLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name, title")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  const { data: isPlatformAdmin } = await supabase.rpc("is_platform_admin");
+
+  let org: (OrgBranding & { id: string; slug: string }) | null = null;
+  if (membership) {
+    const { data } = await supabase
+      .from("organizations")
+      .select(`id, slug, ${ORG_BRAND_COLUMNS}`)
+      .eq("id", membership.organization_id)
+      .maybeSingle();
+    org = data;
+  }
+  const brand = brandFromOrg(org);
+
+  const { data: projects } = await supabase
+    .from("projects")
+    .select("id, name, code, client_name, status")
+    .eq(
+      "organization_id",
+      membership?.organization_id ?? "00000000-0000-0000-0000-000000000000",
+    )
+    .order("created_at", { ascending: true });
+
+  return (
+    <AppShell
+      projects={projects ?? []}
+      org={org}
+      profile={profile}
+      userEmail={user.email ?? null}
+      brand={brand}
+      isPlatformAdmin={!!isPlatformAdmin}
+    >
+      {children}
+    </AppShell>
+  );
+}

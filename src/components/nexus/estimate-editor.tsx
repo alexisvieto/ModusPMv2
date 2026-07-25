@@ -54,6 +54,7 @@ type EstimateProps = {
   id: string;
   name: string;
   client_name: string;
+  project_name: string;
   odoo_code: string;
   elaborated_by: string;
   estimate_date: string;
@@ -109,6 +110,7 @@ export function EstimateEditor({
 
   const [name, setName] = useState(estimate.name);
   const [client, setClient] = useState(estimate.client_name);
+  const [projectName, setProjectName] = useState(estimate.project_name);
   const [odooCode, setOdooCode] = useState(estimate.odoo_code);
   const [elaboratedBy, setElaboratedBy] = useState(estimate.elaborated_by);
   const [date, setDate] = useState(estimate.estimate_date);
@@ -244,6 +246,7 @@ export function EstimateEditor({
     const header = {
       name: name.trim() || "Cotización sin nombre",
       client_name: client.trim(),
+      project_name: projectName.trim(),
       odoo_code: odooCode.trim(),
       elaborated_by: elaboratedBy.trim(),
       estimate_date: date,
@@ -380,6 +383,7 @@ export function EstimateEditor({
       await exportEstimateExcel({
         name,
         client,
+        project_name: projectName,
         odoo_code: odooCode,
         elaborated_by: elaboratedBy,
         date,
@@ -413,18 +417,16 @@ export function EstimateEditor({
     key: keyof typeof pct,
     label: string,
   ) => (
-    <label className="flex flex-col gap-1">
+    <label className="flex items-center gap-1.5 whitespace-nowrap">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-1">
-        <input
-          type="number"
-          step="0.5"
-          className={inpR + " w-20"}
-          value={pct[key]}
-          onChange={(e) => setPct({ ...pct, [key]: e.target.value })}
-        />
-        <span className="text-xs text-muted-foreground">%</span>
-      </div>
+      <input
+        type="number"
+        step="0.5"
+        className={inpR + " w-12 px-1 text-center"}
+        value={pct[key]}
+        onChange={(e) => setPct({ ...pct, [key]: e.target.value })}
+      />
+      <span className="text-xs text-muted-foreground">%</span>
     </label>
   );
 
@@ -438,15 +440,25 @@ export function EstimateEditor({
       </datalist>
 
       {/* barra superior */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="space-y-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           <input
-            className="min-w-0 flex-1 border-0 bg-transparent text-2xl font-semibold tracking-tight outline-none disabled:opacity-100"
+            className="min-w-[12rem] flex-1 border-0 bg-transparent text-2xl font-semibold tracking-tight outline-none disabled:opacity-100"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nombre de la cotización"
             disabled={locked}
           />
+          <label className="flex shrink-0 items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">Cliente</span>
+            <input
+              className={inp + " h-8 w-44"}
+              value={client}
+              onChange={(e) => setClient(e.target.value)}
+              placeholder="Cliente"
+              disabled={locked}
+            />
+          </label>
           <span
             className={cn(
               "shrink-0 rounded-full px-2.5 py-1 text-xs font-medium",
@@ -485,15 +497,6 @@ export function EstimateEditor({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="mr-1 text-right">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Precio de venta
-            </p>
-            <p className="text-xl font-bold tabular-nums text-[#0f2044]">
-              {money(grand.total)}
-            </p>
-          </div>
-
           {estimate.status === "borrador" && (
             <Button variant="outline" size="sm" onClick={() => changeStatus("en_revision")} disabled={statusBusy}>
               Enviar a revisión
@@ -551,60 +554,61 @@ export function EstimateEditor({
 
       {/* Todo el contenido editable se bloquea cuando la cotización está aprobada. */}
       <fieldset disabled={locked} className="min-w-0 space-y-6 border-0 p-0">
-      {/* encabezado + parámetros */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-3 rounded-lg border p-4">
-          <div className="grid grid-cols-2 gap-3">
-            <label className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Cliente</span>
-              <input className={inp} value={client} onChange={(e) => setClient(e.target.value)} />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Código Odoo (S00XXX)</span>
-              <input
-                className={inp}
-                value={odooCode}
-                onChange={(e) => setOdooCode(e.target.value)}
-                placeholder="Ej. S00549"
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Fecha</span>
-              <input type="date" className={inp} value={date} onChange={(e) => setDate(e.target.value)} />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">Elaborado por</span>
-              <input className={inp} value={elaboratedBy} onChange={(e) => setElaboratedBy(e.target.value)} />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">División</span>
-              <select
-                className={inp}
-                value={divisionId ?? ""}
-                onChange={(e) => setDivisionId(e.target.value || null)}
-              >
-                <option value="">—</option>
-                {divisions.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+      {/* encabezado: campos principales (horizontal, prominente) + % compactos abajo */}
+      <div className="space-y-4 rounded-lg border p-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Nombre del proyecto</span>
+            <input
+              className={inp}
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="Ej. Radio Enlaces Cerro Galera"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Código Odoo (S00XXX)</span>
+            <input
+              className={inp}
+              value={odooCode}
+              onChange={(e) => setOdooCode(e.target.value)}
+              placeholder="Ej. S00549"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Fecha</span>
+            <input type="date" className={inp} value={date} onChange={(e) => setDate(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">Elaborado por</span>
+            <input className={inp} value={elaboratedBy} onChange={(e) => setElaboratedBy(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">División</span>
+            <select
+              className={inp}
+              value={divisionId ?? ""}
+              onChange={(e) => setDivisionId(e.target.value || null)}
+            >
+              <option value="">—</option>
+              {divisions.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
-        <div className="rounded-lg border p-4">
-          <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Parámetros (%)
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {pctField("ind_oficina", "Ind. Oficina")}
-            {pctField("ind_campo", "Ind. Campo")}
-            {pctField("financiamiento", "Financiamiento")}
-            {pctField("utilidad", "Utilidad")}
-            {pctField("itbms", "ITBMS")}
-          </div>
+        <div className="flex flex-nowrap items-center gap-x-4 overflow-x-auto border-t pt-3">
+          <span className="shrink-0 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Parámetros %
+          </span>
+          {pctField("ind_oficina", "Ind. Oficina")}
+          {pctField("ind_campo", "Ind. Campo")}
+          {pctField("financiamiento", "Financiam.")}
+          {pctField("utilidad", "Utilidad")}
+          {pctField("itbms", "ITBMS")}
         </div>
       </div>
 

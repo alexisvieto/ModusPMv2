@@ -28,7 +28,7 @@ export default async function EstimatePage({
   const { data: est } = await supabase
     .from("nexus_estimates")
     .select(
-      "id, organization_id, division_id, name, client_name, odoo_code, elaborated_by, estimate_date, params, status, version_group, version_no, is_current",
+      "id, organization_id, division_id, name, client_name, project_name, odoo_code, elaborated_by, estimate_date, params, status, version_group, version_no, is_current",
     )
     .eq("id", estimateId)
     .maybeSingle();
@@ -139,6 +139,7 @@ export default async function EstimatePage({
         id: est.id,
         name: est.name,
         client_name: est.client_name ?? "",
+        project_name: est.project_name ?? "",
         odoo_code: est.odoo_code ?? "",
         elaborated_by: est.elaborated_by ?? "",
         estimate_date: est.estimate_date,

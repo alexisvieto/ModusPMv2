@@ -926,6 +926,7 @@ export type Database = {
           odoo_code: string | null
           organization_id: string
           params: Json
+          project_name: string | null
           status: string
           total: number
           updated_at: string
@@ -947,6 +948,7 @@ export type Database = {
           odoo_code?: string | null
           organization_id: string
           params?: Json
+          project_name?: string | null
           status?: string
           total?: number
           updated_at?: string
@@ -968,6 +970,7 @@ export type Database = {
           odoo_code?: string | null
           organization_id?: string
           params?: Json
+          project_name?: string | null
           status?: string
           total?: number
           updated_at?: string

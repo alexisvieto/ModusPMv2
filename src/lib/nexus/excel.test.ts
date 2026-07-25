@@ -5,6 +5,7 @@ import { buildEstimateWorkbook, type ExcelData } from "@/lib/nexus/excel";
 const ASSA: ExcelData = {
   name: "ASSA Control de Acceso",
   client: "ASSA",
+  project_name: "Migración Keri Systems",
   odoo_code: "S00549",
   elaborated_by: "Alexis Vieto",
   date: "2026-06-23",

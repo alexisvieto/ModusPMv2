@@ -31,6 +31,7 @@ export type ExcelCategory = {
 export type ExcelData = {
   name: string;
   client: string;
+  project_name: string;
   odoo_code: string;
   elaborated_by: string;
   date: string;
@@ -109,7 +110,13 @@ export async function buildEstimateWorkbook(data: ExcelData): Promise<any> {
     { c: "A1", v: data.name || "Cotización", sz: 12 },
     {
       c: "E1",
-      v: `Cliente: ${data.client || "—"}${data.odoo_code ? `   ·   Odoo: ${data.odoo_code}` : ""}`,
+      v: [
+        `Cliente: ${data.client || "—"}`,
+        data.project_name ? `Proyecto: ${data.project_name}` : "",
+        data.odoo_code ? `Odoo: ${data.odoo_code}` : "",
+      ]
+        .filter(Boolean)
+        .join("   ·   "),
       sz: 10,
     },
     { c: "I1", v: `Elaborado: ${data.elaborated_by || "—"}`, sz: 10 },
@@ -299,7 +306,7 @@ export async function buildEstimateWorkbook(data: ExcelData): Promise<any> {
 
   wsR.mergeCells("A2:F2");
   const rs = wsR.getCell("A2");
-  rs.value = `Cliente: ${data.client || "—"}   |   Elaborado por: ${data.elaborated_by || "—"}   |   Fecha: ${data.date}`;
+  rs.value = `Cliente: ${data.client || "—"}${data.project_name ? `   |   Proyecto: ${data.project_name}` : ""}   |   Elaborado por: ${data.elaborated_by || "—"}   |   Fecha: ${data.date}`;
   rs.font = { name: FONT, size: 10, color: { argb: "FF595959" } };
   rs.fill = fillOf(LGRAY);
 
@@ -400,7 +407,7 @@ export async function buildEstimateWorkbook(data: ExcelData): Promise<any> {
 
   wsG.mergeCells(2, 2, 2, 8);
   const gsub = wsG.getCell("B2");
-  gsub.value = `Cliente: ${data.client || "—"}   |   Elaborado por: ${data.elaborated_by || "—"}   |   Fecha: ${data.date}`;
+  gsub.value = `Cliente: ${data.client || "—"}${data.project_name ? `   |   Proyecto: ${data.project_name}` : ""}   |   Elaborado por: ${data.elaborated_by || "—"}   |   Fecha: ${data.date}`;
   gsub.font = { name: FONT, size: 10, color: { argb: "FF595959" } };
 
   wsG.mergeCells(4, 2, 4, 8);

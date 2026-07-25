@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { sendToOdoo } from "@/app/app/nexus/odoo-actions";
 
 import { Button } from "@/components/ui/button";
+import { CatalogCombobox } from "@/components/nexus/catalog-combobox";
+import { EstimateGantt } from "@/components/nexus/estimate-gantt";
 import {
   addBuckets,
   bucketsFrom,
@@ -126,7 +128,6 @@ export function EstimateEditor({
   const catalogByDesc = new Map(
     catalog.map((c) => [c.description.trim().toLowerCase(), c]),
   );
-  const catalogOptions = [...new Set(catalog.map((c) => c.description))];
 
   // % en porcentaje (string) para edición cómoda; se convierten a fracción.
   // toFixed(6) limpia el ruido de punto flotante (0.07×100 = 7.000000000000001).
@@ -434,13 +435,6 @@ export function EstimateEditor({
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6 md:p-8">
-      {/* autocompletar de descripciones desde el catálogo aprendido */}
-      <datalist id="nexus-catalog">
-        {catalogOptions.map((d) => (
-          <option key={d} value={d} />
-        ))}
-      </datalist>
-
       {/* barra superior */}
       <div className="space-y-3">
         <div className="flex min-w-0 flex-wrap items-center gap-3">
@@ -684,13 +678,12 @@ export function EstimateEditor({
                     {c.items.map((it) => (
                       <tr key={it.uid} className="border-b last:border-0">
                         <td className="px-3 py-1">
-                          <input
+                          <CatalogCombobox
                             className={inp}
-                            list="nexus-catalog"
                             value={it.description}
                             placeholder="Detector de humo…"
-                            onChange={(e) => {
-                              const v = e.target.value;
+                            catalog={catalog}
+                            onChange={(v) => {
                               const m = catalogByDesc.get(v.trim().toLowerCase());
                               const patch: Partial<EItem> = { description: v };
                               if (m) {
@@ -700,6 +693,13 @@ export function EstimateEditor({
                               }
                               patchItem(c.uid, it.uid, patch);
                             }}
+                            onPick={(m) =>
+                              patchItem(c.uid, it.uid, {
+                                description: m.description,
+                                manufacturer: m.manufacturer ?? "",
+                                unit_price: String(m.unit_price),
+                              })
+                            }
                           />
                         </td>
                         <td className="px-3 py-1">
@@ -855,6 +855,17 @@ export function EstimateEditor({
           </Button>
         </div>
       </div>
+
+      {/* cronograma (Gantt en pantalla) */}
+      <EstimateGantt
+        cats={cats.map((c) => ({
+          name: c.name,
+          color: c.color,
+          duracion: Number(c.duracion) || 0,
+          paralelo: c.paralelo,
+          labor: c.labor.map((l) => ({ profile_name: l.profile_name })),
+        }))}
+      />
 
       {/* resumen (cascada) */}
       <div className="rounded-lg border">

@@ -6,6 +6,7 @@
 // =========================================================
 
 import type { CostKind, NexusParams } from "@/lib/nexus/calc";
+import { scheduleGantt } from "@/lib/nexus/schedule";
 
 export type ExcelItem = {
   description: string;
@@ -374,24 +375,14 @@ export async function buildEstimateWorkbook(data: ExcelData): Promise<any> {
     pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
   });
 
-  // Programación en días hábiles: secuencial; "paralelo" arranca junto al anterior.
-  type GRow = { name: string; recurso: string; dur: number; start: number; end: number; color: string; paralelo: boolean };
-  const grows: GRow[] = [];
-  let cursor = 1, prevStart = 1, maxEnd = 0;
-  data.categories.forEach((c, i) => {
-    const dur = Math.max(0, Math.round(c.duracion || 0));
-    const start = c.paralelo && i > 0 ? prevStart : cursor;
-    const end = dur > 0 ? start + dur - 1 : start - 1;
-    prevStart = start;
-    if (dur > 0) {
-      cursor = Math.max(cursor, end + 1);
-      maxEnd = Math.max(maxEnd, end);
-    }
-    const recurso = [...new Set(c.labor.map((l) => l.profile_name))].join(", ") || "—";
-    grows.push({ name: c.name, recurso, dur, start, end, color: hexToArgb(c.color), paralelo: !!c.paralelo && i > 0 });
-  });
-  const totalDays = maxEnd;
+  // Programación en días hábiles (misma lógica que la app: schedule.ts).
+  const { rows: srows, totalDays } = scheduleGantt(data.categories);
+  const grows = srows.map((r) => ({ ...r, color: hexToArgb(r.color) }));
   const dayCols = Math.min(60, Math.max(10, totalDays));
+  const gridBorder = {
+    right: { style: "thin" as const, color: { argb: "FFDCE3EF" } },
+    bottom: { style: "thin" as const, color: { argb: "FFDCE3EF" } },
+  };
 
   wsG.columns = [
     { width: 5 }, { width: 40 }, { width: 20 }, { width: 8 }, { width: 9 }, { width: 9 }, { width: 12 }, { width: 10 },
@@ -429,6 +420,7 @@ export async function buildEstimateWorkbook(data: ExcelData): Promise<any> {
     c.font = { name: FONT, bold: true, size: 7, color: { argb: WHITE } };
     c.fill = fillOf(DAYNAVY);
     c.alignment = { horizontal: "center" };
+    c.border = gridBorder;
   }
 
   let gr = 7;
@@ -443,8 +435,11 @@ export async function buildEstimateWorkbook(data: ExcelData): Promise<any> {
     rr.getCell(7).value = row.paralelo ? "Paralelo" : "Secuencial";
     rr.getCell(8).value = row.dur > 0 ? `${row.dur} d` : "—";
     for (let ci = 1; ci <= 8; ci++) rr.getCell(ci).font = { name: FONT, size: 9 };
-    for (let d = row.start; d <= row.end && d <= dayCols; d++) {
-      rr.getCell(8 + d).fill = fillOf(row.color);
+    // grilla de días visible + barra de color en el rango del sistema
+    for (let d = 1; d <= dayCols; d++) {
+      const dc = rr.getCell(8 + d);
+      dc.border = gridBorder;
+      if (row.dur > 0 && d >= row.start && d <= row.end) dc.fill = fillOf(row.color);
     }
     gr++;
   });

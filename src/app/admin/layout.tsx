@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 
+import { AdminSignOut } from "./admin-signout";
 import { Toaster } from "@/components/ui/sonner";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,13 +38,16 @@ export default async function AdminLayout({
             Plataforma
           </span>
         </div>
-        <Link
-          href="/app"
-          className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" />
-          Volver a la app
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            href="/app"
+            className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" />
+            Volver a la app
+          </Link>
+          <AdminSignOut />
+        </div>
       </header>
       <main className="min-w-0">{children}</main>
       <Toaster position="top-right" />

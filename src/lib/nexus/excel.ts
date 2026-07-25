@@ -22,6 +22,9 @@ export type ExcelLabor = {
 };
 export type ExcelCategory = {
   name: string;
+  color?: string | null;
+  duracion: number;
+  paralelo: boolean;
   items: ExcelItem[];
   labor: ExcelLabor[];
 };
@@ -41,9 +44,19 @@ const BLUE = "FF1A3460";
 const ALT = "FFF0F4FF";
 const WHITE = "FFFFFFFF";
 const GRAY = "FF999999";
+const YELL = "FFFFF2CC";
+const LGRAY = "FFF4F6FB";
+const DAYNAVY = "FF1F3864";
 const FONT = "Calibri";
 const ACC =
   '_(* #,##0.00_);_(* (#,##0.00);_(* "-"??_);_(@_)';
+
+function hexToArgb(hex: string | null | undefined): string {
+  const h = (hex ?? "").replace("#", "");
+  if (h.length === 6) return "FF" + h.toUpperCase();
+  if (h.length === 3) return "FF" + h.split("").map((c) => c + c).join("").toUpperCase();
+  return "FF94A3B8";
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type WS = any;
@@ -265,6 +278,184 @@ export async function buildEstimateWorkbook(data: ExcelData): Promise<any> {
       : 0;
     cell.numFmt = ACC;
   }
+
+  // ==================== HOJA "Rentabilidad" ====================
+  // Simulador what-if: los % (amarillo) recalculan los KPIs; el Costo Base se
+  // vincula a los directos de la hoja Análisis.
+  const AN = "'Análisis de Presupuesto'";
+  const wsR: WS = wb.addWorksheet("Rentabilidad", {
+    views: [{ showGridLines: false }],
+    pageSetup: { fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+  });
+  wsR.columns = [{ width: 42 }, { width: 16 }, { width: 16 }, { width: 16 }, { width: 16 }, { width: 16 }];
+
+  wsR.mergeCells("A1:F1");
+  const rt = wsR.getCell("A1");
+  rt.value = `RENTABILIDAD DEL PROYECTO  ·  ${data.name || "Cotización"}`;
+  rt.font = { name: FONT, bold: true, size: 14, color: { argb: WHITE } };
+  rt.fill = fillOf(NAVY);
+  rt.alignment = { vertical: "middle" };
+  wsR.getRow(1).height = 24;
+
+  wsR.mergeCells("A2:F2");
+  const rs = wsR.getCell("A2");
+  rs.value = `Cliente: ${data.client || "—"}   |   Elaborado por: ${data.elaborated_by || "—"}   |   Fecha: ${data.date}`;
+  rs.font = { name: FONT, size: 10, color: { argb: "FF595959" } };
+  rs.fill = fillOf(LGRAY);
+
+  wsR.mergeCells("A4:F4");
+  const rpb = wsR.getCell("A4");
+  rpb.value = "▌  PARÁMETROS — modificá los % para simular escenarios";
+  rpb.font = { name: FONT, bold: true, size: 10, color: { argb: WHITE } };
+  rpb.fill = fillOf(BLUE);
+
+  wsR.getCell("A5").value = "Editable →";
+  wsR.getCell("A5").font = { name: FONT, size: 9, color: { argb: GRAY } };
+  const rlab = ["Ind. Oficina", "Ind. Campo", "Financiamiento", "Utilidad", "ITBMS"];
+  const rcol = ["B", "C", "D", "E", "F"];
+  const pv = [p.ind_oficina, p.ind_campo, p.financiamiento, p.utilidad, p.itbms];
+  rcol.forEach((col, i) => {
+    const lc = wsR.getCell(`${col}5`);
+    lc.value = rlab[i];
+    lc.font = { name: FONT, bold: true, size: 9, color: { argb: "FF595959" } };
+    lc.fill = fillOf(LGRAY);
+    const vc = wsR.getCell(`${col}6`);
+    vc.value = pv[i];
+    vc.numFmt = "0.0%";
+    vc.font = { name: FONT, bold: true, size: 11, color: { argb: "FF0000FF" } };
+    vc.fill = fillOf(YELL);
+  });
+
+  wsR.mergeCells("A8:F8");
+  const rab = wsR.getCell("A8");
+  rab.value = "▌  ANÁLISIS DE RENTABILIDAD";
+  rab.font = { name: FONT, bold: true, size: 10, color: { argb: WHITE } };
+  rab.fill = fillOf(BLUE);
+
+  const kpis: [number, string, string, boolean, boolean][] = [
+    [9, "Costo Base (Material + M.O. + Herramienta + Flete)", `${AN}!D${totalRow}+${AN}!E${totalRow}+${AN}!F${totalRow}+${AN}!G${totalRow}`, false, false],
+    [10, "Indirectos de Oficina", "B9*B6", false, false],
+    [11, "Indirectos de Campo", "B9*C6", false, false],
+    [12, "Financiamiento", "(B9+B10+B11)*D6", false, false],
+    [13, "Utilidad generada ($)", "(B9+B10+B11+B12)*E6", false, false],
+    [14, "Subtotal sin ITBMS", "B9+B10+B11+B12+B13", false, false],
+    [15, "ITBMS", "B14*F6", false, false],
+    [16, "TOTAL FACTURADO AL CLIENTE", "B14+B15", false, true],
+    [17, "Margen de Utilidad (%)", "IF(B14=0,0,B13/B14)", true, true],
+  ];
+  for (const [row, label, formula, pct, hi] of kpis) {
+    const a = wsR.getCell(`A${row}`);
+    a.value = label;
+    a.font = { name: FONT, bold: hi, size: hi ? 11 : 10, color: { argb: hi ? NAVY : "FF000000" } };
+    if (hi) a.fill = fillOf(YELL);
+    const b = wsR.getCell(`B${row}`);
+    b.value = { formula };
+    b.numFmt = pct ? "0.0%" : ACC;
+    b.font = { name: FONT, bold: hi, size: hi ? 12 : 10, color: { argb: hi ? NAVY : "FF000000" } };
+    if (hi) b.fill = fillOf(YELL);
+  }
+
+  wsR.mergeCells("A19:F19");
+  const rnote = wsR.getCell("A19");
+  rnote.value =
+    "💡  Los valores en amarillo son editables. Modificá los % de arriba para simular escenarios; el Costo Base se vincula a la hoja Análisis.";
+  rnote.font = { name: FONT, size: 8, color: { argb: GRAY } };
+
+  // ==================== HOJA "Gantt" ====================
+  const wsG: WS = wb.addWorksheet("Gantt", {
+    views: [{ showGridLines: false }],
+    pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+  });
+
+  // Programación en días hábiles: secuencial; "paralelo" arranca junto al anterior.
+  type GRow = { name: string; recurso: string; dur: number; start: number; end: number; color: string; paralelo: boolean };
+  const grows: GRow[] = [];
+  let cursor = 1, prevStart = 1, maxEnd = 0;
+  data.categories.forEach((c, i) => {
+    const dur = Math.max(0, Math.round(c.duracion || 0));
+    const start = c.paralelo && i > 0 ? prevStart : cursor;
+    const end = dur > 0 ? start + dur - 1 : start - 1;
+    prevStart = start;
+    if (dur > 0) {
+      cursor = Math.max(cursor, end + 1);
+      maxEnd = Math.max(maxEnd, end);
+    }
+    const recurso = [...new Set(c.labor.map((l) => l.profile_name))].join(", ") || "—";
+    grows.push({ name: c.name, recurso, dur, start, end, color: hexToArgb(c.color), paralelo: !!c.paralelo && i > 0 });
+  });
+  const totalDays = maxEnd;
+  const dayCols = Math.min(60, Math.max(10, totalDays));
+
+  wsG.columns = [
+    { width: 5 }, { width: 40 }, { width: 20 }, { width: 8 }, { width: 9 }, { width: 9 }, { width: 12 }, { width: 10 },
+    ...Array.from({ length: dayCols }, () => ({ width: 3 })),
+  ];
+
+  wsG.mergeCells(1, 2, 1, 8);
+  const gt = wsG.getCell("B1");
+  gt.value = data.name || "Cotización";
+  gt.font = { name: FONT, bold: true, size: 14 };
+  gt.fill = fillOf(LGRAY);
+  wsG.getRow(1).height = 22;
+
+  wsG.mergeCells(2, 2, 2, 8);
+  const gsub = wsG.getCell("B2");
+  gsub.value = `Cliente: ${data.client || "—"}   |   Elaborado por: ${data.elaborated_by || "—"}   |   Fecha: ${data.date}`;
+  gsub.font = { name: FONT, size: 10, color: { argb: "FF595959" } };
+
+  wsG.mergeCells(4, 2, 4, 8);
+  const gn = wsG.getCell("B4");
+  gn.value = "Duración estimada — Días hábiles (referencial para cotización)";
+  gn.font = { name: FONT, size: 10, color: { argb: "FF6B7A99" } };
+
+  const gh = ["#", "Solución / Sistema", "Recurso", "Días", "Inicio", "Fin", "Relación", "Resumen"];
+  const ghr = wsG.getRow(6);
+  gh.forEach((h, i) => {
+    const c = ghr.getCell(i + 1);
+    c.value = h;
+    c.font = { name: FONT, bold: true, size: 9, color: { argb: WHITE } };
+    c.fill = fillOf(BLUE);
+  });
+  for (let d = 1; d <= dayCols; d++) {
+    const c = ghr.getCell(8 + d);
+    c.value = d;
+    c.font = { name: FONT, bold: true, size: 7, color: { argb: WHITE } };
+    c.fill = fillOf(DAYNAVY);
+    c.alignment = { horizontal: "center" };
+  }
+
+  let gr = 7;
+  grows.forEach((row, i) => {
+    const rr = wsG.getRow(gr);
+    rr.getCell(1).value = i + 1;
+    rr.getCell(2).value = row.name;
+    rr.getCell(3).value = row.recurso;
+    rr.getCell(4).value = row.dur;
+    rr.getCell(5).value = row.dur > 0 ? row.start : "—";
+    rr.getCell(6).value = row.dur > 0 ? row.end : "—";
+    rr.getCell(7).value = row.paralelo ? "Paralelo" : "Secuencial";
+    rr.getCell(8).value = row.dur > 0 ? `${row.dur} d` : "—";
+    for (let ci = 1; ci <= 8; ci++) rr.getCell(ci).font = { name: FONT, size: 9 };
+    for (let d = row.start; d <= row.end && d <= dayCols; d++) {
+      rr.getCell(8 + d).fill = fillOf(row.color);
+    }
+    gr++;
+  });
+
+  const gtr = gr + 1;
+  wsG.mergeCells(gtr, 2, gtr, 7);
+  const gtc = wsG.getCell(`B${gtr}`);
+  gtc.value = "DURACIÓN TOTAL ESTIMADA DEL PROYECTO";
+  gtc.font = { name: FONT, bold: true, size: 11, color: { argb: WHITE } };
+  for (let ci = 1; ci <= 8; ci++) wsG.getRow(gtr).getCell(ci).fill = fillOf(NAVY);
+  const gtv = wsG.getCell(`H${gtr}`);
+  gtv.value = `${totalDays} días`;
+  gtv.font = { name: FONT, bold: true, size: 11, color: { argb: "FFE8A020" } };
+
+  const gnote = wsG.getCell(`B${gtr + 2}`);
+  gnote.value =
+    "* Duración referencial en días hábiles (lunes a viernes). Las fechas exactas se confirman al adjudicarse el proyecto.";
+  gnote.font = { name: FONT, size: 8, color: { argb: GRAY } };
 
   return wb;
 }

@@ -44,6 +44,8 @@ type ECat = {
   category_id: string | null;
   name: string;
   color: string | null;
+  duracion: string;
+  paralelo: boolean;
   items: EItem[];
   labor: ELabor[];
 };
@@ -193,7 +195,7 @@ export function EstimateEditor({
     }
     setCats((cs) => [
       ...cs,
-      { uid: uid(), category_id: oc.id, name: oc.name, color: oc.color, items: [], labor: [] },
+      { uid: uid(), category_id: oc.id, name: oc.name, color: oc.color, duracion: "0", paralelo: false, items: [], labor: [] },
     ]);
     setPickCat("");
   }
@@ -254,6 +256,8 @@ export function EstimateEditor({
       name: c.name,
       color: c.color,
       sort_order: ci,
+      duracion: Number(c.duracion) || 0,
+      paralelo: c.paralelo,
       items: c.items.map((it, ii) => ({
         description: it.description,
         manufacturer: it.manufacturer,
@@ -382,6 +386,9 @@ export function EstimateEditor({
         params: paramsFrac,
         categories: cats.map((c) => ({
           name: c.name,
+          color: c.color,
+          duracion: Number(c.duracion) || 0,
+          paralelo: c.paralelo,
           items: c.items.map((it) => ({
             description: it.description,
             manufacturer: it.manufacturer,
@@ -616,6 +623,29 @@ export function EstimateEditor({
                   <span className="truncate font-semibold">{c.name}</span>
                 </div>
                 <div className="flex items-center gap-3">
+                  <label
+                    className="flex items-center gap-1 text-xs text-muted-foreground"
+                    title="Duración estimada (días hábiles) para el Gantt"
+                  >
+                    Días
+                    <input
+                      type="number"
+                      className="h-7 w-14 rounded-md border border-input bg-transparent px-1.5 text-right text-xs outline-none focus-visible:border-ring"
+                      value={c.duracion}
+                      onChange={(e) => patchCat(c.uid, { duracion: e.target.value })}
+                    />
+                  </label>
+                  <label
+                    className="flex items-center gap-1 text-xs text-muted-foreground"
+                    title="Corre en paralelo con el sistema anterior"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={c.paralelo}
+                      onChange={(e) => patchCat(c.uid, { paralelo: e.target.checked })}
+                    />
+                    Paralelo
+                  </label>
                   <span className="text-sm tabular-nums text-muted-foreground">
                     Subtotal categoría:{" "}
                     <span className="font-medium text-foreground">{money(bd.total)}</span>

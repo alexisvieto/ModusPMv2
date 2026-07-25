@@ -45,7 +45,7 @@ export default async function EstimatePage({
   ] = await Promise.all([
       supabase
         .from("nexus_estimate_categories")
-        .select("id, category_id, name, color, sort_order")
+        .select("id, category_id, name, color, sort_order, duracion, paralelo")
         .eq("estimate_id", estimateId)
         .order("sort_order", { ascending: true }),
       supabase
@@ -108,6 +108,8 @@ export default async function EstimatePage({
     category_id: c.category_id,
     name: c.name,
     color: c.color,
+    duracion: String(c.duracion ?? 0),
+    paralelo: c.paralelo ?? false,
     items: items
       .filter((i) => i.estimate_category_id === c.id)
       .map((i) => ({

@@ -18,6 +18,9 @@ const ASSA: ExcelData = {
   categories: [
     {
       name: "Control de Acceso",
+      color: "#f39c12",
+      duracion: 3,
+      paralelo: false,
       items: [
         {
           description: "Migración Base de datos Keri Systems",
@@ -83,5 +86,34 @@ describe("buildEstimateWorkbook — hoja Análisis de Presupuesto", () => {
     // Total general (fila 8) suma las categorías.
     expect(ws.getCell("A8").value).toBe("TOTAL GENERAL DEL PROYECTO");
     expect(formula(ws.getCell("N8").value)).toBe("N4");
+  });
+});
+
+describe("buildEstimateWorkbook — hojas Rentabilidad y Gantt", () => {
+  it("Rentabilidad: % editables + KPIs que recalculan (what-if)", async () => {
+    const wb = await buildEstimateWorkbook(ASSA);
+    const wsR = wb.getWorksheet("Rentabilidad");
+    expect(wsR).toBeTruthy();
+    expect(String(wsR.getCell("A1").value)).toContain("RENTABILIDAD");
+    // % editables (fila 6) inicializados con los parámetros de la cotización
+    expect(wsR.getCell("B6").value).toBeCloseTo(0.1, 9); // ind_oficina
+    expect(wsR.getCell("E6").value).toBeCloseTo(0.2, 9); // utilidad
+    // Costo base vinculado a los directos de la hoja Análisis
+    expect(formula(wsR.getCell("B9").value)).toContain("Análisis de Presupuesto");
+    // KPIs recalculan desde los % editables (no valores fijos)
+    expect(formula(wsR.getCell("B10").value)).toBe("B9*B6");
+    expect(formula(wsR.getCell("B16").value)).toBe("B14+B15"); // total facturado
+    expect(formula(wsR.getCell("B17").value)).toBe("IF(B14=0,0,B13/B14)"); // margen
+  });
+
+  it("Gantt: fila por sistema con días / inicio / fin", async () => {
+    const wb = await buildEstimateWorkbook(ASSA);
+    const wsG = wb.getWorksheet("Gantt");
+    expect(wsG).toBeTruthy();
+    expect(wsG.getCell("B6").value).toBe("Solución / Sistema");
+    expect(wsG.getCell("B7").value).toBe("Control de Acceso");
+    expect(wsG.getCell("D7").value).toBe(3); // días
+    expect(wsG.getCell("E7").value).toBe(1); // inicio
+    expect(wsG.getCell("F7").value).toBe(3); // fin = 1 + 3 - 1
   });
 });

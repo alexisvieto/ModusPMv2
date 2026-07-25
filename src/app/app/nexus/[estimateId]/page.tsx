@@ -60,7 +60,7 @@ export default async function EstimatePage({
         .order("sort_order", { ascending: true }),
       supabase
         .from("nexus_divisions")
-        .select("id, name")
+        .select("id, name, is_mixed")
         .eq("organization_id", est.organization_id)
         .order("sort_order", { ascending: true }),
       supabase
@@ -161,7 +161,11 @@ export default async function EstimatePage({
         name: p.name,
         daily_rate: Number(p.daily_rate),
       }))}
-      divisions={(divisions ?? []).map((d) => ({ id: d.id, name: d.name }))}
+      divisions={(divisions ?? []).map((d) => ({
+        id: d.id,
+        name: d.name,
+        is_mixed: d.is_mixed,
+      }))}
       catalog={(catalog ?? []).map((c) => ({
         description: c.description,
         manufacturer: c.manufacturer,

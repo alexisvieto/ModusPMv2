@@ -101,7 +101,7 @@ export function EstimateEditor({
   initialCategories: ECat[];
   orgCategories: { id: string; name: string; color: string | null; division_id: string }[];
   laborProfiles: { id: string; name: string; daily_rate: number }[];
-  divisions: { id: string; name: string }[];
+  divisions: { id: string; name: string; is_mixed: boolean }[];
   catalog: { description: string; manufacturer: string | null; unit_price: number }[];
   isAdmin: boolean;
   versions: { id: string; version_no: number; status: string; is_current: boolean }[];
@@ -235,9 +235,11 @@ export function EstimateEditor({
       cs.map((c) => (c.uid === cu ? { ...c, labor: c.labor.filter((l) => l.uid !== lu) } : c)),
     );
 
-  // categorías de la org disponibles para la división elegida
+  // categorías de la org disponibles para la división elegida.
+  // Las divisiones "mixtas" (Proyecto Mixto) permiten categorías de cualquier división.
+  const divIsMixed = divisions.find((d) => d.id === divisionId)?.is_mixed ?? false;
   const availCats = orgCategories.filter(
-    (c) => !divisionId || c.division_id === divisionId,
+    (c) => !divisionId || divIsMixed || c.division_id === divisionId,
   );
 
   async function persist(): Promise<{ ok: boolean; error?: string }> {
@@ -841,7 +843,9 @@ export function EstimateEditor({
             <option value="">Agregar categoría…</option>
             {availCats.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name}
+                {divIsMixed
+                  ? `${c.name} · ${divisions.find((d) => d.id === c.division_id)?.name ?? ""}`
+                  : c.name}
               </option>
             ))}
           </select>

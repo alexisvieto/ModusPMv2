@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Layers, Network, Settings, SlidersHorizontal, Wind, Zap, type LucideIcon } from "lucide-react";
+import { Blocks, Layers, Network, Settings, ShieldCheck, SlidersHorizontal, Wind, Zap, type LucideIcon } from "lucide-react";
 
 import { NewEstimateButton } from "@/components/nexus/new-estimate-button";
 import { createClient } from "@/lib/supabase/server";
@@ -14,6 +14,8 @@ const NEXUS_STATUS_LABEL: Record<string, string> = {
 // Ícono por división (por nombre; fallback genérico para otras orgs/divisiones).
 function iconForDivision(name: string): LucideIcon {
   const n = name.toLowerCase();
+  if (n.includes("mixto") || n.includes("mixta")) return Blocks;
+  if (n.includes("especiales")) return ShieldCheck;
   if (n.includes("telecom") || n.includes("sistemas")) return Network;
   if (n.includes("hvac") || n.includes("aire") || n.includes("clima")) return Wind;
   if (n.includes("energy") || n.includes("energía") || n.includes("solar")) return Zap;

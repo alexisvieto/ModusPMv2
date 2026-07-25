@@ -79,6 +79,12 @@ export default async function EstimatePage({
         .order("version_no", { ascending: true }),
     ]);
 
+  const { data: settings } = await supabase
+    .from("nexus_settings")
+    .select("review_teams_email")
+    .eq("organization_id", est.organization_id)
+    .maybeSingle();
+
   const catIds = (cats ?? []).map((c) => c.id);
   const [itemsRes, laborRes] = await Promise.all([
     catIds.length
@@ -172,6 +178,7 @@ export default async function EstimatePage({
         unit_price: Number(c.unit_price),
       }))}
       isAdmin={!!isAdmin}
+      reviewTeamsEmail={settings?.review_teams_email ?? ""}
       versions={(versionRows ?? []).map((v) => ({
         id: v.id,
         version_no: v.version_no,

@@ -34,8 +34,13 @@ export default async function NexusGestionPage() {
     );
   }
 
-  const [{ data: divisions }, { data: categories }, { data: profiles }, { data: catalog }] =
-    await Promise.all([
+  const [
+    { data: divisions },
+    { data: categories },
+    { data: profiles },
+    { data: catalog },
+    { data: settings },
+  ] = await Promise.all([
       supabase
         .from("nexus_divisions")
         .select("id, name")
@@ -56,6 +61,11 @@ export default async function NexusGestionPage() {
         .select("id, description, manufacturer, unit_price, division_id")
         .eq("organization_id", orgId)
         .order("description", { ascending: true }),
+      supabase
+        .from("nexus_settings")
+        .select("review_teams_email")
+        .eq("organization_id", orgId)
+        .maybeSingle(),
     ]);
 
   return (
@@ -90,6 +100,7 @@ export default async function NexusGestionPage() {
           unit_price: Number(c.unit_price),
           division_id: c.division_id,
         }))}
+        reviewEmail={settings?.review_teams_email ?? ""}
       />
     </div>
   );

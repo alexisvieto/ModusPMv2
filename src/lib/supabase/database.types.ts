@@ -1080,6 +1080,7 @@ export type Database = {
           ind_oficina: number
           itbms: number
           organization_id: string
+          review_teams_email: string | null
           updated_at: string
           utilidad: number
         }
@@ -1089,6 +1090,7 @@ export type Database = {
           ind_oficina?: number
           itbms?: number
           organization_id: string
+          review_teams_email?: string | null
           updated_at?: string
           utilidad?: number
         }
@@ -1098,6 +1100,7 @@ export type Database = {
           ind_oficina?: number
           itbms?: number
           organization_id?: string
+          review_teams_email?: string | null
           updated_at?: string
           utilidad?: number
         }

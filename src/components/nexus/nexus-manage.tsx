@@ -28,12 +28,14 @@ export function NexusManage({
   categories,
   profiles: profilesInit,
   catalog: catalogInit,
+  reviewEmail: reviewEmailInit,
 }: {
   orgId: string;
   divisions: Div[];
   categories: Cat[];
   profiles: Prof[];
   catalog: CatItem[];
+  reviewEmail: string;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -41,6 +43,17 @@ export function NexusManage({
   const [profiles, setProfiles] = useState<Prof[]>(profilesInit);
   const [catalog, setCatalog] = useState<CatItem[]>(catalogInit);
   const [search, setSearch] = useState("");
+  const [reviewEmail, setReviewEmail] = useState(reviewEmailInit);
+
+  // Correo de Teams del aprobador (para "Enviar a revisión"). Guarda al perder foco.
+  async function saveReviewEmail() {
+    const { error } = await supabase
+      .from("nexus_settings")
+      .update({ review_teams_email: reviewEmail.trim() || null })
+      .eq("organization_id", orgId);
+    if (error) return toast.error("No se pudo guardar el correo del aprobador.");
+    toast.success("Aprobador guardado.");
+  }
 
   // nuevos
   const [newDiv, setNewDiv] = useState("");
@@ -131,6 +144,33 @@ export function NexusManage({
 
   return (
     <div className="space-y-10">
+      {/* ── Revisión / Aprobación (Teams) ── */}
+      <section>
+        <h2 className="mb-3 text-sm font-semibold">Revisión / Aprobación</h2>
+        <div className="rounded-lg border p-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium">
+              Aprobador — correo de Teams (opcional)
+            </span>
+            <input
+              type="email"
+              className={inp + " max-w-md"}
+              value={reviewEmail}
+              placeholder="gerente@empresa.com"
+              onChange={(e) => setReviewEmail(e.target.value)}
+              onBlur={saveReviewEmail}
+            />
+          </label>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Al dar <b>Enviar a revisión</b> en una cotización, se descarga el
+            Excel y se abre Teams con el mensaje listo. Si pones el correo del
+            gerente aquí, abre el chat directo con él; si lo dejas vacío, Teams
+            abre un chat nuevo y eliges el destinatario. Luego solo adjuntas el
+            Excel y envías.
+          </p>
+        </div>
+      </section>
+
       {/* ── Divisiones y categorías ── */}
       <section>
         <h2 className="mb-3 text-sm font-semibold">Divisiones y categorías</h2>

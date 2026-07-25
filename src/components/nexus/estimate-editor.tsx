@@ -97,6 +97,7 @@ export function EstimateEditor({
   divisions,
   catalog,
   isAdmin,
+  reviewTeamsEmail,
   versions,
 }: {
   estimate: EstimateProps;
@@ -106,6 +107,7 @@ export function EstimateEditor({
   divisions: { id: string; name: string; is_mixed: boolean }[];
   catalog: { description: string; manufacturer: string | null; unit_price: number }[];
   isAdmin: boolean;
+  reviewTeamsEmail: string;
   versions: { id: string; version_no: number; status: string; is_current: boolean }[];
 }) {
   const router = useRouter();
@@ -342,6 +344,31 @@ export function EstimateEditor({
     router.refresh();
   }
 
+  // "Enviar a revisión": descarga el Excel, abre Teams con el mensaje listo
+  // (el usuario adjunta el Excel y envía) y pasa la cotización a en_revisión.
+  async function sendToReview() {
+    if (statusBusy) return;
+    const link = `${window.location.origin}/app/nexus/${estimate.id}`;
+    const msg = [
+      `Cotización lista para revisión: ${name || "(sin nombre)"}`,
+      client ? `Cliente: ${client}` : "",
+      projectName ? `Proyecto: ${projectName}` : "",
+      `Precio de venta: ${money(grand.total)}`,
+      "Adjunto el Excel con el detalle.",
+      `Abrir: ${link}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    // Abrir Teams dentro del gesto del clic (evita bloqueo de popup).
+    let url = "https://teams.microsoft.com/l/chat/0/0?";
+    if (reviewTeamsEmail) url += `users=${encodeURIComponent(reviewTeamsEmail)}&`;
+    url += `message=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+    await exportExcel(); // descarga el .xlsx para adjuntarlo
+    await changeStatus("en_revision");
+    toast.info("Se descargó el Excel y se abrió Teams. Adjuntá el archivo y enviá.");
+  }
+
   async function clone() {
     const supabase = createClient();
     const { data, error } = await supabase.rpc("nexus_clone_estimate", {
@@ -494,7 +521,7 @@ export function EstimateEditor({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {estimate.status === "borrador" && (
-            <Button variant="outline" size="sm" onClick={() => changeStatus("en_revision")} disabled={statusBusy}>
+            <Button variant="outline" size="sm" onClick={sendToReview} disabled={statusBusy}>
               Enviar a revisión
             </Button>
           )}

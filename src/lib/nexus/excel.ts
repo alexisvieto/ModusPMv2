@@ -5,7 +5,13 @@
 // Client-only (usa Blob/descarga); ExcelJS entra por dynamic import.
 // =========================================================
 
-import type { CostKind, NexusParams } from "@/lib/nexus/calc";
+import {
+  addBuckets,
+  bucketsFrom,
+  calcCascade,
+  type CostKind,
+  type NexusParams,
+} from "@/lib/nexus/calc";
 import { scheduleGantt } from "@/lib/nexus/schedule";
 
 export type ExcelItem = {
@@ -63,9 +69,104 @@ function hexToArgb(hex: string | null | undefined): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type WS = any;
 
+// ── Donut de Rentabilidad: composición del precio de venta ──
+// (ExcelJS no crea gráficas nativas; el donut se incrusta como IMAGEN).
+export const DONUT_COLORS = {
+  base: "1F3864",
+  indOficina: "2E5FA3",
+  indCampo: "4472C4",
+  financiamiento: "ED7D31",
+  utilidad: "FFC000",
+  itbms: "C00000",
+};
+
+export type DonutSegment = { label: string; value: number; color: string };
+
+// Puro/testeable: calcula los 6 segmentos desde los costos (cascada canónica).
+export function computeDonutSegments(data: ExcelData): DonutSegment[] {
+  const buckets = data.categories.reduce(
+    (acc, c) =>
+      addBuckets(
+        acc,
+        bucketsFrom(
+          c.items.map((i) => ({ kind: i.kind, qty: i.qty, unit_price: i.unit_price })),
+          c.labor.map((l) => ({
+            personas: l.personas,
+            dias: l.dias,
+            daily_rate: l.daily_rate,
+          })),
+        ),
+      ),
+    { material: 0, manoObra: 0, herramienta: 0, flete: 0 },
+  );
+  const bd = calcCascade(buckets, data.params);
+  return [
+    { label: "Costo Base", value: bd.base, color: DONUT_COLORS.base },
+    { label: "Ind. Oficina", value: bd.indOficina, color: DONUT_COLORS.indOficina },
+    { label: "Ind. Campo", value: bd.indCampo, color: DONUT_COLORS.indCampo },
+    { label: "Financiamiento", value: bd.financiamiento, color: DONUT_COLORS.financiamiento },
+    { label: "Utilidad", value: bd.utilidad, color: DONUT_COLORS.utilidad },
+    { label: "ITBMS", value: bd.itbms, color: DONUT_COLORS.itbms },
+  ];
+}
+
+// Solo navegador (usa canvas). Devuelve el PNG del donut en base64 (sin cabecera).
+export function drawDonutPng(segments: DonutSegment[]): string {
+  const canvas = document.createElement("canvas");
+  const W = 460;
+  const H = 300;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, W, H);
+  const total = segments.reduce((s, x) => s + x.value, 0) || 1;
+  const cx = 110;
+  const cy = 150;
+  const r = 95;
+  const rin = 52;
+  let a0 = -Math.PI / 2;
+  for (const s of segments) {
+    const a1 = a0 + (s.value / total) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, a0, a1);
+    ctx.closePath();
+    ctx.fillStyle = "#" + s.color;
+    ctx.fill();
+    a0 = a1;
+  }
+  ctx.beginPath();
+  ctx.arc(cx, cy, rin, 0, 2 * Math.PI);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.fillStyle = "#0F2044";
+  ctx.textAlign = "center";
+  ctx.font = "bold 12px Calibri, Arial";
+  ctx.fillText("Precio venta", cx, cy - 4);
+  ctx.font = "bold 13px Calibri, Arial";
+  ctx.fillText(total.toLocaleString("es-PA", { maximumFractionDigits: 0 }), cx, cy + 14);
+  let ly = 30;
+  const lx = 235;
+  ctx.textAlign = "left";
+  for (const s of segments) {
+    ctx.fillStyle = "#" + s.color;
+    ctx.fillRect(lx, ly, 14, 14);
+    ctx.fillStyle = "#333333";
+    ctx.font = "12px Calibri, Arial";
+    ctx.fillText(`${s.label} — ${((s.value / total) * 100).toFixed(1)}%`, lx + 20, ly + 12);
+    ly += 26;
+  }
+  return canvas.toDataURL("image/png").split(",")[1];
+}
+
 // Construye el workbook (sin DOM) — separado para poder verificarlo en tests.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function buildEstimateWorkbook(data: ExcelData): Promise<any> {
+export async function buildEstimateWorkbook(
+  data: ExcelData,
+  opts: { donutBase64?: string } = {},
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<any> {
   const excelMod: { default?: unknown } = await import("exceljs");
   const ExcelJS = (excelMod.default ?? excelMod) as {
     Workbook: new () => Record<string, unknown>;
@@ -363,10 +464,22 @@ export async function buildEstimateWorkbook(data: ExcelData): Promise<any> {
     if (hi) b.fill = fillOf(YELL);
   }
 
+  // Donut: composición del precio de venta (imagen, snapshot al exportar).
+  if (opts.donutBase64) {
+    const dTitle = wsR.getCell("H4");
+    dTitle.value = "Composición del precio de venta";
+    dTitle.font = { name: FONT, bold: true, size: 11, color: { argb: NAVY } };
+    const imgId = wb.addImage({ base64: opts.donutBase64, extension: "png" });
+    wsR.addImage(imgId, {
+      tl: { col: 7, row: 4 },
+      ext: { width: 460, height: 300 },
+    });
+  }
+
   wsR.mergeCells("A19:F19");
   const rnote = wsR.getCell("A19");
   rnote.value =
-    "💡  Los valores en amarillo son editables. Modificá los % de arriba para simular escenarios; el Costo Base se vincula a la hoja Análisis.";
+    "💡  Los valores en amarillo son editables. Modificá los % de arriba para simular escenarios; el Costo Base se vincula a la hoja Análisis. (El donut es una foto al momento de exportar.)";
   rnote.font = { name: FONT, size: 8, color: { argb: GRAY } };
 
   // ==================== HOJA "Gantt" ====================
@@ -463,7 +576,8 @@ export async function buildEstimateWorkbook(data: ExcelData): Promise<any> {
 }
 
 export async function exportEstimateExcel(data: ExcelData) {
-  const wb = await buildEstimateWorkbook(data);
+  const donutBase64 = drawDonutPng(computeDonutSegments(data));
+  const wb = await buildEstimateWorkbook(data, { donutBase64 });
   const out = await wb.xlsx.writeBuffer();
   const blob = new Blob([out], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

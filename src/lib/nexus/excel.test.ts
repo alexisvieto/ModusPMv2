@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 
-import { buildEstimateWorkbook, type ExcelData } from "@/lib/nexus/excel";
+import {
+  buildEstimateWorkbook,
+  computeDonutSegments,
+  type ExcelData,
+} from "@/lib/nexus/excel";
 
 const ASSA: ExcelData = {
   name: "ASSA Control de Acceso",
@@ -105,6 +109,23 @@ describe("buildEstimateWorkbook — hojas Rentabilidad y Gantt", () => {
     expect(formula(wsR.getCell("B10").value)).toBe("B9*B6");
     expect(formula(wsR.getCell("B16").value)).toBe("B14+B15"); // total facturado
     expect(formula(wsR.getCell("B17").value)).toBe("IF(B14=0,0,B13/B14)"); // margen
+  });
+
+  it("Donut: 6 segmentos que suman el precio de venta", () => {
+    const segs = computeDonutSegments(ASSA);
+    expect(segs.map((s) => s.label)).toEqual([
+      "Costo Base",
+      "Ind. Oficina",
+      "Ind. Campo",
+      "Financiamiento",
+      "Utilidad",
+      "ITBMS",
+    ]);
+    // La suma de los segmentos = total facturado (2505.01…).
+    const sum = segs.reduce((a, s) => a + s.value, 0);
+    expect(sum).toBeCloseTo(2505.013410816, 6);
+    // Cada segmento con color hex de 6 dígitos.
+    for (const s of segs) expect(s.color).toMatch(/^[0-9A-F]{6}$/i);
   });
 
   it("Gantt: fila por sistema con días / inicio / fin", async () => {

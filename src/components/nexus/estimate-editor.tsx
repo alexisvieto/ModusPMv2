@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Copy, Download, Plus, Ruler, Save, Send, Trash2, Users } from "lucide-react";
+import { Copy, Download, GitBranch, Plus, Ruler, Save, Send, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { sendToOdoo } from "@/app/app/nexus/odoo-actions";
@@ -58,6 +58,8 @@ type EstimateProps = {
   division_id: string | null;
   params: NexusParams;
   status: string;
+  version_no: number;
+  is_current: boolean;
 };
 
 const KINDS: { v: CostKind; l: string }[] = [
@@ -90,6 +92,7 @@ export function EstimateEditor({
   divisions,
   catalog,
   isAdmin,
+  versions,
 }: {
   estimate: EstimateProps;
   initialCategories: ECat[];
@@ -98,6 +101,7 @@ export function EstimateEditor({
   divisions: { id: string; name: string }[];
   catalog: { description: string; manufacturer: string | null; unit_price: number }[];
   isAdmin: boolean;
+  versions: { id: string; version_no: number; status: string; is_current: boolean }[];
 }) {
   const router = useRouter();
 
@@ -341,6 +345,32 @@ export function EstimateEditor({
     router.push(`/app/nexus/${data as string}`);
   }
 
+  async function newVersion() {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("nexus_new_version", {
+      p_estimate: estimate.id,
+    });
+    if (error || !data) {
+      toast.error("No se pudo crear la versión.");
+      return;
+    }
+    toast.success("Nueva versión creada.");
+    router.push(`/app/nexus/${data as string}`);
+  }
+
+  async function makeCurrent() {
+    const supabase = createClient();
+    const { error } = await supabase.rpc("nexus_set_current_version", {
+      p_estimate: estimate.id,
+    });
+    if (error) {
+      toast.error("No se pudo marcar como vigente.");
+      return;
+    }
+    toast.success("Marcada como vigente.");
+    router.refresh();
+  }
+
   async function exportExcel() {
     try {
       await exportEstimateExcel({
@@ -418,6 +448,34 @@ export function EstimateEditor({
           >
             {sm.label}
           </span>
+          {versions.length > 1 ? (
+            <select
+              className="h-8 shrink-0 rounded-md border border-input bg-transparent px-2 text-xs outline-none"
+              value={estimate.id}
+              onChange={(e) => router.push(`/app/nexus/${e.target.value}`)}
+              title="Versiones"
+            >
+              {versions.map((v) => (
+                <option key={v.id} value={v.id}>
+                  v{v.version_no}
+                  {v.is_current ? " · vigente" : ""}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="shrink-0 text-xs text-muted-foreground">
+              v{estimate.version_no}
+            </span>
+          )}
+          {!estimate.is_current && (
+            <button
+              onClick={makeCurrent}
+              className="shrink-0 rounded-full bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning transition-colors hover:bg-warning/20"
+              title="Esta versión no es la vigente del grupo"
+            >
+              No vigente — hacer vigente
+            </button>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="mr-1 text-right">
@@ -459,6 +517,10 @@ export function EstimateEditor({
             <Ruler className="size-4" />
             Planos
           </Link>
+          <Button variant="outline" onClick={newVersion}>
+            <GitBranch className="size-4" />
+            Nueva versión
+          </Button>
           <Button variant="outline" onClick={clone}>
             <Copy className="size-4" />
             Duplicar

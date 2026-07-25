@@ -4,6 +4,13 @@ import { Layers, Network, Settings, SlidersHorizontal, Wind, Zap, type LucideIco
 import { NewEstimateButton } from "@/components/nexus/new-estimate-button";
 import { createClient } from "@/lib/supabase/server";
 
+const NEXUS_STATUS_LABEL: Record<string, string> = {
+  borrador: "Borrador",
+  en_revision: "En revisión",
+  aprobada: "Aprobada",
+  enviada: "Enviada",
+};
+
 // Ícono por división (por nombre; fallback genérico para otras orgs/divisiones).
 function iconForDivision(name: string): LucideIcon {
   const n = name.toLowerCase();
@@ -29,8 +36,9 @@ export default async function NexusHome() {
   const [{ data: estimates }, { data: divisions }] = await Promise.all([
     supabase
       .from("nexus_estimates")
-      .select("id, name, client_name, odoo_code, estimate_date, total, status")
+      .select("id, name, client_name, odoo_code, estimate_date, total, status, version_no")
       .eq("organization_id", orgId)
+      .eq("is_current", true)
       .order("created_at", { ascending: false }),
     supabase
       .from("nexus_divisions")
@@ -92,6 +100,14 @@ export default async function NexusHome() {
                     >
                       {e.name}
                     </Link>
+                    {e.version_no > 1 && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        v{e.version_no}
+                      </span>
+                    )}
+                    <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      {NEXUS_STATUS_LABEL[e.status] ?? e.status}
+                    </span>
                   </td>
                   <td className="px-4 py-2 text-muted-foreground">
                     {e.client_name ?? "—"}

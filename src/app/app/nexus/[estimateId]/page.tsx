@@ -28,7 +28,7 @@ export default async function EstimatePage({
   const { data: est } = await supabase
     .from("nexus_estimates")
     .select(
-      "id, organization_id, division_id, name, client_name, odoo_code, elaborated_by, estimate_date, params, status",
+      "id, organization_id, division_id, name, client_name, odoo_code, elaborated_by, estimate_date, params, status, version_group, version_no, is_current",
     )
     .eq("id", estimateId)
     .maybeSingle();
@@ -41,6 +41,7 @@ export default async function EstimatePage({
     { data: divisions },
     { data: catalog },
     { data: isAdmin },
+    { data: versionRows },
   ] = await Promise.all([
       supabase
         .from("nexus_estimate_categories")
@@ -71,6 +72,11 @@ export default async function EstimatePage({
         org: est.organization_id,
         roles: ["owner", "admin"],
       }),
+      supabase
+        .from("nexus_estimates")
+        .select("id, version_no, status, is_current")
+        .eq("version_group", est.version_group)
+        .order("version_no", { ascending: true }),
     ]);
 
   const catIds = (cats ?? []).map((c) => c.id);
@@ -137,6 +143,8 @@ export default async function EstimatePage({
         division_id: est.division_id,
         params: paramsFrom(est.params),
         status: est.status ?? "borrador",
+        version_no: est.version_no ?? 1,
+        is_current: est.is_current ?? true,
       }}
       initialCategories={initialCategories}
       orgCategories={(orgCats ?? []).map((c) => ({
@@ -157,6 +165,12 @@ export default async function EstimatePage({
         unit_price: Number(c.unit_price),
       }))}
       isAdmin={!!isAdmin}
+      versions={(versionRows ?? []).map((v) => ({
+        id: v.id,
+        version_no: v.version_no,
+        status: v.status,
+        is_current: v.is_current,
+      }))}
     />
   );
 }

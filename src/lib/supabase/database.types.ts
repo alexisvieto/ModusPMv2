@@ -921,6 +921,7 @@ export type Database = {
           elaborated_user_id: string | null
           estimate_date: string
           id: string
+          is_current: boolean
           name: string
           odoo_code: string | null
           organization_id: string
@@ -928,6 +929,8 @@ export type Database = {
           status: string
           total: number
           updated_at: string
+          version_group: string
+          version_no: number
         }
         Insert: {
           approved_at?: string | null
@@ -939,6 +942,7 @@ export type Database = {
           elaborated_user_id?: string | null
           estimate_date?: string
           id?: string
+          is_current?: boolean
           name: string
           odoo_code?: string | null
           organization_id: string
@@ -946,6 +950,8 @@ export type Database = {
           status?: string
           total?: number
           updated_at?: string
+          version_group?: string
+          version_no?: number
         }
         Update: {
           approved_at?: string | null
@@ -957,6 +963,7 @@ export type Database = {
           elaborated_user_id?: string | null
           estimate_date?: string
           id?: string
+          is_current?: boolean
           name?: string
           odoo_code?: string | null
           organization_id?: string
@@ -964,6 +971,8 @@ export type Database = {
           status?: string
           total?: number
           updated_at?: string
+          version_group?: string
+          version_no?: number
         }
         Relationships: [
           {
@@ -2384,11 +2393,16 @@ export type Database = {
       is_org_member: { Args: { org: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
       nexus_clone_estimate: { Args: { p_estimate: string }; Returns: string }
+      nexus_new_version: { Args: { p_estimate: string }; Returns: string }
       nexus_save_estimate: {
         Args: { p_categories: Json; p_estimate: string; p_header: Json }
         Returns: undefined
       }
       nexus_seed_org_defaults: { Args: { p_org: string }; Returns: undefined }
+      nexus_set_current_version: {
+        Args: { p_estimate: string }
+        Returns: undefined
+      }
       nexus_set_estimate_status: {
         Args: { p_estimate: string; p_status: string }
         Returns: undefined

@@ -912,6 +912,8 @@ export type Database = {
       }
       nexus_estimates: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           client_name: string | null
           created_at: string
           division_id: string | null
@@ -928,6 +930,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           client_name?: string | null
           created_at?: string
           division_id?: string | null
@@ -944,6 +948,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           client_name?: string | null
           created_at?: string
           division_id?: string | null
@@ -2377,11 +2383,16 @@ export type Database = {
       }
       is_org_member: { Args: { org: string }; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }
+      nexus_clone_estimate: { Args: { p_estimate: string }; Returns: string }
       nexus_save_estimate: {
         Args: { p_categories: Json; p_estimate: string; p_header: Json }
         Returns: undefined
       }
       nexus_seed_org_defaults: { Args: { p_org: string }; Returns: undefined }
+      nexus_set_estimate_status: {
+        Args: { p_estimate: string; p_status: string }
+        Returns: undefined
+      }
       save_report_entries: {
         Args: { p_entries: Json; p_report_id: string }
         Returns: undefined

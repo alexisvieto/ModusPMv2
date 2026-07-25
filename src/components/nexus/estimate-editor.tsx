@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Download, Plus, Ruler, Save, Send, Trash2, Users } from "lucide-react";
+import { Copy, Download, Plus, Ruler, Save, Send, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { sendToOdoo } from "@/app/app/nexus/odoo-actions";
@@ -19,6 +19,7 @@ import {
 } from "@/lib/nexus/calc";
 import { exportEstimateExcel } from "@/lib/nexus/excel";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
 // ---------- tipos del editor (numéricos como string para edición fluida) ----------
 type EItem = {
@@ -56,6 +57,7 @@ type EstimateProps = {
   estimate_date: string;
   division_id: string | null;
   params: NexusParams;
+  status: string;
 };
 
 const KINDS: { v: CostKind; l: string }[] = [
@@ -64,6 +66,13 @@ const KINDS: { v: CostKind; l: string }[] = [
   { v: "Herramienta", l: "Herramienta" },
   { v: "Flete", l: "Flete" },
 ];
+
+const STATUS_META: Record<string, { label: string; cls: string }> = {
+  borrador: { label: "Borrador", cls: "bg-muted text-muted-foreground" },
+  en_revision: { label: "En revisión", cls: "bg-warning/10 text-warning" },
+  aprobada: { label: "Aprobada", cls: "bg-success/10 text-success" },
+  enviada: { label: "Enviada", cls: "bg-primary/10 text-primary" },
+};
 
 const money = (n: number) =>
   n.toLocaleString("es-PA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -79,12 +88,16 @@ export function EstimateEditor({
   orgCategories,
   laborProfiles,
   divisions,
+  catalog,
+  isAdmin,
 }: {
   estimate: EstimateProps;
   initialCategories: ECat[];
   orgCategories: { id: string; name: string; color: string | null; division_id: string }[];
   laborProfiles: { id: string; name: string; daily_rate: number }[];
   divisions: { id: string; name: string }[];
+  catalog: { description: string; manufacturer: string | null; unit_price: number }[];
+  isAdmin: boolean;
 }) {
   const router = useRouter();
 
@@ -97,7 +110,15 @@ export function EstimateEditor({
   const [cats, setCats] = useState<ECat[]>(initialCategories);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
   const [pickCat, setPickCat] = useState("");
+
+  const locked = estimate.status === "aprobada";
+  const sm = STATUS_META[estimate.status] ?? STATUS_META.borrador;
+  const catalogByDesc = new Map(
+    catalog.map((c) => [c.description.trim().toLowerCase(), c]),
+  );
+  const catalogOptions = [...new Set(catalog.map((c) => c.description))];
 
   // % en porcentaje (string) para edición cómoda; se convierten a fracción.
   // toFixed(6) limpia el ruido de punto flotante (0.07×100 = 7.000000000000001).
@@ -272,11 +293,14 @@ export function EstimateEditor({
   async function sendOdoo() {
     if (saving || sending) return;
     setSending(true);
-    const p = await persist();
-    if (!p.ok) {
-      setSending(false);
-      toast.error(p.error ?? "No se pudo guardar antes de enviar.");
-      return;
+    // Si está aprobada (bloqueada) no se re-persiste: se envía lo ya guardado.
+    if (!locked) {
+      const p = await persist();
+      if (!p.ok) {
+        setSending(false);
+        toast.error(p.error ?? "No se pudo guardar antes de enviar.");
+        return;
+      }
     }
     const r = await sendToOdoo(estimate.id);
     setSending(false);
@@ -286,6 +310,35 @@ export function EstimateEditor({
     } else {
       toast.error(r.error ?? "No se pudo enviar a Odoo.");
     }
+  }
+
+  async function changeStatus(next: string) {
+    if (statusBusy) return;
+    setStatusBusy(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("nexus_set_estimate_status", {
+      p_estimate: estimate.id,
+      p_status: next,
+    });
+    setStatusBusy(false);
+    if (error) {
+      toast.error(error.message || "No se pudo cambiar el estado.");
+      return;
+    }
+    router.refresh();
+  }
+
+  async function clone() {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("nexus_clone_estimate", {
+      p_estimate: estimate.id,
+    });
+    if (error || !data) {
+      toast.error("No se pudo duplicar la cotización.");
+      return;
+    }
+    toast.success("Cotización duplicada.");
+    router.push(`/app/nexus/${data as string}`);
   }
 
   async function exportExcel() {
@@ -340,16 +393,34 @@ export function EstimateEditor({
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6 md:p-8">
+      {/* autocompletar de descripciones desde el catálogo aprendido */}
+      <datalist id="nexus-catalog">
+        {catalogOptions.map((d) => (
+          <option key={d} value={d} />
+        ))}
+      </datalist>
+
       {/* barra superior */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <input
-          className="min-w-0 flex-1 border-0 bg-transparent text-2xl font-semibold tracking-tight outline-none"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Nombre de la cotización"
-        />
-        <div className="flex items-center gap-3">
-          <div className="text-right">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <input
+            className="min-w-0 flex-1 border-0 bg-transparent text-2xl font-semibold tracking-tight outline-none disabled:opacity-100"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Nombre de la cotización"
+            disabled={locked}
+          />
+          <span
+            className={cn(
+              "shrink-0 rounded-full px-2.5 py-1 text-xs font-medium",
+              sm.cls,
+            )}
+          >
+            {sm.label}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="mr-1 text-right">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
               Precio de venta
             </p>
@@ -357,13 +428,41 @@ export function EstimateEditor({
               {money(grand.total)}
             </p>
           </div>
+
+          {estimate.status === "borrador" && (
+            <Button variant="outline" size="sm" onClick={() => changeStatus("en_revision")} disabled={statusBusy}>
+              Enviar a revisión
+            </Button>
+          )}
+          {estimate.status === "en_revision" && (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => changeStatus("borrador")} disabled={statusBusy}>
+                Volver a borrador
+              </Button>
+              {isAdmin && (
+                <Button size="sm" onClick={() => changeStatus("aprobada")} disabled={statusBusy}>
+                  Aprobar
+                </Button>
+              )}
+            </>
+          )}
+          {locked && isAdmin && (
+            <Button variant="outline" size="sm" onClick={() => changeStatus("borrador")} disabled={statusBusy}>
+              Reabrir
+            </Button>
+          )}
+
           <Link
             href={`/app/nexus/${estimate.id}/calculo`}
             className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors hover:bg-muted"
           >
             <Ruler className="size-4" />
-            Análisis de planos
+            Planos
           </Link>
+          <Button variant="outline" onClick={clone}>
+            <Copy className="size-4" />
+            Duplicar
+          </Button>
           <Button variant="outline" onClick={exportExcel}>
             <Download className="size-4" />
             Excel
@@ -372,13 +471,17 @@ export function EstimateEditor({
             <Send className="size-4" />
             {sending ? "Enviando…" : "Enviar a Odoo"}
           </Button>
-          <Button onClick={save} disabled={saving}>
-            <Save className="size-4" />
-            {saving ? "Guardando…" : "Guardar"}
-          </Button>
+          {!locked && (
+            <Button onClick={save} disabled={saving}>
+              <Save className="size-4" />
+              {saving ? "Guardando…" : "Guardar"}
+            </Button>
+          )}
         </div>
       </div>
 
+      {/* Todo el contenido editable se bloquea cuando la cotización está aprobada. */}
+      <fieldset disabled={locked} className="min-w-0 space-y-6 border-0 p-0">
       {/* encabezado + parámetros */}
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-3 rounded-lg border p-4">
@@ -485,9 +588,20 @@ export function EstimateEditor({
                         <td className="px-3 py-1">
                           <input
                             className={inp}
+                            list="nexus-catalog"
                             value={it.description}
                             placeholder="Detector de humo…"
-                            onChange={(e) => patchItem(c.uid, it.uid, { description: e.target.value })}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              const m = catalogByDesc.get(v.trim().toLowerCase());
+                              const patch: Partial<EItem> = { description: v };
+                              if (m) {
+                                if (!it.manufacturer) patch.manufacturer = m.manufacturer ?? "";
+                                if (!(Number(it.unit_price) > 0))
+                                  patch.unit_price = String(m.unit_price);
+                              }
+                              patchItem(c.uid, it.uid, patch);
+                            }}
                           />
                         </td>
                         <td className="px-3 py-1">
@@ -664,6 +778,7 @@ export function EstimateEditor({
           </span>
         </div>
       </div>
+      </fieldset>
     </div>
   );
 }

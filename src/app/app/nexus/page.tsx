@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Layers, Network, Settings, Wind, Zap, type LucideIcon } from "lucide-react";
+import { Layers, Network, Settings, SlidersHorizontal, Wind, Zap, type LucideIcon } from "lucide-react";
 
 import { NewEstimateButton } from "@/components/nexus/new-estimate-button";
 import { createClient } from "@/lib/supabase/server";
@@ -49,6 +49,13 @@ export default async function NexusHome() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/app/nexus/gestion"
+            title="Gestión: catálogo, categorías, perfiles"
+            className="inline-flex size-9 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <SlidersHorizontal className="size-4" />
+          </Link>
           <Link
             href="/app/nexus/config"
             title="Integración con Odoo"

@@ -28,14 +28,20 @@ export default async function EstimatePage({
   const { data: est } = await supabase
     .from("nexus_estimates")
     .select(
-      "id, organization_id, division_id, name, client_name, odoo_code, elaborated_by, estimate_date, params",
+      "id, organization_id, division_id, name, client_name, odoo_code, elaborated_by, estimate_date, params, status",
     )
     .eq("id", estimateId)
     .maybeSingle();
   if (!est) notFound();
 
-  const [{ data: cats }, { data: orgCats }, { data: profiles }, { data: divisions }] =
-    await Promise.all([
+  const [
+    { data: cats },
+    { data: orgCats },
+    { data: profiles },
+    { data: divisions },
+    { data: catalog },
+    { data: isAdmin },
+  ] = await Promise.all([
       supabase
         .from("nexus_estimate_categories")
         .select("id, category_id, name, color, sort_order")
@@ -56,6 +62,15 @@ export default async function EstimatePage({
         .select("id, name")
         .eq("organization_id", est.organization_id)
         .order("sort_order", { ascending: true }),
+      supabase
+        .from("nexus_catalog")
+        .select("description, manufacturer, unit_price")
+        .eq("organization_id", est.organization_id)
+        .order("description", { ascending: true }),
+      supabase.rpc("has_org_role", {
+        org: est.organization_id,
+        roles: ["owner", "admin"],
+      }),
     ]);
 
   const catIds = (cats ?? []).map((c) => c.id);
@@ -121,6 +136,7 @@ export default async function EstimatePage({
         estimate_date: est.estimate_date,
         division_id: est.division_id,
         params: paramsFrom(est.params),
+        status: est.status ?? "borrador",
       }}
       initialCategories={initialCategories}
       orgCategories={(orgCats ?? []).map((c) => ({
@@ -135,6 +151,12 @@ export default async function EstimatePage({
         daily_rate: Number(p.daily_rate),
       }))}
       divisions={(divisions ?? []).map((d) => ({ id: d.id, name: d.name }))}
+      catalog={(catalog ?? []).map((c) => ({
+        description: c.description,
+        manufacturer: c.manufacturer,
+        unit_price: Number(c.unit_price),
+      }))}
+      isAdmin={!!isAdmin}
     />
   );
 }

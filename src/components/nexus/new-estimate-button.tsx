@@ -2,20 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Dialog } from "@base-ui/react/dialog";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { DEFAULT_PARAMS } from "@/lib/nexus/calc";
 import { createClient } from "@/lib/supabase/client";
 
@@ -115,69 +108,77 @@ export function NewEstimateButton({
         Nueva cotización
       </Button>
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Nueva cotización</SheetTitle>
-            <SheetDescription>
-              Nombre, cliente y división. Los % se toman de la config de la
-              organización y podés ajustarlos dentro.
-            </SheetDescription>
-          </SheetHeader>
+      <Dialog.Root open={open} onOpenChange={setOpen}>
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/20 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-backdrop-filter:backdrop-blur-xs" />
+          <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-popover p-6 text-popover-foreground shadow-lg transition duration-150 data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
+            <div className="mb-5 text-center">
+              <Dialog.Title className="text-lg font-semibold">
+                Nueva cotización
+              </Dialog.Title>
+              <Dialog.Description className="mt-1 text-sm text-muted-foreground">
+                Los % se toman de la config de la organización y podés
+                ajustarlos dentro.
+              </Dialog.Description>
+            </div>
 
-          <div className="space-y-4 px-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="ne-name">Nombre de la cotización</Label>
-              <Input
-                id="ne-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ej. ASSA Control de Acceso"
-                autoFocus
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="ne-name">Nombre de la cotización</Label>
+                <Input
+                  id="ne-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ej. ASSA Control de Acceso"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ne-client">Cliente</Label>
+                <Input
+                  id="ne-client"
+                  value={client}
+                  onChange={(e) => setClient(e.target.value)}
+                  placeholder="Ej. ASSA"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ne-odoo">Código Odoo (S00XXX)</Label>
+                <Input
+                  id="ne-odoo"
+                  value={odoo}
+                  onChange={(e) => setOdoo(e.target.value)}
+                  placeholder="Ej. S00549 — opcional"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="ne-div">División</Label>
+                <select
+                  id="ne-div"
+                  className={fieldCls}
+                  value={divisionId}
+                  onChange={(e) => setDivisionId(e.target.value)}
+                >
+                  {divisions.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ne-client">Cliente</Label>
-              <Input
-                id="ne-client"
-                value={client}
-                onChange={(e) => setClient(e.target.value)}
-                placeholder="Ej. ASSA"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ne-odoo">Código Odoo (S00XXX)</Label>
-              <Input
-                id="ne-odoo"
-                value={odoo}
-                onChange={(e) => setOdoo(e.target.value)}
-                placeholder="Ej. S00549 — opcional"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ne-div">División</Label>
-              <select
-                id="ne-div"
-                className={fieldCls}
-                value={divisionId}
-                onChange={(e) => setDivisionId(e.target.value)}
-              >
-                {divisions.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
 
-          <SheetFooter>
-            <Button onClick={create} disabled={saving}>
-              {saving ? "Creando…" : "Crear y abrir"}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+            <div className="mt-6 flex justify-center gap-2">
+              <Button variant="outline" onClick={() => setOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={create} disabled={saving}>
+                {saving ? "Creando…" : "Crear y abrir"}
+              </Button>
+            </div>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
     </>
   );
 }

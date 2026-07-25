@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Blocks, Layers, Network, Settings, ShieldCheck, SlidersHorizontal, Wind, Zap, type LucideIcon } from "lucide-react";
 
 import { NewEstimateButton } from "@/components/nexus/new-estimate-button";
+import { ensureNexusSeed } from "@/lib/nexus/seed";
 import { createClient } from "@/lib/supabase/server";
 
 const NEXUS_STATUS_LABEL: Record<string, string> = {
@@ -34,6 +35,12 @@ export default async function NexusHome() {
     .maybeSingle();
   const orgId =
     membership?.organization_id ?? "00000000-0000-0000-0000-000000000000";
+
+  // Auto-seed: la primera vez que una org abre Nexus, siembra sus defaults
+  // (divisiones/categorías/perfiles/% + catálogo por rubro). No-op si ya existe.
+  if (membership?.organization_id) {
+    await ensureNexusSeed(membership.organization_id);
+  }
 
   const [{ data: estimates }, { data: divisions }] = await Promise.all([
     supabase

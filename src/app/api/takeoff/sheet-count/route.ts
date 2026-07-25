@@ -48,7 +48,7 @@ async function readGlyphs(
         content: [
           {
             type: "text",
-            text: `Esta es una grilla de recortes de símbolos de un plano, cada celda numerada (número rojo arriba-izquierda). Para CADA celda, devolvé la LETRA o marca que hay DENTRO del círculo/figura (p.ej. "H", "R", "V"). Devolvé SOLO JSON: {"0":"H","1":"","2":"R"}. Si una celda no tiene una letra/marca clara, devolvé "". Una entrada por celda visible; no inventes.`,
+            text: `Esta es una grilla de recortes de símbolos de un plano, cada celda numerada (número rojo arriba-izquierda). Para CADA celda, devuelve la LETRA o marca que hay DENTRO del círculo/figura (p.ej. "H", "R", "V"). Devuelve SOLO JSON: {"0":"H","1":"","2":"R"}. Si una celda no tiene una letra/marca clara, devuelve "". Una entrada por celda visible; no inventes.`,
           },
           { type: "image", source: { type: "base64", media_type: "image/jpeg", data: mosaicB64 } },
         ],
@@ -314,6 +314,6 @@ export async function POST(req: Request) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[takeoff] sheet-count falló", { sheetId, error: detail });
     // Mensaje genérico al cliente: el detalle (traceback/URL interna) solo en logs.
-    return NextResponse.json({ error: "El conteo falló. Podés reintentarlo." }, { status: 500 });
+    return NextResponse.json({ error: "El conteo falló. Puedes reintentarlo." }, { status: 500 });
   }
 }

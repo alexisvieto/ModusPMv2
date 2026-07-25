@@ -169,7 +169,7 @@ export async function POST(req: Request) {
         page_height: render.page_height,
         job_error: readOk
           ? null
-          : "La visión no pudo leer bien la leyenda. Revisá y completá la simbología a mano antes de contar.",
+          : "La visión no pudo leer bien la leyenda. Revisa y completa la simbología a mano antes de contar.",
       })
       .eq("id", sheetId);
 
@@ -181,6 +181,6 @@ export async function POST(req: Request) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[takeoff] sheet-legend falló", { sheetId, phase, error: detail });
     // Mensaje genérico al cliente/job_error: el detalle (traceback/URL interna) solo en logs.
-    return await fail("El procesamiento de la hoja falló. Podés reintentarlo.");
+    return await fail("El procesamiento de la hoja falló. Puedes reintentarlo.");
   }
 }

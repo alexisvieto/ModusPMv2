@@ -163,7 +163,7 @@ export function InventoryBoard({
   async function submitSpare() {
     const m = spareModels.find((x) => x.key === spareModel);
     const qty = Number(spareQty);
-    if (!m) return toast.error("Elegí un ítem.");
+    if (!m) return toast.error("Elige un ítem.");
     if (!qty || qty <= 0) return toast.error("Cantidad inválida.");
     if (qty > m.qty) return toast.error(`Solo hay ${m.qty} disponibles de ese ítem.`);
     const supabase = createClient();
@@ -186,7 +186,7 @@ export function InventoryBoard({
   async function submitUseSpare() {
     const m = usableSpare.find((x) => x.key === useModel);
     const qty = Number(useQty);
-    if (!m) return toast.error("Elegí un repuesto.");
+    if (!m) return toast.error("Elige un repuesto.");
     if (!qty || qty <= 0) return toast.error("Cantidad inválida.");
     if (qty > m.qty) return toast.error(`Solo hay ${m.qty} en spare de ese ítem.`);
     const supabase = createClient();
@@ -818,7 +818,7 @@ export function InventoryBoard({
               <h3 className="font-semibold">Marcar spare</h3>
             </div>
             <p className="mb-3 text-xs text-muted-foreground">
-              Elegí el ítem y cuántas unidades quedan como repuesto. Se restan de lo
+              Elige el ítem y cuántas unidades quedan como repuesto. Se restan de lo
               instalado y aparecen en la sección Spare (para el cliente).
             </p>
             <label className="text-xs font-medium text-muted-foreground">Ítem</label>
@@ -827,7 +827,7 @@ export function InventoryBoard({
               onChange={(e) => setSpareModel(e.target.value)}
               className="mb-3 mt-1 h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring"
             >
-              <option value="">Elegí un ítem…</option>
+              <option value="">Elige un ítem…</option>
               {spareModels.map((m) => (
                 <option key={m.key} value={m.key}>
                   {m.description}
@@ -880,7 +880,7 @@ export function InventoryBoard({
               onChange={(e) => setUseModel(e.target.value)}
               className="mb-3 mt-1 h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring"
             >
-              <option value="">Elegí un repuesto…</option>
+              <option value="">Elige un repuesto…</option>
               {usableSpare.map((m) => (
                 <option key={m.key} value={m.key}>
                   {m.description}

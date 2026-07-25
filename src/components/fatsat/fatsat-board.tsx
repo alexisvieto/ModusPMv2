@@ -504,7 +504,7 @@ export function FatsatBoard({
               onChange={(e) => setCloneSource(e.target.value)}
               className="mb-4 mt-1 h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring"
             >
-              <option value="">Elegí un proyecto…</option>
+              <option value="">Elige un proyecto…</option>
               {sources.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name} — {s.count} prueba{s.count === 1 ? "" : "s"}

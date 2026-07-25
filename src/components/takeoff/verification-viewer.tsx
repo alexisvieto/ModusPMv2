@@ -815,7 +815,7 @@ export function VerificationViewer({
           {/* Fase de confirmación: el plano aún no se contó. */}
           {needsConfirm && (
             <div className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full border bg-background/95 px-3 py-1.5 text-center text-xs font-medium text-primary shadow">
-              Revisá y confirmá la simbología (panel derecho) para contar →
+              Revisa y confirma la simbología (panel derecho) para contar →
             </div>
           )}
 
@@ -834,10 +834,10 @@ export function VerificationViewer({
               )}
             >
               <BoxSelect className="size-3.5" />
-              {selectMode ? "Seleccionando — arrastrá un rectángulo" : "Seleccionar en bloque"}
+              {selectMode ? "Seleccionando — arrastra un rectángulo" : "Seleccionar en bloque"}
             </button>
             <span className="rounded bg-background/80 px-1.5 py-0.5 text-[10px] text-muted-foreground shadow">
-              Tip: mantené <b>Shift</b> y arrastrá para seleccionar sin activar el modo
+              Tip: mantén <b>Shift</b> y arrastra para seleccionar sin activar el modo
             </span>
           </div>
 
@@ -878,7 +878,7 @@ export function VerificationViewer({
                 value=""
                 onChange={(e) => e.target.value && rescueAs(rescuing, e.target.value)}
               >
-                <option value="">Elegí tipo…</option>
+                <option value="">Elige tipo…</option>
                 {elements.map((el) => (
                   <option key={el.key} value={el.key}>
                     {el.name}
@@ -929,7 +929,7 @@ export function VerificationViewer({
                 onClick={() => setShowLegend((v) => !v)}
                 className="flex w-full items-center justify-between p-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
               >
-                <span>{needsConfirm ? "Confirmá la simbología" : "Leyenda"} ({legendRows.length})</span>
+                <span>{needsConfirm ? "Confirma la simbología" : "Leyenda"} ({legendRows.length})</span>
                 <ChevronDown
                   className={cn("size-4 transition-transform", showLegend ? "" : "-rotate-90")}
                 />
@@ -938,8 +938,8 @@ export function VerificationViewer({
                 <div className="space-y-2 px-3 pb-3">
                   <p className="text-[11px] leading-snug text-muted-foreground">
                     {needsConfirm
-                      ? "El motor propuso esta simbología. Revisá cada fila, corregí o agregá lo que falte, y confirmá para contar. Nada se cuenta sin confirmar."
-                      : "Símbolo → tipo con que se contó. Si corregís algo, volvé a contar."}
+                      ? "El motor propuso esta simbología. Revisa cada fila, corrige o agrega lo que falte, y confirma para contar. Nada se cuenta sin confirmar."
+                      : "Símbolo → tipo con que se contó. Si corriges algo, vuelve a contar."}
                   </p>
                   <div className="space-y-1.5">
                     {legendRows.map((row, i) => {

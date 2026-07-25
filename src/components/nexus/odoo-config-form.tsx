@@ -168,7 +168,7 @@ export function OdooConfigForm({
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          Se guarda cifrada (Vault) y nunca se muestra. La generás en Odoo →
+          Se guarda cifrada (Vault) y nunca se muestra. La generas en Odoo →
           Preferencias → Seguridad de la cuenta → Nueva API key.
         </p>
         <div className="flex flex-wrap items-center gap-2">

@@ -117,7 +117,7 @@ export function NewEstimateButton({
                 Nueva cotización
               </Dialog.Title>
               <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-                Los % se toman de la config de la organización y podés
+                Los % se toman de la config de la organización y puedes
                 ajustarlos dentro.
               </Dialog.Description>
             </div>

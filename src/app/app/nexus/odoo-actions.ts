@@ -136,7 +136,7 @@ export async function sendToOdoo(
     org: est.organization_id,
     roles: ["owner", "admin", "project_manager", "member"],
   });
-  if (!canWrite) return { ok: false, error: "No tenés permiso para enviar a Odoo." };
+  if (!canWrite) return { ok: false, error: "No tienes permiso para enviar a Odoo." };
 
   const admin = createAdminClient();
   const { data: cfg } = await admin
@@ -146,7 +146,7 @@ export async function sendToOdoo(
     .maybeSingle();
   if (!cfg?.is_enabled) return { ok: false, error: "La integración con Odoo está deshabilitada." };
   if (!cfg.url || !cfg.db || !cfg.login || !cfg.api_key_set) {
-    return { ok: false, error: "Completá la configuración de Odoo (Nexus → Config)." };
+    return { ok: false, error: "Completa la configuración de Odoo (Nexus → Config)." };
   }
   if (!cfg.default_product_id) {
     return { ok: false, error: "Configurá el producto Odoo por defecto para las líneas." };

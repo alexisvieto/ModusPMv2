@@ -192,7 +192,7 @@ export function EstimateEditor({
   function addCategory() {
     const oc = orgCategories.find((c) => c.id === pickCat);
     if (!oc) {
-      toast.error("Elegí una categoría.");
+      toast.error("Elige una categoría.");
       return;
     }
     setCats((cs) => [

@@ -92,7 +92,7 @@ async function authenticate(c: OdooConn): Promise<number> {
     {},
   ])) as number | false;
   if (!uid || typeof uid !== "number") {
-    throw new Error("Autenticación rechazada: revisá base de datos, usuario y API key.");
+    throw new Error("Autenticación rechazada: revisa base de datos, usuario y API key.");
   }
   return uid;
 }

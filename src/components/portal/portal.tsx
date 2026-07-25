@@ -121,7 +121,7 @@ export function Portal({
             </div>
           )}
           <p className="mt-6 text-sm text-white/45">
-            Elegí la aplicación con la que querés trabajar
+            Elige la aplicación con la que quieres trabajar
           </p>
         </div>
 

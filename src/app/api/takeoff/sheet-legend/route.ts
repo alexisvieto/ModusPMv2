@@ -54,7 +54,7 @@ export async function POST(req: Request) {
   const { data: sysRow } = analysisRow
     ? await supabase
         .from("takeoff_systems")
-        .select("project_id, legend")
+        .select("estimate_id, legend")
         .eq("id", analysisRow.system_id)
         .maybeSingle()
     : { data: null };
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Análisis no encontrado." }, { status: 404 });
   }
   const systemType = analysisRow.system_type;
-  const projectId = sysRow.project_id;
+  const estimateId = sysRow.estimate_id;
   const validKeys = new Set(elementsFor(systemType).map((e) => e.key));
 
   const gate = await gateAiRequest({
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
         await recordAiUsage({
           organizationId: sheet.organization_id,
           userId: user.id,
-          projectId,
+          projectId: null,
           route: "takeoff-plano",
           model: LEGEND_MODEL,
           inputTokens: inTok,
@@ -122,7 +122,7 @@ export async function POST(req: Request) {
     // 2) Imagen del plano completo para el visor.
     phase = "render";
     const render = await engineRender(pdfUrl);
-    const imgPath = `${sheet.organization_id}/${projectId}/sheets/${sheetId}.jpg`;
+    const imgPath = `${sheet.organization_id}/${estimateId}/sheets/${sheetId}.jpg`;
     phase = "guardar-imagen";
     const upImg = await supabase.storage
       .from("takeoff-temp")

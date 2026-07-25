@@ -31,14 +31,14 @@ const SEVERITY_STYLE: Record<string, { chip: string; dot: string; label: string 
 };
 
 export function ScopeReport({
-  projectId,
+  estimateId,
   doc,
   items,
   brand,
   taxId,
   reportFooter,
 }: {
-  projectId: string;
+  estimateId: string;
   doc: ScopeDocRow;
   items: ScopeItemRow[];
   brand: Brand;
@@ -64,7 +64,7 @@ export function ScopeReport({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <Link
-            href={`/app/proyectos/${projectId}/calculo`}
+            href={`/app/nexus/${estimateId}/calculo`}
             className={cn(
               buttonVariants({ size: "sm", variant: "ghost" }),
               "-ml-2 mb-1",

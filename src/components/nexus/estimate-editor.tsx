@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, Plus, Save, Send, Trash2, Users } from "lucide-react";
+import Link from "next/link";
+import { Download, Plus, Ruler, Save, Send, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { sendToOdoo } from "@/app/app/nexus/odoo-actions";
@@ -353,6 +354,13 @@ export function EstimateEditor({
               {money(grand.total)}
             </p>
           </div>
+          <Link
+            href={`/app/nexus/${estimate.id}/calculo`}
+            className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            <Ruler className="size-4" />
+            Análisis de planos
+          </Link>
           <Button variant="outline" onClick={exportExcel}>
             <Download className="size-4" />
             Excel

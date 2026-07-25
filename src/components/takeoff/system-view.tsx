@@ -17,7 +17,7 @@ type System = Database["public"]["Tables"]["takeoff_systems"]["Row"];
 type Analysis = Database["public"]["Tables"]["takeoff_analyses"]["Row"] & {
   takeoff_sheets: { id: string; status: string }[];
 };
-type Project = { id: string; organization_id: string; name: string };
+type Estimate = { id: string; organization_id: string; name: string };
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   borrador: { label: "Borrador", cls: "bg-muted text-muted-foreground" },
@@ -28,12 +28,12 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
 };
 
 export function SystemView({
-  project,
+  estimate,
   system,
   analyses,
   currentUserId,
 }: {
-  project: Project;
+  estimate: Estimate;
   system: System;
   analyses: Analysis[];
   currentUserId: string | null;
@@ -94,7 +94,7 @@ export function SystemView({
     const { data, error } = await supabase
       .from("takeoff_analyses")
       .insert({
-        organization_id: project.organization_id,
+        organization_id: estimate.organization_id,
         system_id: system.id,
         system_type: system.system_type,
         name: name.trim() || `Análisis ${new Date().toISOString().slice(0, 10)}`,
@@ -133,11 +133,11 @@ export function SystemView({
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
       const id = crypto.randomUUID();
-      const path = `${project.organization_id}/${project.id}/sheets/${id}.pdf`;
+      const path = `${estimate.organization_id}/${estimate.id}/sheets/${id}.pdf`;
       // Fila primero, upload después (sin huérfanos).
       const { error: insErr } = await supabase.from("takeoff_sheets").insert({
         id,
-        organization_id: project.organization_id,
+        organization_id: estimate.organization_id,
         analysis_id: analysisId,
         sheet_number: file.name.replace(/\.pdf$/i, "").slice(0, 60),
         file_hash: hash,
@@ -160,7 +160,7 @@ export function SystemView({
     setUploadProgress(null);
     setPendingAnalysisId(null);
     if (fileRef.current) fileRef.current.value = "";
-    router.push(`/app/proyectos/${project.id}/calculo/analisis/${analysisId}`);
+    router.push(`/app/nexus/${estimate.id}/calculo/analisis/${analysisId}`);
   }
 
   return (
@@ -177,7 +177,7 @@ export function SystemView({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link
-            href={`/app/proyectos/${project.id}/calculo`}
+            href={`/app/nexus/${estimate.id}/calculo`}
             className={cn(buttonVariants({ size: "sm", variant: "ghost" }), "-ml-2 mb-1")}
           >
             <ArrowLeft className="size-4" />
@@ -186,7 +186,7 @@ export function SystemView({
           <h1 className="text-xl font-semibold tracking-tight">
             {system.display_name}
           </h1>
-          <p className="text-sm text-muted-foreground">{project.name}</p>
+          <p className="text-sm text-muted-foreground">{estimate.name}</p>
         </div>
         {uploadProgress ? (
           <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
@@ -243,7 +243,7 @@ export function SystemView({
                 className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card transition-colors hover:bg-muted/40"
               >
                 <Link
-                  href={`/app/proyectos/${project.id}/calculo/analisis/${a.id}`}
+                  href={`/app/nexus/${estimate.id}/calculo/analisis/${a.id}`}
                   className="flex min-w-0 flex-1 items-center gap-3 p-4"
                 >
                   <FileStack className="size-4 shrink-0 text-primary" />

@@ -101,12 +101,6 @@ export async function POST(req: Request) {
   if (!analysisRow) return NextResponse.json({ error: "Análisis no encontrado." }, { status: 404 });
   const systemType = analysisRow.system_type;
   const systemId = analysisRow.system_id;
-  const { data: sysRow } = await supabase
-    .from("takeoff_systems")
-    .select("project_id")
-    .eq("id", systemId)
-    .maybeSingle();
-  const projectId = sysRow?.project_id ?? "";
   const validKeys = new Set(elementsFor(systemType).map((e) => e.key));
 
   // Diccionario CONFIRMADO (única verdad; sin piso). Se valida contra el catálogo.
@@ -211,7 +205,7 @@ export async function POST(req: Request) {
             await recordAiUsage({
               organizationId: sheet.organization_id,
               userId: user.id,
-              projectId,
+              projectId: null,
               route: "takeoff-glifos",
               model: LEGEND_MODEL,
               inputTokens: read.usage.input_tokens,

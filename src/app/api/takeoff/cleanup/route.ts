@@ -26,14 +26,14 @@ export async function GET(req: Request) {
 
   const { data: stale } = await admin
     .from("takeoff_scope_docs")
-    .select("id, organization_id, project_id, pdf_path")
+    .select("id, organization_id, estimate_id, pdf_path")
     .not("pdf_path", "is", null)
     .neq("status", "analizado")
     .lt("created_at", cutoff);
 
   let removed = 0;
   for (const doc of stale ?? []) {
-    const prefix = `${doc.organization_id}/${doc.project_id}/${doc.id}`;
+    const prefix = `${doc.organization_id}/${doc.estimate_id}/${doc.id}`;
     await admin.storage
       .from("takeoff-temp")
       .remove([doc.pdf_path!, `${prefix}/chunks.json`]);

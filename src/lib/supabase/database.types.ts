@@ -1785,6 +1785,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           doc_name: string
+          estimate_id: string
           executive_summary: string | null
           file_hash: string
           id: string
@@ -1794,7 +1795,6 @@ export type Database = {
           page_count: number | null
           pdf_path: string | null
           progress: string | null
-          project_id: string
           project_title: string | null
           status: string
           tender_ref: string | null
@@ -1805,6 +1805,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           doc_name: string
+          estimate_id: string
           executive_summary?: string | null
           file_hash: string
           id?: string
@@ -1814,7 +1815,6 @@ export type Database = {
           page_count?: number | null
           pdf_path?: string | null
           progress?: string | null
-          project_id: string
           project_title?: string | null
           status?: string
           tender_ref?: string | null
@@ -1825,6 +1825,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           doc_name?: string
+          estimate_id?: string
           executive_summary?: string | null
           file_hash?: string
           id?: string
@@ -1834,17 +1835,16 @@ export type Database = {
           page_count?: number | null
           pdf_path?: string | null
           progress?: string | null
-          project_id?: string
           project_title?: string | null
           status?: string
           tender_ref?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "fk_scope_doc_project"
-            columns: ["project_id", "organization_id"]
+            foreignKeyName: "takeoff_scope_docs_estimate_fk"
+            columns: ["estimate_id", "organization_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "nexus_estimates"
             referencedColumns: ["id", "organization_id"]
           },
           {
@@ -1933,30 +1933,30 @@ export type Database = {
         Row: {
           declared_at: string | null
           declared_by: string | null
+          estimate_id: string
           organization_id: string
-          project_id: string
           status: string
         }
         Insert: {
           declared_at?: string | null
           declared_by?: string | null
+          estimate_id: string
           organization_id: string
-          project_id: string
           status?: string
         }
         Update: {
           declared_at?: string | null
           declared_by?: string | null
+          estimate_id?: string
           organization_id?: string
-          project_id?: string
           status?: string
         }
         Relationships: [
           {
-            foreignKeyName: "fk_scope_status_project"
-            columns: ["project_id", "organization_id"]
+            foreignKeyName: "takeoff_scope_status_estimate_fk"
+            columns: ["estimate_id", "organization_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "nexus_estimates"
             referencedColumns: ["id", "organization_id"]
           },
           {
@@ -2121,10 +2121,10 @@ export type Database = {
         Row: {
           created_at: string
           display_name: string
+          estimate_id: string
           id: string
           legend: Json | null
           organization_id: string
-          project_id: string
           sort_order: number
           source: string
           system_type: string
@@ -2132,10 +2132,10 @@ export type Database = {
         Insert: {
           created_at?: string
           display_name: string
+          estimate_id: string
           id?: string
           legend?: Json | null
           organization_id: string
-          project_id: string
           sort_order?: number
           source?: string
           system_type: string
@@ -2143,20 +2143,20 @@ export type Database = {
         Update: {
           created_at?: string
           display_name?: string
+          estimate_id?: string
           id?: string
           legend?: Json | null
           organization_id?: string
-          project_id?: string
           sort_order?: number
           source?: string
           system_type?: string
         }
         Relationships: [
           {
-            foreignKeyName: "fk_system_project"
-            columns: ["project_id", "organization_id"]
+            foreignKeyName: "takeoff_systems_estimate_fk"
+            columns: ["estimate_id", "organization_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "nexus_estimates"
             referencedColumns: ["id", "organization_id"]
           },
           {

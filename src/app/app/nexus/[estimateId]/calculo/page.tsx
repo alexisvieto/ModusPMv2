@@ -7,42 +7,42 @@ import { createClient } from "@/lib/supabase/server";
 export default async function CalculoPage({
   params,
 }: {
-  params: Promise<{ projectId: string }>;
+  params: Promise<{ estimateId: string }>;
 }) {
-  const { projectId } = await params;
+  const { estimateId } = await params;
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: project } = await supabase
-    .from("projects")
-    .select("id, organization_id, name, code")
-    .eq("id", projectId)
+  const { data: estimate } = await supabase
+    .from("nexus_estimates")
+    .select("id, organization_id, name")
+    .eq("id", estimateId)
     .maybeSingle();
-  if (!project) notFound();
+  if (!estimate) notFound();
 
   const [{ data: systems }, { data: scopeStatus }, { data: scopeDocs }, profiles] =
     await Promise.all([
       supabase
         .from("takeoff_systems")
         .select("*")
-        .eq("project_id", projectId)
+        .eq("estimate_id", estimateId)
         .order("sort_order", { ascending: true }),
       supabase
         .from("takeoff_scope_status")
         .select("*")
-        .eq("project_id", projectId)
+        .eq("estimate_id", estimateId)
         .maybeSingle(),
       supabase
         .from("takeoff_scope_docs")
         .select(
           "id, doc_name, status, progress, page_count, project_title, contracting_entity, analyzed_at, created_at",
         )
-        .eq("project_id", projectId)
+        .eq("estimate_id", estimateId)
         .order("created_at", { ascending: false }),
-      orgMemberProfiles(supabase, project.organization_id),
+      orgMemberProfiles(supabase, estimate.organization_id),
     ]);
 
   return (
@@ -55,7 +55,7 @@ export default async function CalculoPage({
         </p>
       </div>
       <TakeoffHome
-        project={project}
+        estimate={estimate}
         systems={systems ?? []}
         scopeStatus={scopeStatus ?? null}
         scopeDocs={scopeDocs ?? []}

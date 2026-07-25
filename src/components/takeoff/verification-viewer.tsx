@@ -61,7 +61,7 @@ function parseCandidates(j: unknown): Candidate[] {
     })
     .filter((c) => Number.isFinite(c.x) && Number.isFinite(c.y));
 }
-type Project = { id: string; organization_id: string; name: string };
+type Estimate = { id: string; organization_id: string; name: string };
 
 const ACTIVE_STATUSES = ["detectado", "confirmado", "reclasificado", "agregado_manual"];
 
@@ -90,14 +90,14 @@ const SOURCE_LABEL: Record<string, { t: string; cls: string }> = {
 };
 
 export function VerificationViewer({
-  project,
+  estimate,
   analysis,
   system,
   sheets: initialSheets,
   detections: initialDetections,
   imgUrls,
 }: {
-  project: Project;
+  estimate: Estimate;
   analysis: { id: string; name: string; status: string; system_type: string };
   system: { id: string; display_name: string; system_type: string; legend?: unknown };
   sheets: Sheet[];
@@ -410,7 +410,7 @@ export function VerificationViewer({
         return;
       }
       toast.success("Análisis aprobado. Cantidades listas para costos.");
-      router.push(`/app/proyectos/${project.id}/calculo/sistema/${system.id}`);
+      router.push(`/app/nexus/${estimate.id}/calculo/sistema/${system.id}`);
     } finally {
       setApproving(false);
     }
@@ -609,7 +609,7 @@ export function VerificationViewer({
       <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5">
         <div className="flex items-center gap-3">
           <Link
-            href={`/app/proyectos/${project.id}/calculo/sistema/${system.id}`}
+            href={`/app/nexus/${estimate.id}/calculo/sistema/${system.id}`}
             className={cn(buttonVariants({ size: "sm", variant: "ghost" }), "-ml-2")}
           >
             <ArrowLeft className="size-4" />

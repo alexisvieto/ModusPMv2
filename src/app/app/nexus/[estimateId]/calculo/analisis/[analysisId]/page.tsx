@@ -6,27 +6,27 @@ import { createClient } from "@/lib/supabase/server";
 export default async function AnalysisPage({
   params,
 }: {
-  params: Promise<{ projectId: string; analysisId: string }>;
+  params: Promise<{ estimateId: string; analysisId: string }>;
 }) {
-  const { projectId, analysisId } = await params;
+  const { estimateId, analysisId } = await params;
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: project } = await supabase
-    .from("projects")
+  const { data: estimate } = await supabase
+    .from("nexus_estimates")
     .select("id, organization_id, name")
-    .eq("id", projectId)
+    .eq("id", estimateId)
     .maybeSingle();
-  if (!project) notFound();
+  if (!estimate) notFound();
 
   const { data: analysis } = await supabase
     .from("takeoff_analyses")
     .select("*")
     .eq("id", analysisId)
-    .eq("organization_id", project.organization_id)
+    .eq("organization_id", estimate.organization_id)
     .maybeSingle();
   if (!analysis) notFound();
 
@@ -71,7 +71,7 @@ export default async function AnalysisPage({
   return (
     <div className="p-0">
       <VerificationViewer
-        project={project}
+        estimate={estimate}
         analysis={{
           id: analysis.id,
           name: analysis.name,

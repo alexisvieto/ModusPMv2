@@ -6,27 +6,27 @@ import { createClient } from "@/lib/supabase/server";
 export default async function SistemaPage({
   params,
 }: {
-  params: Promise<{ projectId: string; systemId: string }>;
+  params: Promise<{ estimateId: string; systemId: string }>;
 }) {
-  const { projectId, systemId } = await params;
+  const { estimateId, systemId } = await params;
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: project } = await supabase
-    .from("projects")
+  const { data: estimate } = await supabase
+    .from("nexus_estimates")
     .select("id, organization_id, name")
-    .eq("id", projectId)
+    .eq("id", estimateId)
     .maybeSingle();
-  if (!project) notFound();
+  if (!estimate) notFound();
 
   const { data: system } = await supabase
     .from("takeoff_systems")
     .select("*")
     .eq("id", systemId)
-    .eq("project_id", projectId)
+    .eq("estimate_id", estimateId)
     .maybeSingle();
   if (!system) notFound();
 
@@ -54,7 +54,7 @@ export default async function SistemaPage({
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-8">
       <SystemView
-        project={project}
+        estimate={estimate}
         system={system}
         analyses={analyses}
         currentUserId={user?.id ?? null}

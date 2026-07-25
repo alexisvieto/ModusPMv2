@@ -36,20 +36,20 @@ type ScopeDoc = Pick<
   | "analyzed_at"
   | "created_at"
 >;
-type Project = { id: string; organization_id: string; name: string; code: string | null };
+type Estimate = { id: string; organization_id: string; name: string };
 
 const selectCls =
   "h-9 rounded-md border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring";
 
 export function TakeoffHome({
-  project,
+  estimate,
   systems,
   scopeStatus,
   scopeDocs,
   profiles,
   currentUserId,
 }: {
-  project: Project;
+  estimate: Estimate;
   systems: System[];
   scopeStatus: ScopeStatus | null;
   scopeDocs: ScopeDoc[];
@@ -145,7 +145,7 @@ export function TakeoffHome({
       const { data: existing } = await supabase
         .from("takeoff_scope_docs")
         .select("id, doc_name, status")
-        .eq("project_id", project.id)
+        .eq("estimate_id", estimate.id)
         .eq("file_hash", hash)
         .maybeSingle();
       if (existing) {
@@ -161,11 +161,11 @@ export function TakeoffHome({
       // Fila PRIMERO, upload después: si el browser muere entre ambos, el
       // cron encuentra el documento y limpia; un PDF sin fila sería huérfano.
       const id = crypto.randomUUID();
-      const path = `${project.organization_id}/${project.id}/${id}/pliego.pdf`;
+      const path = `${estimate.organization_id}/${estimate.id}/${id}/pliego.pdf`;
       const { error } = await supabase.from("takeoff_scope_docs").insert({
         id,
-        organization_id: project.organization_id,
-        project_id: project.id,
+        organization_id: estimate.organization_id,
+        estimate_id: estimate.id,
         doc_name: file.name,
         file_hash: hash,
         status: "procesando",
@@ -191,8 +191,8 @@ export function TakeoffHome({
         return;
       }
       await supabase.from("takeoff_scope_status").upsert({
-        project_id: project.id,
-        organization_id: project.organization_id,
+        estimate_id: estimate.id,
+        organization_id: estimate.organization_id,
         status: "pendiente",
         declared_by: null,
         declared_at: null,
@@ -207,8 +207,8 @@ export function TakeoffHome({
   async function declareNoPliego() {
     const supabase = createClient();
     const { error } = await supabase.from("takeoff_scope_status").upsert({
-      project_id: project.id,
-      organization_id: project.organization_id,
+      estimate_id: estimate.id,
+      organization_id: estimate.organization_id,
       status: "no_existe",
       declared_by: currentUserId,
       declared_at: new Date().toISOString(),
@@ -220,8 +220,8 @@ export function TakeoffHome({
   async function revertNoPliego() {
     const supabase = createClient();
     const { error } = await supabase.from("takeoff_scope_status").upsert({
-      project_id: project.id,
-      organization_id: project.organization_id,
+      estimate_id: estimate.id,
+      organization_id: estimate.organization_id,
       status: "pendiente",
       declared_by: null,
       declared_at: null,
@@ -235,8 +235,8 @@ export function TakeoffHome({
     setAddingSystem(true);
     const supabase = createClient();
     const { error } = await supabase.from("takeoff_systems").insert({
-      organization_id: project.organization_id,
-      project_id: project.id,
+      organization_id: estimate.organization_id,
+      estimate_id: estimate.id,
       system_type: newSystem,
       display_name: SYSTEM_LABEL[newSystem] ?? newSystem,
       source: "manual",
@@ -339,7 +339,7 @@ export function TakeoffHome({
                   <div className="flex items-center gap-2">
                     {d.status === "analizado" && (
                       <Link
-                        href={`/app/proyectos/${project.id}/calculo/pliego/${d.id}`}
+                        href={`/app/nexus/${estimate.id}/calculo/pliego/${d.id}`}
                         className={buttonVariants({ size: "sm", variant: "outline" })}
                       >
                         Ver informe
@@ -401,7 +401,7 @@ export function TakeoffHome({
             {systems.map((s) => (
               <Link
                 key={s.id}
-                href={`/app/proyectos/${project.id}/calculo/sistema/${s.id}`}
+                href={`/app/nexus/${estimate.id}/calculo/sistema/${s.id}`}
                 className="block rounded-xl border bg-card p-4 transition-colors hover:bg-muted/40"
               >
                 <div className="flex items-start justify-between gap-2">

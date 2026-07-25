@@ -7,16 +7,16 @@ import { createClient } from "@/lib/supabase/server";
 export default async function PliegoReportPage({
   params,
 }: {
-  params: Promise<{ projectId: string; docId: string }>;
+  params: Promise<{ estimateId: string; docId: string }>;
 }) {
-  const { projectId, docId } = await params;
+  const { estimateId, docId } = await params;
   const supabase = await createClient();
 
   const { data: doc } = await supabase
     .from("takeoff_scope_docs")
     .select("*")
     .eq("id", docId)
-    .eq("project_id", projectId)
+    .eq("estimate_id", estimateId)
     .maybeSingle();
   if (!doc || doc.status !== "analizado") notFound();
 
@@ -38,7 +38,7 @@ export default async function PliegoReportPage({
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-4 md:p-8">
       <ScopeReport
-        projectId={projectId}
+        estimateId={estimateId}
         doc={doc}
         items={items ?? []}
         brand={brand}

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Building2,
-  Calculator,
   CalendarRange,
   Check,
   ChevronsUpDown,
@@ -132,11 +131,6 @@ export function AppShell({
           label: "Costos",
           href: `/app/proyectos/${activeProjectId}/costos`,
           icon: Receipt,
-        },
-        {
-          label: "Cálculo",
-          href: `/app/proyectos/${activeProjectId}/calculo`,
-          icon: Calculator,
         },
         {
           label: "IA",

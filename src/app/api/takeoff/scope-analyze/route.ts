@@ -120,7 +120,7 @@ export async function POST(req: Request) {
   }
   const anthropic = new Anthropic({ apiKey: gate.apiKey });
 
-  const prefix = `${doc.organization_id}/${doc.project_id}/${doc.id}`;
+  const prefix = `${doc.organization_id}/${doc.estimate_id}/${doc.id}`;
   const chunksPath = `${prefix}/chunks.json`;
 
   const setProgress = async (progress: string, patch?: Record<string, unknown>) => {
@@ -274,7 +274,7 @@ export async function POST(req: Request) {
           await recordAiUsage({
             organizationId: doc.organization_id,
             userId: user.id,
-            projectId: doc.project_id,
+            projectId: null,
             route: "takeoff-pliego",
             model: EXTRACT_MODEL,
             inputTokens: msg.usage.input_tokens,
@@ -383,7 +383,7 @@ ${all.filter((i) => i.category === "alcance").slice(0, 20).map((i) => `- ${i.des
     await recordAiUsage({
       organizationId: doc.organization_id,
       userId: user.id,
-      projectId: doc.project_id,
+      projectId: null,
       route: "takeoff-pliego",
       model: EXTRACT_MODEL,
       inputTokens: msg.usage.input_tokens,
@@ -403,7 +403,7 @@ ${all.filter((i) => i.category === "alcance").slice(0, 20).map((i) => `- ${i.des
     if (claimed.systems.length) {
       const sysRows = claimed.systems.map((s, i) => ({
         organization_id: doc.organization_id,
-        project_id: doc.project_id,
+        estimate_id: doc.estimate_id,
         system_type: s,
         display_name: SYSTEM_TYPES.find((t) => t.v === s)?.l ?? s,
         source: "pliego",
@@ -411,7 +411,7 @@ ${all.filter((i) => i.category === "alcance").slice(0, 20).map((i) => `- ${i.des
       }));
       await supabase
         .from("takeoff_systems")
-        .upsert(sysRows, { onConflict: "project_id,system_type", ignoreDuplicates: true });
+        .upsert(sysRows, { onConflict: "estimate_id,system_type", ignoreDuplicates: true });
     }
 
     await supabase
@@ -432,7 +432,7 @@ ${all.filter((i) => i.category === "alcance").slice(0, 20).map((i) => `- ${i.des
     await supabase
       .from("takeoff_scope_status")
       .upsert({
-        project_id: doc.project_id,
+        estimate_id: doc.estimate_id,
         organization_id: doc.organization_id,
         status: "analizado",
       });

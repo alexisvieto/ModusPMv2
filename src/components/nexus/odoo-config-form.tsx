@@ -41,12 +41,17 @@ export function OdooConfigForm({
   const [busy, setBusy] = useState<null | "cfg" | "key" | "test">(null);
 
   async function saveConfig() {
+    const pid = productId.trim() ? Number(productId) : null;
+    if (pid !== null && !Number.isInteger(pid)) {
+      toast.error("El ID de producto Odoo debe ser un número entero.");
+      return;
+    }
     setBusy("cfg");
     const r = await saveOdooConfig(orgId, {
       url,
       db,
       login,
-      defaultProductId: productId.trim() ? Number(productId) : null,
+      defaultProductId: pid,
       isEnabled: enabled,
     });
     setBusy(null);

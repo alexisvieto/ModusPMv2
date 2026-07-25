@@ -32,10 +32,12 @@ export default async function AnalysisPage({
 
   const { data: system } = await supabase
     .from("takeoff_systems")
-    .select("id, display_name, system_type, legend")
+    .select("id, display_name, system_type, legend, estimate_id")
     .eq("id", analysis.system_id)
     .maybeSingle();
   if (!system) notFound();
+  // El análisis debe pertenecer a la cotización de la URL (coherencia de contexto).
+  if (system.estimate_id !== estimateId) notFound();
 
   const [{ data: sheets }, { data: detections }] = await Promise.all([
     supabase

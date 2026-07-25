@@ -78,7 +78,14 @@ export default async function NexusHome() {
             <tbody>
               {estimates.map((e) => (
                 <tr key={e.id} className="border-t">
-                  <td className="px-4 py-2">{e.name}</td>
+                  <td className="px-4 py-2">
+                    <Link
+                      href={`/app/nexus/${e.id}`}
+                      className="font-medium text-[#0f2044] hover:underline"
+                    >
+                      {e.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-2 text-muted-foreground">
                     {e.client_name ?? "—"}
                   </td>

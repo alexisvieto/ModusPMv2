@@ -4,12 +4,52 @@
 // existe en todas las versiones de Odoo (Online, .sh y self-hosted).
 // =========================================================
 
+import { lookup } from "node:dns/promises";
+
 export type OdooConn = { url: string; db: string; login: string; key: string };
 
 function endpoint(url: string): string {
   const u = url.trim().replace(/\/+$/, "");
   if (!/^https?:\/\//i.test(u)) throw new Error("La URL de Odoo debe empezar con https://");
   return `${u}/jsonrpc`;
+}
+
+// Anti-SSRF: la URL de Odoo la define un admin del tenant; se rechaza si
+// resuelve a una dirección de red interna (metadata, loopback, RFC1918…).
+function isPrivateIp(ip: string): boolean {
+  if (ip.includes(":")) {
+    const v = ip.toLowerCase();
+    if (v === "::1" || v === "::") return true;
+    if (v.startsWith("fe80") || v.startsWith("fc") || v.startsWith("fd")) return true;
+    const m = v.match(/::ffff:(\d+\.\d+\.\d+\.\d+)/);
+    return m ? isPrivateIp(m[1]) : false;
+  }
+  const p = ip.split(".").map(Number);
+  if (p.length !== 4 || p.some((n) => Number.isNaN(n))) return false;
+  const [a, b] = p;
+  return (
+    a === 10 ||
+    a === 127 ||
+    a === 0 ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 100 && b >= 64 && b <= 127)
+  );
+}
+
+async function assertSafeHost(url: string): Promise<void> {
+  const host = new URL(url).hostname.replace(/^\[|\]$/g, "");
+  if (host.toLowerCase() === "localhost") {
+    throw new Error("La URL de Odoo no puede apuntar a la red interna.");
+  }
+  const isIpLiteral = /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.includes(":");
+  const addrs = isIpLiteral
+    ? [host]
+    : (await lookup(host, { all: true })).map((r) => r.address);
+  if (addrs.some(isPrivateIp)) {
+    throw new Error("La URL de Odoo no puede apuntar a la red interna.");
+  }
 }
 
 // Llamada JSON-RPC cruda a un servicio de Odoo (common | object).
@@ -19,7 +59,9 @@ async function rpc(
   method: string,
   args: unknown[],
 ): Promise<unknown> {
-  const res = await fetch(endpoint(url), {
+  const ep = endpoint(url);
+  await assertSafeHost(url);
+  const res = await fetch(ep, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -105,7 +147,7 @@ export async function pushToExistingOrder(
       "sale.order",
       "search_read",
       [[["name", "=", opts.odooCode]]],
-      { fields: ["id", "name", "state"], limit: 1 },
+      { fields: ["id", "name", "state"] },
     )) as { id: number; name: string; state: string }[];
 
     if (!found.length) {
@@ -114,10 +156,31 @@ export async function pushToExistingOrder(
         error: `No encontré la cotización ${opts.odooCode} en Odoo. Creála primero en Odoo.`,
       };
     }
+    if (found.length > 1) {
+      return {
+        ok: false,
+        error: `Hay ${found.length} cotizaciones con el código ${opts.odooCode} en Odoo; resolvé la duplicación antes de enviar.`,
+      };
+    }
     const order = found[0];
+    if (order.state !== "draft" && order.state !== "sent") {
+      return {
+        ok: false,
+        error: `La cotización ${opts.odooCode} está en estado «${order.state}»; solo se puede actualizar en borrador o enviada.`,
+      };
+    }
 
-    // (5,0,0) borra las líneas existentes; (0,0,{...}) agrega las nuevas.
-    const commands: unknown[] = [[5, 0, 0]];
+    // Reemplaza SOLO las líneas creadas por Nexus (mismo producto por defecto),
+    // sin tocar líneas manuales cargadas en Odoo.
+    const existing = (await executeKw(
+      c,
+      uid,
+      "sale.order.line",
+      "search_read",
+      [[["order_id", "=", order.id], ["product_id", "=", opts.productId]]],
+      { fields: ["id"] },
+    )) as { id: number }[];
+    const commands: unknown[] = existing.map((l) => [2, l.id, 0]);
     for (const l of opts.lines) {
       commands.push([
         0,

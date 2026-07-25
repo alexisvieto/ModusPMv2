@@ -211,7 +211,8 @@ export function EstimateEditor({
     (c) => !divisionId || c.division_id === divisionId,
   );
 
-  async function persist(): Promise<boolean> {
+  async function persist(): Promise<{ ok: boolean; error?: string }> {
+    if (!date) return { ok: false, error: "La fecha es obligatoria." };
     const supabase = createClient();
     const header = {
       name: name.trim() || "Cotización sin nombre",
@@ -251,28 +252,30 @@ export function EstimateEditor({
       p_header: header,
       p_categories: payload,
     });
-    return !error;
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
   }
 
   async function save() {
-    if (saving) return;
+    if (saving || sending) return;
     setSaving(true);
-    const ok = await persist();
+    const r = await persist();
     setSaving(false);
-    if (ok) {
+    if (r.ok) {
       toast.success("Cotización guardada.");
       router.refresh();
     } else {
-      toast.error("No se pudo guardar la cotización.");
+      toast.error(r.error ?? "No se pudo guardar la cotización.");
     }
   }
 
   async function sendOdoo() {
-    if (sending) return;
+    if (saving || sending) return;
     setSending(true);
-    if (!(await persist())) {
+    const p = await persist();
+    if (!p.ok) {
       setSending(false);
-      toast.error("No se pudo guardar antes de enviar.");
+      toast.error(p.error ?? "No se pudo guardar antes de enviar.");
       return;
     }
     const r = await sendToOdoo(estimate.id);

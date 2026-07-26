@@ -40,10 +40,9 @@ const APPS: AppCard[] = [
   {
     name: "Site Survey",
     tagline: "Levantamiento en sitio",
-    href: "#",
+    href: "/app/survey",
     icon: ClipboardList,
-    enabled: false,
-    badge: "Próximamente",
+    enabled: true,
   },
 ];
 

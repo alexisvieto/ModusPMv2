@@ -14,6 +14,192 @@ export type Database = {
   }
   public: {
     Tables: {
+      survey_surveys: {
+        Row: {
+          client_name: string | null
+          created_at: string
+          engineer_name: string | null
+          engineer_user_id: string | null
+          field_days: number
+          id: string
+          notes: string | null
+          organization_id: string
+          personnel: number
+          project_name: string | null
+          site_location: string | null
+          status: string
+          survey_date: string
+          updated_at: string
+        }
+        Insert: {
+          client_name?: string | null
+          created_at?: string
+          engineer_name?: string | null
+          engineer_user_id?: string | null
+          field_days?: number
+          id?: string
+          notes?: string | null
+          organization_id: string
+          personnel?: number
+          project_name?: string | null
+          site_location?: string | null
+          status?: string
+          survey_date?: string
+          updated_at?: string
+        }
+        Update: {
+          client_name?: string | null
+          created_at?: string
+          engineer_name?: string | null
+          engineer_user_id?: string | null
+          field_days?: number
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          personnel?: number
+          project_name?: string | null
+          site_location?: string | null
+          status?: string
+          survey_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      survey_contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          role: string | null
+          sort_order: number
+          survey_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          role?: string | null
+          sort_order?: number
+          survey_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          role?: string | null
+          sort_order?: number
+          survey_id?: string
+        }
+        Relationships: []
+      }
+      survey_findings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          organization_id: string
+          severity: string
+          sort_order: number
+          survey_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          organization_id: string
+          severity?: string
+          sort_order?: number
+          survey_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          organization_id?: string
+          severity?: string
+          sort_order?: number
+          survey_id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      survey_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          finding_id: string | null
+          id: string
+          organization_id: string
+          sort_order: number
+          storage_path: string
+          survey_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          finding_id?: string | null
+          id?: string
+          organization_id: string
+          sort_order?: number
+          storage_path: string
+          survey_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          finding_id?: string | null
+          id?: string
+          organization_id?: string
+          sort_order?: number
+          storage_path?: string
+          survey_id?: string
+        }
+        Relationships: []
+      }
+      survey_signatures: {
+        Row: {
+          id: string
+          organization_id: string
+          signed_at: string
+          signer_name: string
+          signer_role: string | null
+          storage_path: string
+          survey_id: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          signed_at?: string
+          signer_name: string
+          signer_role?: string | null
+          storage_path: string
+          survey_id: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          signed_at?: string
+          signer_name?: string
+          signer_role?: string | null
+          storage_path?: string
+          survey_id?: string
+        }
+        Relationships: []
+      }
       ai_provider_configs: {
         Row: {
           api_key_set: boolean

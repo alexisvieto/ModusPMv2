@@ -95,7 +95,7 @@ export default function Home() {
             <span className="font-mono whitespace-nowrap">v0.1 · demo</span>
           </div>
           <div className="border-t pt-3 text-center text-muted-foreground">
-            Modus PM — un producto de{" "}
+            Nexus — un producto de{" "}
             <span className="font-medium text-foreground">Nexera</span>
             {" · "}
             <a

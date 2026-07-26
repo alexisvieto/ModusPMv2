@@ -19,10 +19,10 @@ export type Brand = {
 
 /** Fallback al producto cuando una org no tiene marca configurada. */
 export const DEFAULT_BRAND: Brand = {
-  name: "Modus PM",
-  primary: "#0F766E",
-  accent: "#14B8A6",
-  dark: "#1F2937",
+  name: "Nexus",
+  primary: "#0F2044",
+  accent: "#E8A020",
+  dark: "#0F2044",
   website: null,
   email: null,
   phone: null,

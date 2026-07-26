@@ -389,7 +389,7 @@ export function IaView({
             <p className="mt-2 text-xs text-muted-foreground/70">
               Se guarda cifrada en Supabase Vault, nunca se muestra y solo la
               gestionan administradores. En el piloto las funciones usan la llave
-              gestionada por Modus PM; la activación por-tenant se habilita en
+              gestionada por Nexus; la activación por-tenant se habilita en
               producción.
             </p>
           </div>

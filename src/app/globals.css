@@ -79,8 +79,8 @@
   --popover-foreground: oklch(0.27 0.02 258);
 
   /* Acento petróleo (calmado, técnico, confiable) */
-  --primary: oklch(0.52 0.084 195);
-  --primary-foreground: oklch(0.985 0.01 195);
+  --primary: #0f2044; /* Nexus navy — color del producto */
+  --primary-foreground: oklch(0.985 0.01 255);
 
   --secondary: oklch(0.968 0.004 255);
   --secondary-foreground: oklch(0.32 0.02 258);
@@ -99,7 +99,7 @@
 
   --border: oklch(0.922 0.004 255);
   --input: oklch(0.922 0.004 255);
-  --ring: oklch(0.7 0.06 195);
+  --ring: #0f2044;
 
   /* Gráficas — plan vs real, riesgo, avance */
   --chart-1: oklch(0.52 0.084 195);
@@ -111,8 +111,8 @@
   /* Sidebar */
   --sidebar: oklch(0.975 0.004 255);
   --sidebar-foreground: oklch(0.3 0.02 258);
-  --sidebar-primary: oklch(0.52 0.084 195);
-  --sidebar-primary-foreground: oklch(0.985 0.01 195);
+  --sidebar-primary: #0f2044;
+  --sidebar-primary-foreground: oklch(0.985 0.01 255);
   --sidebar-accent: oklch(0.95 0.02 195);
   --sidebar-accent-foreground: oklch(0.4 0.06 195);
   --sidebar-border: oklch(0.922 0.004 255);
@@ -129,7 +129,7 @@
   --popover-foreground: oklch(0.96 0.004 255);
 
   /* Acento petróleo */
-  --primary: oklch(0.7 0.1 192);
+  --primary: #5b83c9;
   --primary-foreground: oklch(0.2 0.02 258);
 
   --secondary: oklch(0.27 0.014 258);
@@ -149,7 +149,7 @@
 
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.6 0.08 195);
+  --ring: #5b83c9;
 
   /* Gráficas */
   --chart-1: oklch(0.7 0.1 192);
@@ -161,7 +161,7 @@
   /* Sidebar */
   --sidebar: oklch(0.17 0.012 258);
   --sidebar-foreground: oklch(0.92 0.004 255);
-  --sidebar-primary: oklch(0.7 0.1 192);
+  --sidebar-primary: #5b83c9;
   --sidebar-primary-foreground: oklch(0.2 0.02 258);
   --sidebar-accent: oklch(0.3 0.04 195);
   --sidebar-accent-foreground: oklch(0.92 0.03 195);

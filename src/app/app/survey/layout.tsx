@@ -46,7 +46,7 @@ export default async function SurveyLayout({
           <span className="h-4 w-px bg-white/20" />
           <div className="flex items-center gap-2">
             <ClipboardList className="size-4 text-[#e8a020]" />
-            <span className="text-sm font-semibold">Site Survey</span>
+            <span className="text-sm font-semibold">Nexus Survey</span>
           </div>
         </div>
         {orgName && (

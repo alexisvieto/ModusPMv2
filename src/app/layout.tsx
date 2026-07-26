@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Modus PM — Gestión de proyectos de ingeniería",
-    template: "%s · Modus PM",
+    default: "Nexus — Plataforma para proyectos de ingeniería",
+    template: "%s · Nexus",
   },
   description:
     "Plataforma colaborativa en tiempo real para Project Managers de ingeniería: Gantt, curva S, reportes diarios, FAT/SAT, control de costos y analítica con IA.",

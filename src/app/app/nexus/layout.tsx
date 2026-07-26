@@ -46,7 +46,7 @@ export default async function NexusLayout({
           <span className="h-4 w-px bg-white/20" />
           <div className="flex items-center gap-2">
             <Calculator className="size-4 text-[#e8a020]" />
-            <span className="text-sm font-semibold">Cálculo de Proyectos</span>
+            <span className="text-sm font-semibold">Nexus Cálculo</span>
           </div>
         </div>
         {orgName && <span className="text-xs text-white/50">{orgName}</span>}

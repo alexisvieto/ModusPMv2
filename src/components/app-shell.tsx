@@ -153,12 +153,6 @@ export function AppShell({
   }
 
   const initials = initialsOf(profile?.full_name ?? null, userEmail);
-  // White-label por tenant: tiñe los tokens de marca con el color de la org.
-  const brandColor = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(
-    brand.primary,
-  )
-    ? brand.primary
-    : null;
 
   // Contenido del sidebar, reutilizado en el aside de escritorio y en el panel
   // deslizante de móvil. `onNavigate` cierra el panel al tocar un enlace.
@@ -175,12 +169,9 @@ export function AppShell({
         ) : (
           <>
             <div className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
-              <span className="font-mono text-sm font-bold">M</span>
+              <span className="font-mono text-sm font-bold">N</span>
             </div>
-            <span className="text-base font-semibold tracking-tight">
-              Modus
-              <span className="ml-1 font-mono font-medium text-primary">PM</span>
-            </span>
+            <span className="text-base font-semibold tracking-tight">Nexus</span>
           </>
         )}
       </div>
@@ -258,13 +249,6 @@ export function AppShell({
 
   return (
     <TooltipProvider delay={200}>
-      {brandColor && (
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `:root{--primary:${brandColor};--sidebar-primary:${brandColor};--ring:${brandColor};--sidebar-ring:${brandColor};}`,
-          }}
-        />
-      )}
       <div className="flex min-h-svh">
         {/* ===== Sidebar (escritorio) ===== */}
         <aside className="hidden w-60 shrink-0 flex-col border-r bg-sidebar md:flex">
@@ -394,7 +378,7 @@ export function AppShell({
                   )}
                   <DropdownMenuItem onClick={() => setAboutOpen(true)}>
                     <Info className="size-4" />
-                    Acerca de Modus PM
+                    Acerca de Nexus
                   </DropdownMenuItem>
                   <DropdownMenuItem variant="destructive" onClick={signOut}>
                     <LogOut className="size-4" />

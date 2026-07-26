@@ -18,7 +18,7 @@ export default async function PortalPage() {
     .limit(1)
     .maybeSingle();
 
-  let brandName = "Modus PM";
+  let brandName = "Nexus";
   let logoUrl: string | null = null;
   let accent = "#e8a020";
   if (membership) {

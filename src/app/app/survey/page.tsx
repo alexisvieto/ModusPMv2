@@ -33,7 +33,7 @@ export default async function SurveyHome() {
     <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-8">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Site Survey</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Nexus Survey</h1>
           <p className="text-sm text-muted-foreground">
             Inspección de sitio previa a la propuesta.
           </p>

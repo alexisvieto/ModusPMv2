@@ -4,7 +4,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { ExternalLink, X } from "lucide-react";
 
 const APP_VERSION = "1.0";
-const TEAL = "#0F766E"; // marca del producto (Modus PM), fija aquí aunque el tenant tiña la app
+const NAVY = "#0F2044"; // Nexus navy — color del producto
 
 export function AboutDialog({
   open,
@@ -26,14 +26,14 @@ export function AboutDialog({
           </Dialog.Close>
 
           {/* Producto */}
-          <Dialog.Title className="text-lg font-semibold tracking-tight">
-            Modus
-            <span className="ml-1 font-mono font-medium" style={{ color: TEAL }}>
-              PM
-            </span>
+          <Dialog.Title
+            className="text-lg font-semibold tracking-tight"
+            style={{ color: NAVY }}
+          >
+            Nexus
           </Dialog.Title>
           <Dialog.Description className="mt-0.5 text-sm text-muted-foreground">
-            Gestión de proyectos de ingeniería
+            Plataforma para proyectos de ingeniería
           </Dialog.Description>
           <p className="mt-1 text-xs text-muted-foreground">
             Versión {APP_VERSION}
@@ -62,20 +62,20 @@ export function AboutDialog({
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 font-medium hover:underline"
-              style={{ color: TEAL }}
+              style={{ color: NAVY }}
             >
               www.nexerai.io
               <ExternalLink className="size-3.5" />
             </a>
             <p className="text-muted-foreground">
-              Modus PM es parte de la suite de Nexera.
+              Nexus es parte de la suite de Nexera.
             </p>
             <p className="text-muted-foreground">
               ¿Necesitas ayuda?{" "}
               <a
                 href="mailto:soporte@nexerai.io"
                 className="font-medium hover:underline"
-                style={{ color: TEAL }}
+                style={{ color: NAVY }}
               >
                 soporte@nexerai.io
               </a>

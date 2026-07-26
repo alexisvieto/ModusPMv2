@@ -1,7 +1,7 @@
 import { HelpCenter } from "@/components/help/help-center";
 
 export const metadata = {
-  title: "Ayuda — Modus PM",
+  title: "Ayuda — Nexus",
 };
 
 export default function AyudaPage() {

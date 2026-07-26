@@ -24,21 +24,21 @@ type AppCard = {
 // después; hoy los datos ya están aislados por RLS dentro de cada app.
 const APPS: AppCard[] = [
   {
-    name: "Cálculo de Proyectos",
+    name: "Nexus Cálculo",
     tagline: "Presupuestos y cotizaciones",
     href: "/app/nexus",
     icon: Calculator,
     enabled: true,
   },
   {
-    name: "Modus PM",
+    name: "Nexus PM",
     tagline: "Gestión de proyectos",
     href: "/app/inicio",
     icon: FolderKanban,
     enabled: true,
   },
   {
-    name: "Site Survey",
+    name: "Nexus Survey",
     tagline: "Levantamiento en sitio",
     href: "/app/survey",
     icon: ClipboardList,

@@ -22,6 +22,7 @@ type SurveyProps = {
   organization_id: string;
   client_name: string;
   project_name: string;
+  odoo_code: string;
   site_location: string;
   survey_date: string;
   engineer_name: string;
@@ -77,6 +78,7 @@ export function SurveyEditor({
 
   const [client, setClient] = useState(survey.client_name);
   const [project, setProject] = useState(survey.project_name);
+  const [odooCode, setOdooCode] = useState(survey.odoo_code);
   const [site, setSite] = useState(survey.site_location);
   const [date, setDate] = useState(survey.survey_date);
   const [engineer, setEngineer] = useState(survey.engineer_name);
@@ -98,6 +100,7 @@ export function SurveyEditor({
     const base = {
       client_name: client.trim() || null,
       project_name: project.trim() || null,
+      odoo_code: odooCode.trim() || null,
       site_location: site.trim() || null,
       survey_date: date,
       engineer_name: engineer.trim() || null,
@@ -351,6 +354,14 @@ export function SurveyEditor({
           </Field>
           <Field label="Ingeniero">
             <input className={inp} value={engineer} onChange={(e) => setEngineer(e.target.value)} />
+          </Field>
+          <Field label="Código Odoo (S00XXX)">
+            <input
+              className={inp}
+              value={odooCode}
+              onChange={(e) => setOdooCode(e.target.value)}
+              placeholder="Ej. S00549"
+            />
           </Field>
         </div>
       </div>

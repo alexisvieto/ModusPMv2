@@ -23,6 +23,7 @@ export type Database = {
           field_days: number
           id: string
           notes: string | null
+          odoo_code: string | null
           organization_id: string
           personnel: number
           project_name: string | null
@@ -39,6 +40,7 @@ export type Database = {
           field_days?: number
           id?: string
           notes?: string | null
+          odoo_code?: string | null
           organization_id: string
           personnel?: number
           project_name?: string | null
@@ -55,6 +57,7 @@ export type Database = {
           field_days?: number
           id?: string
           notes?: string | null
+          odoo_code?: string | null
           organization_id?: string
           personnel?: number
           project_name?: string | null

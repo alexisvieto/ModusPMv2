@@ -16,7 +16,7 @@ export default async function SurveyPage({
   const { data: s } = await supabase
     .from("survey_surveys")
     .select(
-      "id, organization_id, client_name, project_name, site_location, survey_date, engineer_name, personnel, field_days, notes, status",
+      "id, organization_id, client_name, project_name, odoo_code, site_location, survey_date, engineer_name, notes, status",
     )
     .eq("id", surveyId)
     .maybeSingle();
@@ -67,6 +67,7 @@ export default async function SurveyPage({
         organization_id: s.organization_id,
         client_name: s.client_name ?? "",
         project_name: s.project_name ?? "",
+        odoo_code: s.odoo_code ?? "",
         site_location: s.site_location ?? "",
         survey_date: s.survey_date,
         engineer_name: s.engineer_name ?? "",

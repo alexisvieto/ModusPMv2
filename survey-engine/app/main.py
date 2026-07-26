@@ -89,6 +89,7 @@ class Brand(BaseModel):
 class Survey(BaseModel):
     client: str = ""
     project: str = ""
+    odoo_code: str = ""
     site: str = ""
     date: str = ""
     engineer: str = ""

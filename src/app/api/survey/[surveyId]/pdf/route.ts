@@ -29,7 +29,7 @@ export async function GET(
   const { data: s } = await supabase
     .from("survey_surveys")
     .select(
-      "id, organization_id, client_name, project_name, site_location, survey_date, engineer_name, personnel, field_days, notes, status",
+      "id, organization_id, client_name, project_name, odoo_code, site_location, survey_date, engineer_name, notes, status",
     )
     .eq("id", surveyId)
     .maybeSingle();
@@ -114,11 +114,10 @@ export async function GET(
     survey: {
       client: s.client_name ?? "",
       project: s.project_name ?? "",
+      odoo_code: s.odoo_code ?? "",
       site: s.site_location ?? "",
       date: s.survey_date ?? "",
       engineer: s.engineer_name ?? "",
-      personnel: String(s.personnel ?? 0),
-      field_days: String(s.field_days ?? 0),
       notes: s.notes ?? "",
       status: s.status ?? "borrador",
     },

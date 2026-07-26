@@ -84,7 +84,8 @@
     column-gutter: (10pt, 26pt, 10pt),
     label[Cliente], [#s.client], label[Proyecto], [#s.project],
     label[Sitio], [#s.site], label[Fecha], [#s.date],
-    label[Ingeniero], [#s.engineer], label[Estado], [#if s.status == "completado" [Completado] else [Borrador]],
+    label[Ingeniero], [#s.engineer], label[Código Odoo], [#s.odoo_code],
+    label[Estado], [#if s.status == "completado" [Completado] else [Borrador]], [], [],
   )
 ]
 

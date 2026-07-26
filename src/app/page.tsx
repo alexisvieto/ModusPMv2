@@ -99,12 +99,12 @@ export default function Home() {
             <span className="font-medium text-foreground">Nexera</span>
             {" · "}
             <a
-              href="https://www.nexera.io"
+              href="https://www.nexerai.io"
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-foreground hover:underline"
             >
-              www.nexera.io
+              www.nexerai.io
             </a>
           </div>
         </div>

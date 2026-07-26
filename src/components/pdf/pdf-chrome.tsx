@@ -119,7 +119,7 @@ export function PdfFooter({ brand, right }: { brand: Brand; right?: string }) {
         <Text>{right ?? ""}</Text>
       </View>
       {brand.exportCredit && (
-        <Text style={s.credit}>a product by Nexera · nexera.io</Text>
+        <Text style={s.credit}>a product by Nexera · nexerai.io</Text>
       )}
     </View>
   );

@@ -58,13 +58,13 @@ export function AboutDialog({
           {/* Enlaces */}
           <div className="mt-4 space-y-2 text-sm">
             <a
-              href="https://www.nexera.io"
+              href="https://www.nexerai.io"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 font-medium hover:underline"
               style={{ color: TEAL }}
             >
-              www.nexera.io
+              www.nexerai.io
               <ExternalLink className="size-3.5" />
             </a>
             <p className="text-muted-foreground">
@@ -73,11 +73,11 @@ export function AboutDialog({
             <p className="text-muted-foreground">
               ¿Necesitas ayuda?{" "}
               <a
-                href="mailto:soporte@nexera.io"
+                href="mailto:soporte@nexerai.io"
                 className="font-medium hover:underline"
                 style={{ color: TEAL }}
               >
-                soporte@nexera.io
+                soporte@nexerai.io
               </a>
             </p>
           </div>

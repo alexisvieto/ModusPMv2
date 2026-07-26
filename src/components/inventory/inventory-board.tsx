@@ -535,7 +535,7 @@ export function InventoryBoard({
       const credit = foot + 1;
       ws.mergeCells(credit, 1, credit, 16);
       paint(ws.getCell(credit, 1), {
-        v: "a product by Nexera · nexera.io",
+        v: "a product by Nexera · nexerai.io",
         font: { name: FONT, size: 8, italic: true, color: { argb: "FF9CA3AF" } },
         align: { vertical: "middle", horizontal: "center" },
       });

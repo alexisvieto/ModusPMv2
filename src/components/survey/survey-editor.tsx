@@ -25,8 +25,6 @@ type SurveyProps = {
   site_location: string;
   survey_date: string;
   engineer_name: string;
-  personnel: string;
-  field_days: string;
   notes: string;
   status: string;
 };
@@ -82,8 +80,6 @@ export function SurveyEditor({
   const [site, setSite] = useState(survey.site_location);
   const [date, setDate] = useState(survey.survey_date);
   const [engineer, setEngineer] = useState(survey.engineer_name);
-  const [personnel, setPersonnel] = useState(survey.personnel);
-  const [days, setDays] = useState(survey.field_days);
   const [notes, setNotes] = useState(survey.notes);
   const [status, setStatus] = useState(survey.status);
   const [saving, setSaving] = useState(false);
@@ -105,8 +101,6 @@ export function SurveyEditor({
       site_location: site.trim() || null,
       survey_date: date,
       engineer_name: engineer.trim() || null,
-      personnel: parseInt(personnel) || 0,
-      field_days: Number(days) || 0,
       notes: notes.trim() || null,
     };
     const patch = finalize ? { ...base, status: "completado" } : base;
@@ -358,31 +352,6 @@ export function SurveyEditor({
           <Field label="Ingeniero">
             <input className={inp} value={engineer} onChange={(e) => setEngineer(e.target.value)} />
           </Field>
-        </div>
-        {/* personal y días — alimentan la cotización de Nexus */}
-        <div className="grid gap-3 border-t bg-muted/30 p-4 sm:grid-cols-2">
-          <Field label="Personal en campo (nº)">
-            <input
-              type="number"
-              inputMode="numeric"
-              className={inp}
-              value={personnel}
-              onChange={(e) => setPersonnel(e.target.value)}
-            />
-          </Field>
-          <Field label="Días de campo">
-            <input
-              type="number"
-              inputMode="decimal"
-              className={inp}
-              value={days}
-              onChange={(e) => setDays(e.target.value)}
-            />
-          </Field>
-          <p className="text-xs text-muted-foreground sm:col-span-2">
-            Personal y días alimentan la mano de obra y el cronograma al crear la
-            cotización en Nexus.
-          </p>
         </div>
       </div>
 

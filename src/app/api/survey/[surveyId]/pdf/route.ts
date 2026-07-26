@@ -60,7 +60,7 @@ export async function GET(
       supabase
         .from("organizations")
         .select(
-          "name, legal_name, brand_primary, brand_accent, brand_dark, logo_url, website, contact_email, contact_phone, address",
+          "name, legal_name, brand_primary, brand_accent, brand_dark, logo_url, website, contact_email, contact_phone, address, export_credit",
         )
         .eq("id", s.organization_id)
         .maybeSingle(),
@@ -109,6 +109,7 @@ export async function GET(
       phone: org?.contact_phone ?? "",
       address: org?.address ?? "",
       logo_url: logoAbs,
+      credit: org?.export_credit ?? true,
     },
     survey: {
       client: s.client_name ?? "",

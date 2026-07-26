@@ -70,8 +70,6 @@ export default async function SurveyPage({
         site_location: s.site_location ?? "",
         survey_date: s.survey_date,
         engineer_name: s.engineer_name ?? "",
-        personnel: String(s.personnel ?? 0),
-        field_days: String(s.field_days ?? 0),
         notes: s.notes ?? "",
         status: s.status ?? "borrador",
       }}

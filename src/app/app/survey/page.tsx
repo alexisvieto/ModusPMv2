@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClipboardList, MapPin, Users } from "lucide-react";
+import { ClipboardList, MapPin } from "lucide-react";
 
 import { NewSurveyButton } from "@/components/survey/new-survey-button";
 import { createClient } from "@/lib/supabase/server";
@@ -66,12 +66,8 @@ export default async function SurveyHome() {
                   <span className="truncate">{s.site_location}</span>
                 </span>
               )}
-              <div className="mt-1 flex items-center gap-4 text-xs text-muted-foreground">
-                <span>{s.survey_date}</span>
-                <span className="flex items-center gap-1">
-                  <Users className="size-3.5" />
-                  {s.personnel} pers · {Number(s.field_days)} d
-                </span>
+              <div className="mt-1 text-xs text-muted-foreground">
+                {s.survey_date}
               </div>
             </Link>
           ))}

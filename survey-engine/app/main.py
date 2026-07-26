@@ -83,6 +83,7 @@ class Brand(BaseModel):
     phone: str = ""
     address: str = ""
     logo_url: str = ""
+    credit: bool = True
 
 
 class Survey(BaseModel):

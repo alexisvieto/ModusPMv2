@@ -48,12 +48,11 @@
       [
         #{
           let parts = ()
-          if brand.phone != "" { parts.push(brand.phone) }
-          if brand.email != "" { parts.push(brand.email) }
           if brand.website != "" { parts.push(brand.website) }
+          if brand.email != "" { parts.push(brand.email) }
           parts.join("  ·  ")
         }
-        #if brand.address != "" [ \ #brand.address]
+        #if brand.credit [ \ #text(size: 7pt)[Un producto de Nexera — www.nexerai.io]]
       ],
       [Página #counter(page).display() de #counter(page).final().first()],
     )
@@ -88,23 +87,6 @@
     label[Ingeniero], [#s.engineer], label[Estado], [#if s.status == "completado" [Completado] else [Borrador]],
   )
 ]
-
-// ── Personal y días ──
-#v(0.45cm)
-#grid(
-  columns: (1fr, 1fr),
-  gutter: 14pt,
-  block(fill: navy, inset: 14pt, radius: 6pt, width: 100%)[
-    #text(fill: white.transparentize(25%), size: 9pt)[PERSONAL EN CAMPO]
-    #v(2pt)
-    #text(fill: white, size: 22pt, weight: "bold")[#s.personnel] #text(fill: white.transparentize(30%), size: 10pt)[personas]
-  ],
-  block(fill: navy, inset: 14pt, radius: 6pt, width: 100%)[
-    #text(fill: white.transparentize(25%), size: 9pt)[DÍAS DE CAMPO]
-    #v(2pt)
-    #text(fill: white, size: 22pt, weight: "bold")[#s.field_days] #text(fill: white.transparentize(30%), size: 10pt)[días]
-  ],
-)
 
 // ── Contactos ──
 #if data.contacts.len() > 0 {

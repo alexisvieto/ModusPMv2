@@ -36,6 +36,7 @@ app = FastAPI(title="Survey Engine", version="1.0")
 
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 TEMPLATE = Path(__file__).parent / "template.typ"
+PERMIT_TEMPLATE = Path(__file__).parent / "permit.typ"
 EXT_BY_TYPE = {
     "image/png": ".png",
     "image/jpeg": ".jpg",
@@ -107,6 +108,58 @@ class RenderRequest(BaseModel):
     photos: list[ImageRef] = []
     signatures: list[SigRef] = []
     filename: str = "reporte-site-survey"
+
+
+# ---------- HSE: permiso de trabajo ----------
+class PermitPerson(BaseModel):
+    nombre: str = ""
+    cedula: str = ""
+    firma_url: str = ""
+
+
+class ChecklistItemReq(BaseModel):
+    texto: str = ""
+    cumple: bool | None = None
+
+
+class ChecklistSecReq(BaseModel):
+    seccion: str = ""
+    items: list[ChecklistItemReq] = []
+
+
+class Signer(BaseModel):
+    nombre: str = ""
+    cedula: str = ""
+    firma_url: str = ""
+
+
+class PermitInfo(BaseModel):
+    titulo: str = ""
+    estado: str = "pendiente"
+    empresa: str = ""
+    ciudad_lugar: str = ""
+    area_proceso: str = ""
+    ubicacion: str = ""
+    es_altura: bool = False
+    fecha: str = ""
+    fecha_inicio: str = ""
+    fecha_fin: str = ""
+    hora_inicio: str = ""
+    hora_fin: str = ""
+    descripcion_tarea: str = ""
+    altura_estimada: str = ""
+    equipo_a_usar: str = ""
+    observaciones: str = ""
+
+
+class RenderPermitRequest(BaseModel):
+    brand: Brand
+    permit: PermitInfo
+    personal: list[PermitPerson] = []
+    checklist: list[ChecklistSecReq] = []
+    emisor: Signer = Signer()
+    vigia: Signer = Signer()
+    filename: str = "permiso-de-trabajo"
 
 
 async def require_secret(x_engine_secret: str = Header(default="")) -> None:
@@ -224,5 +277,72 @@ async def render(req: RenderRequest, _: None = Depends(require_secret)) -> Respo
             media_type="application/pdf",
             headers={"Content-Disposition": f'inline; filename="{safe}.pdf"'},
         )
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _brand_sanitized(b: Brand) -> dict:
+    brand = b.model_dump()
+    brand["primary"] = _hex_or(brand["primary"], "#F79A02")
+    brand["accent"] = _hex_or(brand["accent"], "#F8BA00")
+    brand["dark"] = _hex_or(brand["dark"], "#2D2D2D")
+    return brand
+
+
+async def _compile(tmp: Path, template: Path, data: dict, filename: str) -> Response:
+    (tmp / "data.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    shutil.copy(template, tmp / "template.typ")
+    out = tmp / "out.pdf"
+    proc = await asyncio.to_thread(
+        subprocess.run,
+        ["typst", "compile", "--root", str(tmp), str(tmp / "template.typ"), str(out)],
+        capture_output=True,
+        timeout=COMPILE_TIMEOUT,
+    )
+    if proc.returncode != 0 or not out.exists():
+        err = proc.stderr.decode("utf-8", "replace")[:1500]
+        print(f"[survey-engine] typst failed: {err}", flush=True)
+        raise HTTPException(status_code=500, detail=f"Fallo al compilar el PDF: {err}")
+    pdf = out.read_bytes()
+    safe = re.sub(r"[^\w\-]+", "_", filename).strip("_") or "documento"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{safe}.pdf"'},
+    )
+
+
+@app.post("/render-permit")
+async def render_permit(req: RenderPermitRequest, _: None = Depends(require_secret)) -> Response:
+    tmp = Path(tempfile.mkdtemp(prefix="permit_"))
+    images = tmp / "images"
+    images.mkdir()
+    try:
+        brand = _brand_sanitized(req.brand)
+        async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT, follow_redirects=True) as client:
+            brand["logo"] = await _download(client, req.brand.logo_url, images, "logo") or ""
+            personal = []
+            for i, per in enumerate(req.personal):
+                fp = await _download(client, per.firma_url, images, f"pers_{i}") if per.firma_url else None
+                personal.append({"nombre": per.nombre, "cedula": per.cedula, "firma": fp or ""})
+            emisor = req.emisor.model_dump()
+            if req.emisor.firma_url:
+                emisor["firma"] = await _download(client, req.emisor.firma_url, images, "emisor") or ""
+            else:
+                emisor["firma"] = ""
+            vigia = req.vigia.model_dump()
+            if req.vigia.firma_url:
+                vigia["firma"] = await _download(client, req.vigia.firma_url, images, "vigia") or ""
+            else:
+                vigia["firma"] = ""
+        data = {
+            "brand": brand,
+            "permit": req.permit.model_dump(),
+            "personal": personal,
+            "checklist": [c.model_dump() for c in req.checklist],
+            "emisor": emisor,
+            "vigia": vigia,
+        }
+        return await _compile(tmp, PERMIT_TEMPLATE, data, req.filename)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

@@ -5,6 +5,7 @@ import {
   Calculator,
   ClipboardList,
   FolderKanban,
+  HardHat,
   LogOut,
 } from "lucide-react";
 
@@ -42,6 +43,13 @@ const APPS: AppCard[] = [
     tagline: "Levantamiento en sitio",
     href: "/app/survey",
     icon: ClipboardList,
+    enabled: true,
+  },
+  {
+    name: "Nexus HSE",
+    tagline: "Seguridad y permisos de trabajo",
+    href: "/app/hse",
+    icon: HardHat,
     enabled: true,
   },
 ];
@@ -125,7 +133,7 @@ export function Portal({
         </div>
 
         {/* Tarjetas de apps */}
-        <div className="grid w-full max-w-3xl gap-4 sm:grid-cols-3">
+        <div className="grid w-full max-w-4xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {APPS.map((app) => {
             const Icon = app.icon;
             const inner = (

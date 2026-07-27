@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import {
   SignaturePad,
   type SignaturePadHandle,
-} from "@/components/survey/signature-pad";
+} from "@/components/ui/signature-pad";
 import { createClient } from "@/lib/supabase/client";
 
 const inp =

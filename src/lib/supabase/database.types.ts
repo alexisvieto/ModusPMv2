@@ -14,6 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
+      hse_permits: {
+        Row: {
+          altura_estimada: string | null
+          area_proceso: string | null
+          checklist: Json
+          ciudad_lugar: string | null
+          created_at: string
+          created_by: string | null
+          descripcion_tarea: string | null
+          emisor_cedula: string | null
+          emisor_firma_path: string | null
+          emisor_nombre: string | null
+          empresa: string | null
+          equipo_a_usar: string | null
+          estado: string
+          fecha: string | null
+          fecha_fin: string | null
+          fecha_inicio: string | null
+          hora_fin: string | null
+          hora_inicio: string | null
+          id: string
+          observaciones: string | null
+          organization_id: string
+          permit_type: string
+          personal: Json
+          ubicacion: string | null
+          updated_at: string
+          vigia_cedula: string | null
+          vigia_firma_path: string | null
+          vigia_nombre: string | null
+        }
+        Insert: {
+          altura_estimada?: string | null
+          area_proceso?: string | null
+          checklist?: Json
+          ciudad_lugar?: string | null
+          created_at?: string
+          created_by?: string | null
+          descripcion_tarea?: string | null
+          emisor_cedula?: string | null
+          emisor_firma_path?: string | null
+          emisor_nombre?: string | null
+          empresa?: string | null
+          equipo_a_usar?: string | null
+          estado?: string
+          fecha?: string | null
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          hora_fin?: string | null
+          hora_inicio?: string | null
+          id?: string
+          observaciones?: string | null
+          organization_id: string
+          permit_type: string
+          personal?: Json
+          ubicacion?: string | null
+          updated_at?: string
+          vigia_cedula?: string | null
+          vigia_firma_path?: string | null
+          vigia_nombre?: string | null
+        }
+        Update: {
+          altura_estimada?: string | null
+          area_proceso?: string | null
+          checklist?: Json
+          ciudad_lugar?: string | null
+          created_at?: string
+          created_by?: string | null
+          descripcion_tarea?: string | null
+          emisor_cedula?: string | null
+          emisor_firma_path?: string | null
+          emisor_nombre?: string | null
+          empresa?: string | null
+          equipo_a_usar?: string | null
+          estado?: string
+          fecha?: string | null
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          hora_fin?: string | null
+          hora_inicio?: string | null
+          id?: string
+          observaciones?: string | null
+          organization_id?: string
+          permit_type?: string
+          personal?: Json
+          ubicacion?: string | null
+          updated_at?: string
+          vigia_cedula?: string | null
+          vigia_firma_path?: string | null
+          vigia_nombre?: string | null
+        }
+        Relationships: []
+      }
       survey_surveys: {
         Row: {
           client_name: string | null

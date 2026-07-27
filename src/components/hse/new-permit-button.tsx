@@ -63,7 +63,7 @@ export function NewPermitButton({ orgId }: { orgId: string }) {
       toast.error("No se pudo crear el permiso.");
       return;
     }
-    router.push(`/app/hse/${data.id}`);
+    router.push(`/app/hse/permisos/${data.id}`);
   }
 
   const grupos = Object.entries(GRUPOS_PERMISOS) as [

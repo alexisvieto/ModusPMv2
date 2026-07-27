@@ -107,6 +107,153 @@ export type Database = {
         }
         Relationships: []
       }
+      hse_empleados: {
+        Row: {
+          activo: boolean
+          cargo: string | null
+          cedula: string | null
+          created_at: string
+          division: string | null
+          foto_path: string | null
+          id: string
+          nombre: string
+          organization_id: string
+          talla_botas: string | null
+          talla_camisa: string | null
+          talla_casco: string | null
+          talla_pantalon: string | null
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          cargo?: string | null
+          cedula?: string | null
+          created_at?: string
+          division?: string | null
+          foto_path?: string | null
+          id?: string
+          nombre: string
+          organization_id: string
+          talla_botas?: string | null
+          talla_camisa?: string | null
+          talla_casco?: string | null
+          talla_pantalon?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          cargo?: string | null
+          cedula?: string | null
+          created_at?: string
+          division?: string | null
+          foto_path?: string | null
+          id?: string
+          nombre?: string
+          organization_id?: string
+          talla_botas?: string | null
+          talla_camisa?: string | null
+          talla_casco?: string | null
+          talla_pantalon?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hse_epp_items: {
+        Row: {
+          activo: boolean
+          categoria: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          imagen_path: string | null
+          marca: string | null
+          modelo: string | null
+          nombre: string
+          organization_id: string
+          stock_actual: number
+          stock_minimo: number
+          updated_at: string
+          vida_util_dias: number | null
+        }
+        Insert: {
+          activo?: boolean
+          categoria?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          imagen_path?: string | null
+          marca?: string | null
+          modelo?: string | null
+          nombre: string
+          organization_id: string
+          stock_actual?: number
+          stock_minimo?: number
+          updated_at?: string
+          vida_util_dias?: number | null
+        }
+        Update: {
+          activo?: boolean
+          categoria?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          imagen_path?: string | null
+          marca?: string | null
+          modelo?: string | null
+          nombre?: string
+          organization_id?: string
+          stock_actual?: number
+          stock_minimo?: number
+          updated_at?: string
+          vida_util_dias?: number | null
+        }
+        Relationships: []
+      }
+      hse_epp_asignaciones: {
+        Row: {
+          activo: boolean
+          cantidad: number
+          created_at: string
+          empleado_id: string
+          entregado_por: string | null
+          epp_id: string
+          fecha_entrega: string
+          fecha_vencimiento: string | null
+          firma_path: string | null
+          id: string
+          notas: string | null
+          organization_id: string
+        }
+        Insert: {
+          activo?: boolean
+          cantidad?: number
+          created_at?: string
+          empleado_id: string
+          entregado_por?: string | null
+          epp_id: string
+          fecha_entrega?: string
+          fecha_vencimiento?: string | null
+          firma_path?: string | null
+          id?: string
+          notas?: string | null
+          organization_id: string
+        }
+        Update: {
+          activo?: boolean
+          cantidad?: number
+          created_at?: string
+          empleado_id?: string
+          entregado_por?: string | null
+          epp_id?: string
+          fecha_entrega?: string
+          fecha_vencimiento?: string | null
+          firma_path?: string | null
+          id?: string
+          notas?: string | null
+          organization_id?: string
+        }
+        Relationships: []
+      }
       survey_surveys: {
         Row: {
           client_name: string | null

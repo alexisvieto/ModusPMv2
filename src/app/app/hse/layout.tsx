@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, HardHat } from "lucide-react";
 
+import { HseNav } from "@/components/hse/hse-nav";
 import { createClient } from "@/lib/supabase/server";
 
 // Chrome propio de Nexus HSE: barra navy + volver al portal. Mobile-first.
@@ -53,6 +54,7 @@ export default async function HSELayout({
           <span className="hidden text-xs text-white/50 sm:inline">{orgName}</span>
         )}
       </header>
+      <HseNav />
       <main className="min-w-0">{children}</main>
     </div>
   );

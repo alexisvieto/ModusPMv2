@@ -107,6 +107,78 @@ export type Database = {
         }
         Relationships: []
       }
+      hse_charlas: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          duracion_min: number | null
+          facilitador: string | null
+          facilitador_id: string | null
+          fecha: string
+          hora_inicio: string | null
+          id: string
+          lugar: string | null
+          organization_id: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          duracion_min?: number | null
+          facilitador?: string | null
+          facilitador_id?: string | null
+          fecha?: string
+          hora_inicio?: string | null
+          id?: string
+          lugar?: string | null
+          organization_id: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          duracion_min?: number | null
+          facilitador?: string | null
+          facilitador_id?: string | null
+          fecha?: string
+          hora_inicio?: string | null
+          id?: string
+          lugar?: string | null
+          organization_id?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hse_charla_asistencias: {
+        Row: {
+          charla_id: string
+          created_at: string
+          empleado_id: string
+          firma_path: string | null
+          id: string
+          organization_id: string
+        }
+        Insert: {
+          charla_id: string
+          created_at?: string
+          empleado_id: string
+          firma_path?: string | null
+          id?: string
+          organization_id: string
+        }
+        Update: {
+          charla_id?: string
+          created_at?: string
+          empleado_id?: string
+          firma_path?: string | null
+          id?: string
+          organization_id?: string
+        }
+        Relationships: []
+      }
       hse_empleados: {
         Row: {
           activo: boolean
@@ -216,6 +288,60 @@ export type Database = {
           requirio_atencion_medica?: boolean
           severidad?: string
           tipo_evento?: string
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      hse_inspecciones: {
+        Row: {
+          accion_requerida: string | null
+          created_at: string
+          estado: string
+          fecha: string
+          fecha_limite: string | null
+          fotos: Json
+          hallazgo: string
+          id: string
+          inspector_id: string | null
+          organization_id: string
+          responsable: string | null
+          riesgo: string
+          tipo_inspeccion: string | null
+          ubicacion: string | null
+          updated_at: string
+        }
+        Insert: {
+          accion_requerida?: string | null
+          created_at?: string
+          estado?: string
+          fecha?: string
+          fecha_limite?: string | null
+          fotos?: Json
+          hallazgo: string
+          id?: string
+          inspector_id?: string | null
+          organization_id: string
+          responsable?: string | null
+          riesgo?: string
+          tipo_inspeccion?: string | null
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accion_requerida?: string | null
+          created_at?: string
+          estado?: string
+          fecha?: string
+          fecha_limite?: string | null
+          fotos?: Json
+          hallazgo?: string
+          id?: string
+          inspector_id?: string | null
+          organization_id?: string
+          responsable?: string | null
+          riesgo?: string
+          tipo_inspeccion?: string | null
           ubicacion?: string | null
           updated_at?: string
         }

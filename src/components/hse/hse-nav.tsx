@@ -7,7 +7,9 @@ import {
   ClipboardCheck,
   HardHat,
   LayoutDashboard,
+  Mic,
   PackageOpen,
+  Search,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -18,6 +20,8 @@ const TABS: { href: string; label: string; icon: LucideIcon; exact?: boolean }[]
   { href: "/app/hse", label: "Tablero", icon: LayoutDashboard, exact: true },
   { href: "/app/hse/permisos", label: "Permisos", icon: ClipboardCheck },
   { href: "/app/hse/incidentes", label: "Incidentes", icon: AlertTriangle },
+  { href: "/app/hse/inspecciones", label: "Inspecciones", icon: Search },
+  { href: "/app/hse/charlas", label: "Charlas", icon: Mic },
   { href: "/app/hse/inventario", label: "Inventario", icon: HardHat },
   { href: "/app/hse/empleados", label: "Empleados", icon: Users },
   { href: "/app/hse/despacho", label: "Despacho", icon: PackageOpen },

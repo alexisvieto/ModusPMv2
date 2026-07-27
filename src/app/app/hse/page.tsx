@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   HardHat,
   PackageOpen,
+  Search,
   ShieldAlert,
   Users,
 } from "lucide-react";
@@ -35,6 +36,7 @@ export default async function HseDashboard() {
     { data: asignaciones },
     { data: permits },
     { data: incidentes },
+    { data: inspecciones },
   ] = await Promise.all([
     supabase
       .from("hse_empleados")
@@ -62,6 +64,12 @@ export default async function HseDashboard() {
       .eq("organization_id", orgId)
       .neq("estado", "cerrado")
       .order("fecha_evento", { ascending: false }),
+    supabase
+      .from("hse_inspecciones")
+      .select("id, hallazgo, riesgo, fecha_limite, estado")
+      .eq("organization_id", orgId)
+      .neq("estado", "cerrado")
+      .order("fecha", { ascending: false }),
   ]);
 
   const empById = new Map((empleados ?? []).map((e) => [e.id, e.nombre]));
@@ -84,6 +92,7 @@ export default async function HseDashboard() {
     (p) => p.fecha_fin && p.fecha_fin < today,
   );
   const incidentesAbiertos = incidentes ?? [];
+  const hallazgosAbiertos = inspecciones ?? [];
 
   const TIPO_LABEL: Record<string, string> = {
     accidente: "Accidente",
@@ -94,12 +103,23 @@ export default async function HseDashboard() {
   const incidentesOrden = [...incidentesAbiertos].sort(
     (a, b) => (SEV_ORDER[a.severidad] ?? 9) - (SEV_ORDER[b.severidad] ?? 9),
   );
+  const RIESGO_LABEL: Record<string, string> = {
+    bajo: "Bajo",
+    medio: "Medio",
+    alto: "Alto",
+    critico: "Crítico",
+  };
+  const RIESGO_ORDER: Record<string, number> = { critico: 0, alto: 1, medio: 2, bajo: 3 };
+  const hallazgosOrden = [...hallazgosAbiertos].sort(
+    (a, b) => (RIESGO_ORDER[a.riesgo] ?? 9) - (RIESGO_ORDER[b.riesgo] ?? 9),
+  );
 
   const kpis = [
     { label: "Empleados", value: empById.size, icon: Users, href: "/app/hse/empleados" },
     { label: "Ítems EPP", value: itemById.size, icon: PackageOpen, href: "/app/hse/inventario" },
     { label: "Permisos abiertos", value: permisosAbiertos.length, icon: ClipboardCheck, href: "/app/hse/permisos" },
     { label: "Incidentes abiertos", value: incidentesAbiertos.length, icon: ShieldAlert, href: "/app/hse/incidentes" },
+    { label: "Hallazgos abiertos", value: hallazgosAbiertos.length, icon: Search, href: "/app/hse/inspecciones" },
     { label: "Stock crítico", value: stockCritico.length, icon: HardHat, href: "/app/hse/inventario" },
   ];
 
@@ -113,7 +133,7 @@ export default async function HseDashboard() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {kpis.map((k) => {
           const Icon = k.icon;
           return (
@@ -144,6 +164,31 @@ export default async function HseDashboard() {
             left={`${TIPO_LABEL[i.tipo_evento] ?? i.tipo_evento} · ${i.descripcion}`}
             right={i.severidad}
             danger={i.severidad === "grave" || i.severidad === "fatal"}
+          />
+        ))}
+      </AlertCard>
+
+      <AlertCard
+        title="Hallazgos abiertos"
+        icon={<Search className="size-4" />}
+        count={hallazgosAbiertos.length}
+        href="/app/hse/inspecciones"
+        empty="Sin hallazgos abiertos."
+      >
+        {hallazgosOrden.slice(0, 6).map((h) => (
+          <Row
+            key={h.id}
+            left={h.hallazgo}
+            right={
+              h.fecha_limite && h.fecha_limite < today
+                ? `${RIESGO_LABEL[h.riesgo] ?? h.riesgo} · vencido`
+                : (RIESGO_LABEL[h.riesgo] ?? h.riesgo)
+            }
+            danger={
+              h.riesgo === "alto" ||
+              h.riesgo === "critico" ||
+              (!!h.fecha_limite && h.fecha_limite < today)
+            }
           />
         ))}
       </AlertCard>

@@ -42,6 +42,8 @@ HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 TEMPLATE = Path(__file__).parent / "template.typ"
 PERMIT_TEMPLATE = Path(__file__).parent / "permit.typ"
 INCIDENTE_TEMPLATE = Path(__file__).parent / "incidente.typ"
+INSPECCION_TEMPLATE = Path(__file__).parent / "inspeccion.typ"
+CHARLA_TEMPLATE = Path(__file__).parent / "charla.typ"
 EXT_BY_TYPE = {
     "image/png": ".png",
     "image/jpeg": ".jpg",
@@ -189,6 +191,51 @@ class RenderIncidenteRequest(BaseModel):
     inc: IncidenteInfo
     fotos: list[ImageRef] = []
     filename: str = "reporte-incidente"
+
+
+# ---------- HSE: reporte de inspección ----------
+class InspeccionInfo(BaseModel):
+    riesgo_label: str = "Medio"
+    riesgo_color: str = "#CA8A04"
+    estado_label: str = "Abierto"
+    fecha: str = ""
+    ubicacion: str = ""
+    tipo_inspeccion: str = ""
+    hallazgo: str = ""
+    accion_requerida: str = ""
+    responsable: str = ""
+    fecha_limite: str = ""
+
+
+class RenderInspeccionRequest(BaseModel):
+    brand: Brand
+    ins: InspeccionInfo
+    fotos: list[ImageRef] = []
+    filename: str = "reporte-inspeccion"
+
+
+# ---------- HSE: acta de charla ----------
+class CharlaInfo(BaseModel):
+    titulo: str = ""
+    fecha: str = ""
+    hora_inicio: str = ""
+    duracion_min: str = ""
+    lugar: str = ""
+    facilitador: str = ""
+    descripcion: str = ""
+
+
+class Asistente(BaseModel):
+    nombre: str = ""
+    cargo: str = ""
+    firma_url: str = ""
+
+
+class RenderCharlaRequest(BaseModel):
+    brand: Brand
+    charla: CharlaInfo
+    asistentes: list[Asistente] = []
+    filename: str = "acta-charla"
 
 
 async def require_secret(x_engine_secret: str = Header(default="")) -> None:
@@ -430,5 +477,52 @@ async def render_incidente(req: RenderIncidenteRequest, _: None = Depends(requir
                     fotos.append({"path": local})
         data = {"brand": brand, "inc": inc, "fotos": fotos}
         return await _compile(tmp, INCIDENTE_TEMPLATE, data, req.filename)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+@app.post("/render-inspeccion")
+async def render_inspeccion(req: RenderInspeccionRequest, _: None = Depends(require_secret)) -> Response:
+    tmp = Path(tempfile.mkdtemp(prefix="inspeccion_"))
+    images = tmp / "images"
+    images.mkdir()
+    try:
+        total_imgs = len(req.fotos) + (1 if req.brand.logo_url else 0)
+        if total_imgs > MAX_IMAGES:
+            raise HTTPException(status_code=413, detail="Demasiadas imágenes")
+        brand = _brand_sanitized(req.brand)
+        ins = req.ins.model_dump()
+        ins["riesgo_color"] = _hex_or(ins["riesgo_color"], "#CA8A04")
+        async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT, follow_redirects=False) as client:
+            brand["logo"] = await _download(client, req.brand.logo_url, images, "logo") or ""
+            fotos = []
+            for idx, f in enumerate(req.fotos):
+                local = await _download(client, f.url, images, f"foto_{idx}")
+                if local:
+                    fotos.append({"path": local})
+        data = {"brand": brand, "ins": ins, "fotos": fotos}
+        return await _compile(tmp, INSPECCION_TEMPLATE, data, req.filename)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+@app.post("/render-charla")
+async def render_charla(req: RenderCharlaRequest, _: None = Depends(require_secret)) -> Response:
+    tmp = Path(tempfile.mkdtemp(prefix="charla_"))
+    images = tmp / "images"
+    images.mkdir()
+    try:
+        total_imgs = len(req.asistentes) + (1 if req.brand.logo_url else 0)
+        if total_imgs > MAX_IMAGES:
+            raise HTTPException(status_code=413, detail="Demasiadas imágenes")
+        brand = _brand_sanitized(req.brand)
+        async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT, follow_redirects=False) as client:
+            brand["logo"] = await _download(client, req.brand.logo_url, images, "logo") or ""
+            asistentes = []
+            for idx, a in enumerate(req.asistentes):
+                fp = await _download(client, a.firma_url, images, f"asist_{idx}") if a.firma_url else None
+                asistentes.append({"nombre": a.nombre, "cargo": a.cargo, "firma": fp or ""})
+        data = {"brand": brand, "charla": req.charla.model_dump(), "asistentes": asistentes}
+        return await _compile(tmp, CHARLA_TEMPLATE, data, req.filename)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

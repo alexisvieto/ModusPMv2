@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  AlertTriangle,
   ClipboardCheck,
   HardHat,
   LayoutDashboard,
@@ -16,6 +17,7 @@ import { cn } from "@/lib/utils";
 const TABS: { href: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
   { href: "/app/hse", label: "Tablero", icon: LayoutDashboard, exact: true },
   { href: "/app/hse/permisos", label: "Permisos", icon: ClipboardCheck },
+  { href: "/app/hse/incidentes", label: "Incidentes", icon: AlertTriangle },
   { href: "/app/hse/inventario", label: "Inventario", icon: HardHat },
   { href: "/app/hse/empleados", label: "Empleados", icon: Users },
   { href: "/app/hse/despacho", label: "Despacho", icon: PackageOpen },

@@ -158,6 +158,69 @@ export type Database = {
         }
         Relationships: []
       }
+      hse_incidentes: {
+        Row: {
+          accion_correctiva: string | null
+          causa_raiz: string | null
+          created_at: string
+          descripcion: string
+          dias_perdidos: number
+          empleado_afectado: string | null
+          estado: string
+          fecha_evento: string
+          fotos: Json
+          hora_evento: string | null
+          id: string
+          organization_id: string
+          reportado_por: string | null
+          requirio_atencion_medica: boolean
+          severidad: string
+          tipo_evento: string
+          ubicacion: string | null
+          updated_at: string
+        }
+        Insert: {
+          accion_correctiva?: string | null
+          causa_raiz?: string | null
+          created_at?: string
+          descripcion: string
+          dias_perdidos?: number
+          empleado_afectado?: string | null
+          estado?: string
+          fecha_evento?: string
+          fotos?: Json
+          hora_evento?: string | null
+          id?: string
+          organization_id: string
+          reportado_por?: string | null
+          requirio_atencion_medica?: boolean
+          severidad?: string
+          tipo_evento?: string
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accion_correctiva?: string | null
+          causa_raiz?: string | null
+          created_at?: string
+          descripcion?: string
+          dias_perdidos?: number
+          empleado_afectado?: string | null
+          estado?: string
+          fecha_evento?: string
+          fotos?: Json
+          hora_evento?: string | null
+          id?: string
+          organization_id?: string
+          reportado_por?: string | null
+          requirio_atencion_medica?: boolean
+          severidad?: string
+          tipo_evento?: string
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hse_epp_items: {
         Row: {
           activo: boolean

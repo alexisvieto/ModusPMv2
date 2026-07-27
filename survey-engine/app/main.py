@@ -41,6 +41,7 @@ app = FastAPI(title="Survey Engine", version="1.0")
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 TEMPLATE = Path(__file__).parent / "template.typ"
 PERMIT_TEMPLATE = Path(__file__).parent / "permit.typ"
+INCIDENTE_TEMPLATE = Path(__file__).parent / "incidente.typ"
 EXT_BY_TYPE = {
     "image/png": ".png",
     "image/jpeg": ".jpg",
@@ -164,6 +165,30 @@ class RenderPermitRequest(BaseModel):
     emisor: Signer = Signer()
     vigia: Signer = Signer()
     filename: str = "permiso-de-trabajo"
+
+
+# ---------- HSE: reporte de incidente ----------
+class IncidenteInfo(BaseModel):
+    tipo_label: str = "Incidente"
+    severidad_label: str = "Leve"
+    severidad_color: str = "#15803D"
+    estado_label: str = "Abierto"
+    fecha: str = ""
+    hora: str = ""
+    ubicacion: str = ""
+    descripcion: str = ""
+    causa_raiz: str = ""
+    accion_correctiva: str = ""
+    afectado_nombre: str = ""
+    dias_perdidos: int = 0
+    atencion_medica: bool = False
+
+
+class RenderIncidenteRequest(BaseModel):
+    brand: Brand
+    inc: IncidenteInfo
+    fotos: list[ImageRef] = []
+    filename: str = "reporte-incidente"
 
 
 async def require_secret(x_engine_secret: str = Header(default="")) -> None:
@@ -380,5 +405,30 @@ async def render_permit(req: RenderPermitRequest, _: None = Depends(require_secr
             "vigia": vigia,
         }
         return await _compile(tmp, PERMIT_TEMPLATE, data, req.filename)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+@app.post("/render-incidente")
+async def render_incidente(req: RenderIncidenteRequest, _: None = Depends(require_secret)) -> Response:
+    tmp = Path(tempfile.mkdtemp(prefix="incidente_"))
+    images = tmp / "images"
+    images.mkdir()
+    try:
+        total_imgs = len(req.fotos) + (1 if req.brand.logo_url else 0)
+        if total_imgs > MAX_IMAGES:
+            raise HTTPException(status_code=413, detail="Demasiadas imágenes")
+        brand = _brand_sanitized(req.brand)
+        inc = req.inc.model_dump()
+        inc["severidad_color"] = _hex_or(inc["severidad_color"], "#15803D")
+        async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT, follow_redirects=False) as client:
+            brand["logo"] = await _download(client, req.brand.logo_url, images, "logo") or ""
+            fotos = []
+            for idx, f in enumerate(req.fotos):
+                local = await _download(client, f.url, images, f"foto_{idx}")
+                if local:
+                    fotos.append({"path": local})
+        data = {"brand": brand, "inc": inc, "fotos": fotos}
+        return await _compile(tmp, INCIDENTE_TEMPLATE, data, req.filename)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

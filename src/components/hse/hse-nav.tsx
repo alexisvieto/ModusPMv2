@@ -10,6 +10,7 @@ import {
   Mic,
   PackageOpen,
   Search,
+  TrendingUp,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -22,6 +23,7 @@ const TABS: { href: string; label: string; icon: LucideIcon; exact?: boolean }[]
   { href: "/app/hse/incidentes", label: "Incidentes", icon: AlertTriangle },
   { href: "/app/hse/inspecciones", label: "Inspecciones", icon: Search },
   { href: "/app/hse/charlas", label: "Charlas", icon: Mic },
+  { href: "/app/hse/indicadores", label: "Indicadores", icon: TrendingUp },
   { href: "/app/hse/inventario", label: "Inventario", icon: HardHat },
   { href: "/app/hse/empleados", label: "Empleados", icon: Users },
   { href: "/app/hse/despacho", label: "Despacho", icon: PackageOpen },

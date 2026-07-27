@@ -15,7 +15,7 @@ export default async function EmpleadosPage() {
     ? await supabase
         .from("hse_empleados")
         .select(
-          "id, nombre, cedula, cargo, division, talla_casco, talla_camisa, talla_pantalon, talla_botas",
+          "id, nombre, cedula, cargo, division, talla_casco, talla_camisa, talla_pantalon, talla_botas, foto_path",
         )
         .eq("organization_id", orgId)
         .eq("activo", true)
@@ -28,6 +28,18 @@ export default async function EmpleadosPage() {
         Sin organización.
       </div>
     );
+  }
+
+  // Firma las fotos en una sola llamada.
+  const paths = (rows ?? []).map((e) => e.foto_path).filter((p): p is string => !!p);
+  const urlByPath = new Map<string, string>();
+  if (paths.length) {
+    const { data: signed } = await supabase.storage
+      .from("hse-evidence")
+      .createSignedUrls(paths, 3600);
+    (signed ?? []).forEach((s, i) => {
+      if (s.signedUrl) urlByPath.set(paths[i], s.signedUrl);
+    });
   }
 
   return (
@@ -43,6 +55,8 @@ export default async function EmpleadosPage() {
         talla_camisa: e.talla_camisa ?? "",
         talla_pantalon: e.talla_pantalon ?? "",
         talla_botas: e.talla_botas ?? "",
+        foto_path: e.foto_path ?? "",
+        foto_url: e.foto_path ? (urlByPath.get(e.foto_path) ?? "") : "",
       }))}
     />
   );

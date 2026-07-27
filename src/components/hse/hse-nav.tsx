@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   ClipboardCheck,
   HardHat,
+  LayoutDashboard,
   PackageOpen,
   Users,
   type LucideIcon,
@@ -12,7 +13,8 @@ import {
 
 import { cn } from "@/lib/utils";
 
-const TABS: { href: string; label: string; icon: LucideIcon }[] = [
+const TABS: { href: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
+  { href: "/app/hse", label: "Tablero", icon: LayoutDashboard, exact: true },
   { href: "/app/hse/permisos", label: "Permisos", icon: ClipboardCheck },
   { href: "/app/hse/inventario", label: "Inventario", icon: HardHat },
   { href: "/app/hse/empleados", label: "Empleados", icon: Users },
@@ -27,7 +29,7 @@ export function HseNav() {
     <div className="sticky top-14 z-20 border-b bg-background/90 backdrop-blur">
       <div className="mx-auto flex max-w-4xl gap-1 overflow-x-auto px-2 py-1.5">
         {TABS.map((t) => {
-          const active = pathname.startsWith(t.href);
+          const active = t.exact ? pathname === t.href : pathname.startsWith(t.href);
           const Icon = t.icon;
           return (
             <Link

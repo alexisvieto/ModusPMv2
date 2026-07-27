@@ -130,9 +130,14 @@ export async function GET(
         "X-Engine-Secret": engineSecret,
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(55_000),
     });
-  } catch {
-    return NextResponse.json({ error: "No se pudo contactar el motor de PDF." }, { status: 502 });
+  } catch (e) {
+    const timedOut = e instanceof DOMException && e.name === "TimeoutError";
+    return NextResponse.json(
+      { error: timedOut ? "El motor de PDF no respondió a tiempo." : "No se pudo contactar el motor de PDF." },
+      { status: timedOut ? 504 : 502 },
+    );
   }
   if (!resp.ok) {
     const detail = (await resp.text()).slice(0, 500);

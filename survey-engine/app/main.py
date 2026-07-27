@@ -12,12 +12,16 @@ Las imágenes llegan por URL (firmadas de Supabase / logo público), nunca en el
 from __future__ import annotations
 
 import asyncio
+import hmac
+import ipaddress
 import json
 import re
 import shutil
+import socket
 import subprocess
 import tempfile
 from pathlib import Path
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException
@@ -163,7 +167,7 @@ class RenderPermitRequest(BaseModel):
 
 
 async def require_secret(x_engine_secret: str = Header(default="")) -> None:
-    if not ENGINE_SECRET or x_engine_secret != ENGINE_SECRET:
+    if not ENGINE_SECRET or not hmac.compare_digest(x_engine_secret, ENGINE_SECRET):
         raise HTTPException(status_code=401, detail="No autorizado")
 
 
@@ -171,9 +175,37 @@ def _hex_or(value: str, fallback: str) -> str:
     return value if HEX.match(value or "") else fallback
 
 
+def _is_blocked_host(url: str) -> bool:
+    """Anti-SSRF: bloquea hosts que resuelvan a IPs privadas/loopback/link-local/
+    reservadas (incluye 169.254.169.254 = metadata). El logo del tenant lo controla
+    un admin, así que no debe poder apuntar a la red interna del motor."""
+    host = urlparse(url).hostname
+    if not host:
+        return True
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror:
+        return True
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        ):
+            return True
+    return False
+
+
 async def _download(client: httpx.AsyncClient, url: str, dest_dir: Path, stem: str) -> str | None:
     """Descarga una imagen a dest_dir; devuelve la ruta relativa o None si falla."""
     if not url or not url.lower().startswith(("http://", "https://")):
+        return None
+    if _is_blocked_host(url):
+        print(f"[survey-engine] host bloqueado (SSRF): {url[:80]}", flush=True)
         return None
     try:
         async with client.stream("GET", url) as r:
@@ -207,18 +239,14 @@ async def render(req: RenderRequest, _: None = Depends(require_secret)) -> Respo
     images = tmp / "images"
     images.mkdir()
     try:
-        # Sanitiza colores (evita fallos de compilación por valores no-hex).
-        brand = req.brand.model_dump()
-        brand["primary"] = _hex_or(brand["primary"], "#F79A02")
-        brand["accent"] = _hex_or(brand["accent"], "#F8BA00")
-        brand["dark"] = _hex_or(brand["dark"], "#2D2D2D")
+        brand = _brand_sanitized(req.brand)
 
         total_imgs = len(req.photos) + len(req.signatures) + (1 if req.brand.logo_url else 0)
         if total_imgs > MAX_IMAGES:
             raise HTTPException(status_code=413, detail="Demasiadas imágenes")
 
         async with httpx.AsyncClient(
-            timeout=DOWNLOAD_TIMEOUT, follow_redirects=True
+            timeout=DOWNLOAD_TIMEOUT, follow_redirects=False
         ) as client:
             brand["logo"] = await _download(client, req.brand.logo_url, images, "logo") or ""
 
@@ -268,7 +296,7 @@ async def render(req: RenderRequest, _: None = Depends(require_secret)) -> Respo
         if proc.returncode != 0 or not out.exists():
             err = proc.stderr.decode("utf-8", "replace")[:1500]
             print(f"[survey-engine] typst failed: {err}", flush=True)
-            raise HTTPException(status_code=500, detail=f"Fallo al compilar el PDF: {err}")
+            raise HTTPException(status_code=500, detail="Fallo al compilar el PDF.")
 
         pdf = out.read_bytes()
         safe = re.sub(r"[^\w\-]+", "_", req.filename).strip("_") or "reporte"
@@ -283,9 +311,9 @@ async def render(req: RenderRequest, _: None = Depends(require_secret)) -> Respo
 
 def _brand_sanitized(b: Brand) -> dict:
     brand = b.model_dump()
-    brand["primary"] = _hex_or(brand["primary"], "#F79A02")
-    brand["accent"] = _hex_or(brand["accent"], "#F8BA00")
-    brand["dark"] = _hex_or(brand["dark"], "#2D2D2D")
+    brand["primary"] = _hex_or(brand["primary"], "#0F2044")
+    brand["accent"] = _hex_or(brand["accent"], "#E8A020")
+    brand["dark"] = _hex_or(brand["dark"], "#0F2044")
     return brand
 
 
@@ -318,8 +346,16 @@ async def render_permit(req: RenderPermitRequest, _: None = Depends(require_secr
     images = tmp / "images"
     images.mkdir()
     try:
+        total_imgs = (
+            len(req.personal)
+            + (1 if req.brand.logo_url else 0)
+            + (1 if req.emisor.firma_url else 0)
+            + (1 if req.vigia.firma_url else 0)
+        )
+        if total_imgs > MAX_IMAGES:
+            raise HTTPException(status_code=413, detail="Demasiadas imágenes")
         brand = _brand_sanitized(req.brand)
-        async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT, follow_redirects=False) as client:
             brand["logo"] = await _download(client, req.brand.logo_url, images, "logo") or ""
             personal = []
             for i, per in enumerate(req.personal):

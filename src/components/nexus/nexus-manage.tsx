@@ -96,15 +96,22 @@ export function NexusManage({
   // ---------- perfiles de mano de obra ----------
   async function addProfile() {
     if (!newProf.name.trim()) return;
-    const { error } = await supabase.from("nexus_labor_profiles").insert({
-      organization_id: orgId,
-      name: newProf.name.trim(),
-      daily_rate: Number(newProf.rate) || 0,
-      sort_order: profiles.length,
-    });
-    if (error) return toast.error("No se pudo agregar (¿ya existe?).");
+    const { data, error } = await supabase
+      .from("nexus_labor_profiles")
+      .insert({
+        organization_id: orgId,
+        name: newProf.name.trim(),
+        daily_rate: Number(newProf.rate) || 0,
+        sort_order: profiles.length,
+      })
+      .select("id")
+      .maybeSingle();
+    if (error || !data) return toast.error("No se pudo agregar (¿ya existe?).");
+    setProfiles((ps) => [
+      ...ps,
+      { id: data.id, name: newProf.name.trim(), daily_rate: Number(newProf.rate) || 0 },
+    ]);
     setNewProf({ name: "", rate: "" });
-    router.refresh();
   }
   async function saveProfile(p: Prof) {
     const { error } = await supabase
@@ -116,7 +123,7 @@ export function NexusManage({
   async function removeProfile(id: string) {
     const { error } = await supabase.from("nexus_labor_profiles").delete().eq("id", id);
     if (error) return toast.error("No se pudo quitar el perfil.");
-    router.refresh();
+    setProfiles((ps) => ps.filter((p) => p.id !== id));
   }
 
   // ---------- catálogo ----------

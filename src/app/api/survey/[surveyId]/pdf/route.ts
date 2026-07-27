@@ -101,9 +101,9 @@ export async function GET(
     brand: {
       name: org?.name ?? "",
       legal_name: org?.legal_name ?? org?.name ?? "",
-      primary: org?.brand_primary ?? "#F79A02",
-      accent: org?.brand_accent ?? "#F8BA00",
-      dark: org?.brand_dark ?? "#2D2D2D",
+      primary: org?.brand_primary ?? "#0F2044",
+      accent: org?.brand_accent ?? "#E8A020",
+      dark: org?.brand_dark ?? "#0F2044",
       website: org?.website ?? "",
       email: org?.contact_email ?? "",
       phone: org?.contact_phone ?? "",
@@ -154,9 +154,14 @@ export async function GET(
         "X-Engine-Secret": engineSecret,
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(55_000),
     });
-  } catch {
-    return NextResponse.json({ error: "No se pudo contactar el motor de PDF." }, { status: 502 });
+  } catch (e) {
+    const timedOut = e instanceof DOMException && e.name === "TimeoutError";
+    return NextResponse.json(
+      { error: timedOut ? "El motor de PDF no respondió a tiempo." : "No se pudo contactar el motor de PDF." },
+      { status: timedOut ? 504 : 502 },
+    );
   }
   if (!resp.ok) {
     const detail = (await resp.text()).slice(0, 500);

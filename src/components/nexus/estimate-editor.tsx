@@ -348,6 +348,14 @@ export function EstimateEditor({
   // (el usuario adjunta el Excel y envía) y pasa la cotización a en_revisión.
   async function sendToReview() {
     if (statusBusy) return;
+    // Guardar primero: no cambiar de estado con ítems editados sin persistir.
+    if (!locked) {
+      const p = await persist();
+      if (!p.ok) {
+        toast.error(p.error ?? "No se pudo guardar.");
+        return;
+      }
+    }
     const link = `${window.location.origin}/app/nexus/${estimate.id}`;
     const msg = [
       `Cotización lista para revisión: ${name || "(sin nombre)"}`,

@@ -160,12 +160,47 @@ export function PermitEditor({
     }
     const { data: signed } = await sb.storage.from(BUCKET).createSignedUrl(path, 3600);
     const url = signed?.signedUrl ?? "";
+
+    // Estado local + PERSISTIR la firma de inmediato (no esperar a "Guardar",
+    // para que en campo la firma no se pierda si se cierra la pestaña).
+    let nextPersonal = personal;
     if (sigTarget === "emisor") setEmisorFirma({ path, url });
     else if (sigTarget === "vigia") setVigiaFirma({ path, url });
-    else if (typeof sigTarget === "number")
-      patchPersonal(sigTarget, { firma_path: path, firma_url: url });
+    else if (typeof sigTarget === "number") {
+      nextPersonal = personal.map((p, idx) =>
+        idx === sigTarget ? { ...p, firma_path: path, firma_url: url } : p,
+      );
+      setPersonal(nextPersonal);
+    }
+
+    const emisorPath = sigTarget === "emisor" ? path : emisorFirma.path;
+    const vigiaPath = sigTarget === "vigia" ? path : vigiaFirma.path;
+    const aprobado = !!emisorPath && !!vigiaPath;
+    const estadoPatch = aprobado ? { estado: "aprobado" } : {};
+    if (aprobado) setEstado("aprobado");
+
+    const patch =
+      sigTarget === "emisor"
+        ? { emisor_firma_path: path, ...estadoPatch }
+        : sigTarget === "vigia"
+          ? { vigia_firma_path: path, ...estadoPatch }
+          : {
+              personal: nextPersonal.map((p) => ({
+                nombre: p.nombre.trim(),
+                cedula: p.cedula.trim(),
+                firma_path: p.firma_path,
+              })) as unknown as Json,
+            };
+    const { error: dbErr } = await sb
+      .from("hse_permits")
+      .update(patch)
+      .eq("id", permit.id);
     setSavingSig(false);
     setSigTarget(null);
+    if (dbErr) {
+      toast.error("Firma subida, pero no se guardó en el permiso.");
+      return;
+    }
     toast.success("Firma registrada.");
   }
 

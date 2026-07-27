@@ -141,7 +141,7 @@ export function SurveyEditor({
     setContacts((c) => c.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   }
   async function persistContact(c: Contact) {
-    await sb
+    const { error } = await sb
       .from("survey_contacts")
       .update({
         name: c.name.trim(),
@@ -151,6 +151,7 @@ export function SurveyEditor({
         notes: c.notes.trim() || null,
       })
       .eq("id", c.id);
+    if (error) toast.error("No se pudo guardar el contacto.");
   }
   async function removeContact(id: string) {
     setContacts((c) => c.filter((x) => x.id !== id));
@@ -179,7 +180,7 @@ export function SurveyEditor({
     setFindings((f) => f.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   }
   async function persistFinding(f: Finding) {
-    await sb
+    const { error } = await sb
       .from("survey_findings")
       .update({
         title: f.title.trim(),
@@ -187,10 +188,15 @@ export function SurveyEditor({
         severity: f.severity,
       })
       .eq("id", f.id);
+    if (error) toast.error("No se pudo guardar la observación.");
   }
   async function setFindingSeverity(f: Finding, severity: string) {
     patchFinding(f.id, { severity });
-    await sb.from("survey_findings").update({ severity }).eq("id", f.id);
+    const { error } = await sb
+      .from("survey_findings")
+      .update({ severity })
+      .eq("id", f.id);
+    if (error) toast.error("No se pudo guardar la severidad.");
   }
   async function removeFinding(id: string) {
     setFindings((f) => f.filter((x) => x.id !== id));
@@ -231,10 +237,11 @@ export function SurveyEditor({
     setPhotos((p) => p.map((x) => (x.id === id ? { ...x, caption } : x)));
   }
   async function persistPhoto(ph: Photo) {
-    await sb
+    const { error } = await sb
       .from("survey_photos")
       .update({ caption: ph.caption.trim() || null })
       .eq("id", ph.id);
+    if (error) toast.error("No se pudo guardar la descripción.");
   }
   async function removePhoto(ph: Photo) {
     setPhotos((p) => p.filter((x) => x.id !== ph.id));

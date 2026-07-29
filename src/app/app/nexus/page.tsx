@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Blocks, Layers, Network, Settings, ShieldCheck, SlidersHorizontal, Wind, Zap, type LucideIcon } from "lucide-react";
+import { Blocks, Layers, Network, Settings, ShieldCheck, SlidersHorizontal, Wind, X, Zap, type LucideIcon } from "lucide-react";
 
 import { NewEstimateButton } from "@/components/nexus/new-estimate-button";
 import { ensureNexusSeed } from "@/lib/nexus/seed";
@@ -24,8 +24,13 @@ function iconForDivision(name: string): LucideIcon {
 }
 
 // Home de Nexus: lista de cotizaciones (vacía al inicio) y las divisiones
-// configuradas (minimalistas). La creación/edición y el cálculo llegan luego.
-export default async function NexusHome() {
+// configuradas. Al hacer clic en una división se filtra la lista de arriba.
+export default async function NexusHome({
+  searchParams,
+}: {
+  searchParams: Promise<{ division?: string }>;
+}) {
+  const { division: activeDivision } = await searchParams;
   const supabase = await createClient();
 
   const { data: membership } = await supabase
@@ -42,19 +47,26 @@ export default async function NexusHome() {
     await ensureNexusSeed(membership.organization_id);
   }
 
+  let estimatesQuery = supabase
+    .from("nexus_estimates")
+    .select("id, name, client_name, odoo_code, estimate_date, total, status, version_no, division_id")
+    .eq("organization_id", orgId)
+    .eq("is_current", true)
+    .order("created_at", { ascending: false });
+  if (activeDivision) estimatesQuery = estimatesQuery.eq("division_id", activeDivision);
+
   const [{ data: estimates }, { data: divisions }] = await Promise.all([
-    supabase
-      .from("nexus_estimates")
-      .select("id, name, client_name, odoo_code, estimate_date, total, status, version_no")
-      .eq("organization_id", orgId)
-      .eq("is_current", true)
-      .order("created_at", { ascending: false }),
+    estimatesQuery,
     supabase
       .from("nexus_divisions")
       .select("id, name")
       .eq("organization_id", orgId)
       .order("sort_order", { ascending: true }),
   ]);
+
+  const activeDivName = activeDivision
+    ? ((divisions ?? []).find((d) => d.id === activeDivision)?.name ?? null)
+    : null;
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 p-6 md:p-8">
@@ -64,6 +76,15 @@ export default async function NexusHome() {
           <p className="text-sm text-muted-foreground">
             Presupuestos por categoría con exportable para gerencia.
           </p>
+          {activeDivName && (
+            <Link
+              href="/app/nexus"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#0f2044]/8 px-2.5 py-1 text-xs font-medium text-[#0f2044] transition-colors hover:bg-[#0f2044]/15"
+            >
+              División: {activeDivName}
+              <X className="size-3.5" />
+            </Link>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Link
@@ -147,8 +168,9 @@ export default async function NexusHome() {
       ) : (
         <div className="rounded-lg border border-dashed p-10 text-center">
           <p className="text-sm text-muted-foreground">
-            Aún no hay cotizaciones. La creación y el cálculo llegan en el
-            siguiente paso.
+            {activeDivName
+              ? `No hay cotizaciones en la división "${activeDivName}".`
+              : "Aún no hay cotizaciones. La creación y el cálculo llegan en el siguiente paso."}
           </p>
         </div>
       )}
@@ -161,21 +183,29 @@ export default async function NexusHome() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(divisions ?? []).map((d) => {
             const Icon = iconForDivision(d.name);
+            const active = d.id === activeDivision;
             return (
-              <div
+              <Link
                 key={d.id}
-                className="flex items-center gap-4 rounded-xl border bg-card p-5 transition-colors hover:border-[#0f2044]/30"
+                href={active ? "/app/nexus" : `/app/nexus?division=${d.id}`}
+                title={active ? "Quitar filtro" : `Filtrar cotizaciones de ${d.name}`}
+                className={
+                  "flex items-center gap-4 rounded-xl border bg-card p-5 transition-colors " +
+                  (active
+                    ? "border-[#0f2044] ring-1 ring-[#0f2044]"
+                    : "hover:border-[#0f2044]/30")
+                }
               >
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[#0f2044]/8 text-[#0f2044]">
                   <Icon className="size-5.5" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    División
+                    División{active ? " · filtrando" : ""}
                   </p>
                   <p className="font-semibold leading-tight">{d.name}</p>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

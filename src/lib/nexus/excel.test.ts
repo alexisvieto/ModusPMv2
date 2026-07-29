@@ -56,7 +56,7 @@ describe("buildEstimateWorkbook — hoja Análisis de Presupuesto", () => {
     expect(ws.getCell("B3").value).toBe("Descripción");
     expect(ws.getCell("C3").value).toBe("Fabricante");
     expect(ws.getCell("D3").value).toBe("Material");
-    expect(ws.getCell("H3").value).toBe("Hospedaje");
+    expect(ws.getCell("H3").value).toBe("Gastos Asoc.");
     expect(ws.getCell("O3").value).toBe("Total General");
 
     // Branding: header navy + Calibri.
@@ -154,7 +154,7 @@ describe("buildEstimateWorkbook — hoja Costo del Proyecto + ITBMS de compra", 
         duracion: 2,
         paralelo: false,
         items: [
-          { description: "Hospedaje personal", manufacturer: "", kind: "Hospedaje", qty: 2, unit_price: 80 },
+          { description: "Hospedaje personal", manufacturer: "", kind: "GastosAsociados", qty: 2, unit_price: 80 },
         ],
         labor: [{ profile_name: "Técnico", personas: 1, dias: 2, daily_rate: 100 }],
       },
@@ -168,22 +168,22 @@ describe("buildEstimateWorkbook — hoja Costo del Proyecto + ITBMS de compra", 
     expect(wsC.getCell("A1").value).toContain("COSTO REAL DEL PROYECTO");
     // Tasa editable (H3) = 7%.
     expect(wsC.getCell("H3").value).toBeCloseTo(0.07, 9);
-    // Fila 5 = categoría; fila 6 = ítem Hospedaje.
-    expect(wsC.getCell("D6").value).toBe("Hospedaje");
+    // Fila 5 = categoría; fila 6 = ítem (Gastos Asociados).
+    expect(wsC.getCell("D6").value).toBe("Gastos Asociados");
     expect(wsC.getCell("E6").value).toBeCloseTo(80, 6); // precio proveedor
     expect(formula(wsC.getCell("F6").value)).toBe("A6*E6"); // subtotal prov.
     expect(formula(wsC.getCell("G6").value)).toBe("F6*$H$3"); // ITBMS compra
     expect(formula(wsC.getCell("H6").value)).toBe("F6+G6"); // puesto en bodega
   });
 
-  it("hoja Análisis: el costo base ya viene puesto en bodega (Hospedaje 160 → 171.20)", async () => {
+  it("hoja Análisis: el costo base ya trae el 7% de compra (Gastos Asoc. 160 → 171.20)", async () => {
     const wb = await buildEstimateWorkbook(CON_COMPRA);
     const ws = wb.getWorksheet("Análisis de Presupuesto");
-    // Hospedaje va en la columna H (fila 5 = ítem); 2 × 80 × 1.07 = 171.20.
+    // Gastos Asociados va en la columna H (fila 5 = ítem); 2 × 80 × 1.07 = 171.20.
     expect(ws.getCell("H5").value).toBeCloseTo(171.2, 6);
   });
 
-  it("donut: el costo base incluye el 7% de compra del Hospedaje", () => {
+  it("donut: el costo base incluye el 7% de compra de los Gastos Asociados", () => {
     const segs = computeDonutSegments(CON_COMPRA);
     const base = segs.find((s) => s.label === "Costo Base")!.value;
     // Hospedaje 171.20 + Mano de obra 200 = 371.20.

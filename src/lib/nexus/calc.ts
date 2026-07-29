@@ -24,12 +24,14 @@ export const DEFAULT_PARAMS: NexusParams = {
 };
 
 // Los 5 buckets de costo directo (entrada del usuario).
+// "Gastos Asociados" es el cajón general: hospedaje, alquiler de autos,
+// transporte, viáticos, etc. (el detalle va en la descripción del ítem).
 export type Buckets = {
   material: number;
   manoObra: number;
   herramienta: number;
   flete: number;
-  hospedaje: number;
+  gastosAsociados: number;
 };
 
 export type CostKind =
@@ -37,27 +39,21 @@ export type CostKind =
   | "ManoDeObra"
   | "Herramienta"
   | "Flete"
-  | "Hospedaje";
+  | "GastosAsociados";
 
-// Tipos que se le compran a un proveedor: llevan el ITBMS de compra (7%) que
-// convierte el precio del proveedor en el costo "puesto en bodega". La Mano de
-// Obra (personal propio) NO lo lleva.
-export const PURCHASED_KINDS: CostKind[] = [
-  "Material",
-  "Herramienta",
-  "Flete",
-  "Hospedaje",
-];
+// Todo lo que se le compra a un proveedor lleva el ITBMS de compra (7%) que
+// convierte el precio del proveedor en el costo real. Lo único que NO lo lleva
+// es la Mano de Obra (personal propio).
 export const carriesPurchaseTax = (kind: CostKind): boolean =>
-  PURCHASED_KINDS.includes(kind);
+  kind !== "ManoDeObra";
 
 export type Breakdown = {
   material: number;
   manoObra: number;
   herramienta: number;
   flete: number;
-  hospedaje: number;
-  base: number; // suma de los 5 directos (ya puestos en bodega)
+  gastosAsociados: number;
+  base: number; // suma de los 5 directos (ya con el costo real)
   indOficina: number;
   indCampo: number;
   financiamiento: number;
@@ -72,13 +68,13 @@ const emptyBuckets = (): Buckets => ({
   manoObra: 0,
   herramienta: 0,
   flete: 0,
-  hospedaje: 0,
+  gastosAsociados: 0,
 });
 
 /** Cadena en cascada sobre los buckets directos. */
 export function calcCascade(b: Buckets, p: NexusParams): Breakdown {
   const base =
-    b.material + b.manoObra + b.herramienta + b.flete + b.hospedaje;
+    b.material + b.manoObra + b.herramienta + b.flete + b.gastosAsociados;
   const indOficina = base * p.ind_oficina;
   const indCampo = base * p.ind_campo;
   const financiamiento = (base + indOficina + indCampo) * p.financiamiento;
@@ -92,7 +88,7 @@ export function calcCascade(b: Buckets, p: NexusParams): Breakdown {
     manoObra: b.manoObra,
     herramienta: b.herramienta,
     flete: b.flete,
-    hospedaje: b.hospedaje,
+    gastosAsociados: b.gastosAsociados,
     base,
     indOficina,
     indCampo,
@@ -126,7 +122,8 @@ export function bucketsFrom(
     else if (it.kind === "ManoDeObra") b.manoObra += amt;
     else if (it.kind === "Herramienta") b.herramienta += amt;
     else if (it.kind === "Flete") b.flete += amt;
-    else if (it.kind === "Hospedaje") b.hospedaje += amt;
+    // GastosAsociados (y cualquier tipo antiguo tipo "Hospedaje") → cajón general.
+    else b.gastosAsociados += amt;
   }
   for (const l of labor) {
     b.manoObra +=
@@ -141,7 +138,7 @@ export function addBuckets(a: Buckets, b: Buckets): Buckets {
     manoObra: a.manoObra + b.manoObra,
     herramienta: a.herramienta + b.herramienta,
     flete: a.flete + b.flete,
-    hospedaje: a.hospedaje + b.hospedaje,
+    gastosAsociados: a.gastosAsociados + b.gastosAsociados,
   };
 }
 

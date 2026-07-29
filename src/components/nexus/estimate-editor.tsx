@@ -73,7 +73,7 @@ const KINDS: { v: CostKind; l: string }[] = [
   { v: "ManoDeObra", l: "Mano de Obra" },
   { v: "Herramienta", l: "Herramienta" },
   { v: "Flete", l: "Flete" },
-  { v: "Hospedaje", l: "Hospedaje" },
+  { v: "GastosAsociados", l: "Gastos Asociados" },
 ];
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
@@ -174,7 +174,7 @@ export function EstimateEditor({
     manoObra: 0,
     herramienta: 0,
     flete: 0,
-    hospedaje: 0,
+    gastosAsociados: 0,
   });
   const grand = calcCascade(grandBuckets, paramsFrac);
 
@@ -660,9 +660,9 @@ export function EstimateEditor({
         </div>
         <p className="text-xs text-muted-foreground">
           El <span className="font-medium">ITBMS de compra</span> se suma al precio del proveedor
-          (Material, Herramienta, Flete y Hospedaje) → costo{" "}
-          <span className="font-medium">puesto en bodega</span>. La Mano de Obra no lo lleva. Es
-          independiente del ITBMS de venta y de los % indirectos.
+          en todo lo comprado (Material, Herramienta, Flete y Gastos Asociados) → costo{" "}
+          <span className="font-medium">real</span>. La Mano de Obra no lo lleva. Es independiente
+          del ITBMS de venta y de los % indirectos.
         </p>
       </div>
 
@@ -735,7 +735,7 @@ export function EstimateEditor({
                       </th>
                       <th
                         className="w-28 px-3 py-1.5 text-right font-medium"
-                        title="Puesto en bodega — incluye el ITBMS de compra en los tipos comprados"
+                        title="Costo real — incluye el ITBMS de compra (todo menos Mano de Obra)"
                       >
                         Costo
                       </th>
@@ -821,7 +821,7 @@ export function EstimateEditor({
                               {taxed && (
                                 <span
                                   className="ml-1 text-[10px] text-primary/70"
-                                  title="Puesto en bodega (incluye ITBMS de compra)"
+                                  title="Costo real (incluye ITBMS de compra)"
                                 >
                                   +{(paramsFrac.itbms_compra * 100).toFixed(0)}%
                                 </span>
@@ -958,7 +958,7 @@ export function EstimateEditor({
           Resumen del proyecto
         </div>
         <div className="grid gap-x-8 gap-y-1.5 p-4 text-sm sm:grid-cols-2">
-          <Row label="Costo base (Mat. + M.O. + Herram. + Flete + Hosp.)" value={grand.base} />
+          <Row label="Costo base (Mat. + M.O. + Herram. + Flete + Gastos Asoc.)" value={grand.base} />
           <Row label={`Ind. Oficina (${pct.ind_oficina}%)`} value={grand.indOficina} />
           <Row label={`Ind. Campo (${pct.ind_campo}%)`} value={grand.indCampo} />
           <Row label={`Financiamiento (${pct.financiamiento}%)`} value={grand.financiamiento} />

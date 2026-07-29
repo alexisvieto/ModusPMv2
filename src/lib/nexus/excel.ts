@@ -99,7 +99,7 @@ export function computeDonutSegments(data: ExcelData): DonutSegment[] {
           data.params.itbms_compra,
         ),
       ),
-    { material: 0, manoObra: 0, herramienta: 0, flete: 0, hospedaje: 0 },
+    { material: 0, manoObra: 0, herramienta: 0, flete: 0, gastosAsociados: 0 },
   );
   const bd = calcCascade(buckets, data.params);
   return [
@@ -190,7 +190,7 @@ export async function buildEstimateWorkbook(
     { width: 14 }, // E Mano de Obra
     { width: 12 }, // F Herramienta
     { width: 10 }, // G Flete
-    { width: 12 }, // H Hospedaje
+    { width: 14 }, // H Gastos Asociados
     { width: 14 }, // I Ind. Oficina
     { width: 13 }, // J Ind. Campo
     { width: 15 }, // K Financiamiento
@@ -259,7 +259,7 @@ export async function buildEstimateWorkbook(
   // ── Fila 3: encabezados ──
   const heads = [
     "Cant.", "Descripción", "Fabricante", "Material", "Mano de Obra",
-    "Herramienta", "Flete", "Hospedaje", "Ind. Oficina", "Ind. Campo",
+    "Herramienta", "Flete", "Gastos Asoc.", "Ind. Oficina", "Ind. Campo",
     "Financiamiento", "Utilidad", "Subtotal", "ITBMS", "Total General",
   ];
   const hr = ws.getRow(3);
@@ -292,7 +292,7 @@ export async function buildEstimateWorkbook(
           ? "F"
           : kind === "Flete"
             ? "G"
-            : "H"; // Hospedaje
+            : "H"; // Gastos Asociados (y cualquier tipo antiguo)
 
   let r = 4;
   const catRows: number[] = [];
@@ -438,7 +438,7 @@ export async function buildEstimateWorkbook(
   wsC.mergeCells("A3:F3");
   const cNote = wsC.getCell("A3");
   cNote.value =
-    "Costo interno: precio del proveedor + ITBMS de compra = puesto en bodega. La Mano de Obra no lleva ITBMS.";
+    "Costo interno: precio del proveedor + ITBMS de compra = costo real. La Mano de Obra no lleva ITBMS.";
   cNote.font = { name: FONT, size: 8, color: { argb: GRAY } };
   const cRateLbl = wsC.getCell("G3");
   cRateLbl.value = "ITBMS compra →";
@@ -453,7 +453,7 @@ export async function buildEstimateWorkbook(
 
   const cHeads = [
     "Cant.", "Descripción", "Fabricante", "Tipo", "Precio prov.",
-    "Subtotal prov.", "ITBMS compra", "Puesto en bodega",
+    "Subtotal prov.", "ITBMS compra", "Costo real",
   ];
   const cHr = wsC.getRow(4);
   cHeads.forEach((h, i) => {
@@ -469,7 +469,7 @@ export async function buildEstimateWorkbook(
     ManoDeObra: "Mano de Obra",
     Herramienta: "Herramienta",
     Flete: "Flete",
-    Hospedaje: "Hospedaje",
+    GastosAsociados: "Gastos Asociados",
   };
 
   let cRow = 5;
@@ -541,7 +541,7 @@ export async function buildEstimateWorkbook(
   // Costo total real del proyecto.
   const cTotalRow = cRow + 1;
   wsC.mergeCells(`A${cTotalRow}:E${cTotalRow}`);
-  wsC.getCell(`A${cTotalRow}`).value = "COSTO TOTAL DEL PROYECTO (puesto en bodega)";
+  wsC.getCell(`A${cTotalRow}`).value = "COSTO TOTAL DEL PROYECTO (con ITBMS de compra)";
   for (let ci = 1; ci <= 8; ci++) {
     const c = wsC.getRow(cTotalRow).getCell(ci);
     c.fill = fillOf(NAVY);

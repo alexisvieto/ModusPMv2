@@ -171,6 +171,23 @@ export function VerificationViewer({
   }, [sheetDets]);
   const dudososCount = sheetDets.filter((d) => d.confidence !== "alta").length;
 
+  // Glifos que la visión leyó DENTRO de los círculos pero que aún no están en la
+  // leyenda (círculos sin_clasificar con letra en la firma). Agrupados por letra
+  // para amarrarlos en un clic — el arreglo al "no lee un proyecto nuevo": el
+  // motor detecta y lee la marca de ESTE plano; el ingeniero solo dice qué es.
+  const unmappedGlyphs = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const d of sheetDets) {
+      if (d.element_key === "detector_sin_clasificar" && d.signature?.token) {
+        const t = d.signature.token.toUpperCase();
+        m.set(t, (m.get(t) ?? 0) + 1);
+      }
+    }
+    return [...m.entries()]
+      .map(([token, count]) => ({ token, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [sheetDets]);
+
   // ── Diccionario de leyenda (checkpoint humano previo al conteo definitivo) ──
   // Editable; al recontar, el motor vuelve a contar con la leyenda confirmada.
   // Si la hoja no trae leyenda propia (solo la 1ª hoja del juego la tiene), se
@@ -384,6 +401,24 @@ export function VerificationViewer({
       dets.map((x) => ({ action: "reclasificar", detectionId: x.id, toKey: key })),
     );
     toast.success(`${dets.length} reclasificados por firma similar.`);
+  }
+
+  // Amarrar un glifo leído (p.ej. "S") a un tipo: clasifica TODOS los círculos
+  // con esa letra de una vez y lo agrega al diccionario de leyenda (para que al
+  // recontar quede pre-confirmado y se enseñe como leyenda|SYM).
+  async function assignGlyph(token: string, key: string) {
+    const targets = sheetDets.filter(
+      (d) =>
+        d.element_key === "detector_sin_clasificar" &&
+        d.signature?.token?.toUpperCase() === token.toUpperCase(),
+    );
+    if (!targets.length) return;
+    setLegendRows((rows) =>
+      rows.some((r) => r.symbol.toUpperCase() === token.toUpperCase())
+        ? rows
+        : [...rows, { symbol: token, element_key: key, name: elByKey.get(key)?.name ?? "" }],
+    );
+    await propagateReclass(targets, key);
   }
 
   // ── Agregar detección al hacer clic en el plano (vía escritor batch) ──
@@ -992,6 +1027,42 @@ export function VerificationViewer({
                   </Button>
                 </div>
               )}
+            </div>
+          )}
+
+          {unmappedGlyphs.length > 0 && (
+            <div className="border-b bg-amber-50/50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+                Glifos sin asignar
+              </p>
+              <p className="mb-2 mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                El motor leyó estas marcas dentro de los círculos pero no están en
+                la leyenda. Asigna cada una y clasifica todas de una vez.
+              </p>
+              <div className="space-y-1.5">
+                {unmappedGlyphs.map((g) => (
+                  <div key={g.token} className="flex items-center gap-2">
+                    <span className="inline-flex min-w-8 shrink-0 items-center justify-center rounded border bg-background px-1.5 py-0.5 font-mono text-xs font-semibold">
+                      {g.token}
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">×{g.count}</span>
+                    <select
+                      className="h-7 flex-1 rounded-md border border-input bg-transparent px-1.5 text-xs outline-none focus-visible:border-ring focus-visible:ring-[2px] focus-visible:ring-ring/30"
+                      defaultValue=""
+                      onChange={(e) => e.target.value && assignGlyph(g.token, e.target.value)}
+                    >
+                      <option value="" disabled>
+                        Asignar tipo…
+                      </option>
+                      {elements.map((el) => (
+                        <option key={el.key} value={el.key}>
+                          {el.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

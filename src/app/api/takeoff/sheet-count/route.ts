@@ -182,6 +182,10 @@ export async function POST(req: Request) {
     // y se clasifican por la leyenda confirmada. La geometría encuentra; la visión
     // solo lee la marca interna de lo ya encontrado.
     const glyphByPos = new Map<string, string>();
+    // Letra CRUDA leída de cada glifo, aunque NO matchee el diccionario confirmado.
+    // Se adjunta a la firma del círculo sin clasificar para que el visor agrupe y
+    // propague por LETRA (no por tamaño) y el ingeniero la amarre en un clic.
+    const letterByPos = new Map<string, string>();
     const mosaic = result.glyph_mosaic;
     if (mosaic?.image_base64 && mosaic.cells?.length) {
       const gate = await gateAiRequest({
@@ -198,8 +202,11 @@ export async function POST(req: Request) {
           for (const [idx, letter] of Object.entries(read.letters)) {
             const cell = mosaic.cells[Number(idx)];
             if (!cell) continue;
-            const key = symMap.get(clip(letter, 40).trim().toUpperCase());
-            if (key && key !== "otro") glyphByPos.set(`${cell.x.toFixed(4)},${cell.y.toFixed(4)}`, key);
+            const L = clip(letter, 40).trim().toUpperCase();
+            const pos = `${cell.x.toFixed(4)},${cell.y.toFixed(4)}`;
+            if (L) letterByPos.set(pos, L);
+            const key = symMap.get(L);
+            if (key && key !== "otro") glyphByPos.set(pos, key);
           }
           if (read.usage.input_tokens || read.usage.output_tokens) {
             await recordAiUsage({
@@ -259,10 +266,23 @@ export async function POST(req: Request) {
       ...result.detections
         .filter((d) => !near(d.x, d.y))
         .map((d) => {
+          const pos = `${d.x.toFixed(4)},${d.y.toFixed(4)}`;
           const glyphKey =
-            d.element_key === "detector_sin_clasificar"
-              ? glyphByPos.get(`${d.x.toFixed(4)},${d.y.toFixed(4)}`)
-              : undefined;
+            d.element_key === "detector_sin_clasificar" ? glyphByPos.get(pos) : undefined;
+          // Sin clasificar pero con letra leída → se guarda en la firma (token)
+          // para agrupar/propagar por glifo en el visor.
+          let signature: Record<string, unknown> | null =
+            (d.signature ?? null) as Record<string, unknown> | null;
+          if (!glyphKey && d.element_key === "detector_sin_clasificar") {
+            const letter = letterByPos.get(pos);
+            if (letter) {
+              signature = {
+                kind: (signature?.kind as string) ?? "circulo",
+                token: letter,
+                size: (signature?.size as number | null) ?? null,
+              };
+            }
+          }
           return {
             organization_id: sheet.organization_id,
             sheet_id: sheetId,
@@ -271,7 +291,7 @@ export async function POST(req: Request) {
             y: d.y,
             confidence: glyphKey ? "alta" : d.confidence,
             method: glyphKey ? "vision" : d.method,
-            signature: (d.signature ?? null) as unknown as Json,
+            signature: (signature ?? null) as unknown as Json,
           };
         }),
       ...promoted

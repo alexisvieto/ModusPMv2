@@ -290,7 +290,8 @@ export function PermitEditor({
           <Field label="Ciudad / Lugar">
             <input className={inp} value={f.ciudad_lugar} onChange={(e) => set("ciudad_lugar", e.target.value)} />
           </Field>
-          <Field label="Área / Proceso">
+          {/* area_proceso reutilizado como "Código del proyecto" (pedido gerencia HSE) */}
+          <Field label="Código del proyecto">
             <input className={inp} value={f.area_proceso} onChange={(e) => set("area_proceso", e.target.value)} />
           </Field>
           <Field label="Ubicación">

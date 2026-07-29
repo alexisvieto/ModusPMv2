@@ -15,13 +15,13 @@ export default async function DespachoPage() {
     ? await Promise.all([
         supabase
           .from("hse_empleados")
-          .select("id, nombre")
+          .select("id, nombre, talla_casco, talla_camisa, talla_pantalon, talla_botas")
           .eq("organization_id", orgId)
           .eq("activo", true)
           .order("nombre", { ascending: true }),
         supabase
           .from("hse_epp_items")
-          .select("id, nombre, stock_actual, vida_util_dias")
+          .select("id, nombre, stock_actual, vida_util_dias, fecha_vencimiento")
           .eq("organization_id", orgId)
           .eq("activo", true)
           .order("nombre", { ascending: true }),
@@ -39,12 +39,20 @@ export default async function DespachoPage() {
   return (
     <DespachoBoard
       orgId={orgId}
-      empleados={(empleados ?? []).map((e) => ({ id: e.id, nombre: e.nombre }))}
+      empleados={(empleados ?? []).map((e) => ({
+        id: e.id,
+        nombre: e.nombre,
+        talla_casco: e.talla_casco ?? "",
+        talla_camisa: e.talla_camisa ?? "",
+        talla_pantalon: e.talla_pantalon ?? "",
+        talla_botas: e.talla_botas ?? "",
+      }))}
       items={(items ?? []).map((i) => ({
         id: i.id,
         nombre: i.nombre,
         stock_actual: i.stock_actual ?? 0,
         vida_util_dias: i.vida_util_dias,
+        fecha_vencimiento: i.fecha_vencimiento ?? null,
       }))}
     />
   );

@@ -353,6 +353,8 @@ export type Database = {
           categoria: string | null
           created_at: string
           descripcion: string | null
+          fabricante: string | null
+          fecha_vencimiento: string | null
           id: string
           imagen_path: string | null
           marca: string | null
@@ -369,6 +371,8 @@ export type Database = {
           categoria?: string | null
           created_at?: string
           descripcion?: string | null
+          fabricante?: string | null
+          fecha_vencimiento?: string | null
           id?: string
           imagen_path?: string | null
           marca?: string | null
@@ -385,6 +389,8 @@ export type Database = {
           categoria?: string | null
           created_at?: string
           descripcion?: string | null
+          fabricante?: string | null
+          fecha_vencimiento?: string | null
           id?: string
           imagen_path?: string | null
           marca?: string | null
@@ -412,6 +418,7 @@ export type Database = {
           id: string
           notas: string | null
           organization_id: string
+          talla: string | null
         }
         Insert: {
           activo?: boolean
@@ -426,6 +433,7 @@ export type Database = {
           id?: string
           notas?: string | null
           organization_id: string
+          talla?: string | null
         }
         Update: {
           activo?: boolean
@@ -440,6 +448,7 @@ export type Database = {
           id?: string
           notas?: string | null
           organization_id?: string
+          talla?: string | null
         }
         Relationships: []
       }

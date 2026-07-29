@@ -3,6 +3,7 @@
 // conocimiento del dominio (Panamá / ISO 9001·14001) ya validado en campo.
 
 export type PermitTypeKey =
+  | "altura_general"
   | "altura"
   | "altura_torres"
   | "altura_escalera"
@@ -17,6 +18,7 @@ export type PermitTypeMeta = {
 };
 
 export const TIPO_PERMISOS: Record<PermitTypeKey, PermitTypeMeta> = {
+  altura_general: { label: "Altura (General)", icon: "🪜", titulo: "PERMISO PARA TRABAJO EN ALTURA (GENERAL)", grupo: "altura" },
   altura: { label: "Alturas (Andamios)", icon: "🪜", titulo: "PERMISO PARA TRABAJO EN ALTURAS (ANDAMIOS)", grupo: "altura" },
   altura_torres: { label: "Alturas (Torres)", icon: "📡", titulo: "PERMISO PARA TRABAJO EN ALTURAS (TORRES)", grupo: "altura" },
   altura_escalera: { label: "Alturas (Escalera)", icon: "🪜", titulo: "PERMISO PARA TRABAJO EN ALTURAS (ESCALERA)", grupo: "altura" },
@@ -29,12 +31,13 @@ export const GRUPOS_PERMISOS: Record<
   PermitGroupKey,
   { label: string; icon: string; subtipos?: PermitTypeKey[] }
 > = {
-  altura: { label: "Trabajo en Alturas", icon: "🪜", subtipos: ["altura", "altura_torres", "altura_escalera"] },
+  altura: { label: "Trabajo en Alturas", icon: "🪜", subtipos: ["altura_general", "altura", "altura_torres", "altura_escalera"] },
   izaje: { label: "Izaje de Cargas", icon: "🏗️" },
   caliente: { label: "Trabajo en Caliente", icon: "🔥" },
 };
 
 export const SUBTIPO_LABELS: Record<string, { label: string; desc: string }> = {
+  altura_general: { label: "General", desc: "Trabajo en altura general (a más de 1.80 m)" },
   altura: { label: "Andamios", desc: "Montaje y trabajo sobre andamios" },
   altura_torres: { label: "Torres", desc: "Ascenso y trabajo en torres de telecomunicaciones" },
   altura_escalera: { label: "Escalera", desc: "Trabajo con escaleras fijas o portátiles" },
@@ -43,6 +46,33 @@ export const SUBTIPO_LABELS: Record<string, { label: string; desc: string }> = {
 export type ChecklistSection = { seccion: string; items: string[] };
 
 export const CHECKLIST_TEMPLATES: Record<PermitTypeKey, ChecklistSection[]> = {
+  altura_general: [
+    { seccion: "1. Preparación y Evaluación Previa", items: [
+      "Condiciones climáticas evaluadas: sin lluvia, tormenta eléctrica ni vientos superiores a 40 km/h",
+      "Área de trabajo y puntos de anclaje evaluados (estructura estable y con capacidad de soporte)",
+      "Estado físico del trabajador verificado: sin fatiga, mareo, medicación que afecte el equilibrio, o consumo de alcohol/drogas",
+      "Plan de rescate en alturas definido y comunicado al equipo",
+      "Vigía / persona de apoyo en tierra presente durante toda la actividad",
+      "Charla de seguridad previa realizada y permiso divulgado al personal",
+    ]},
+    { seccion: "2. EPP y Protección Contra Caídas", items: [
+      "Arnés de cuerpo completo certificado y en buen estado (costuras, hebillas, anillos D)",
+      "Eslinga con absorbedor de energía (máximo 1.80 m); doble eslinga para 100% de enganche",
+      "Líneas de vida / puntos de anclaje certificados (5000 lb) por encima del anillo D dorsal",
+      "Conectores y mosquetones de doble seguro (automáticos, acero)",
+      "Casco con barbuquejo de 3 puntos y sin daños visibles",
+      "Botas de seguridad antideslizantes y guantes adecuados para agarre",
+    ]},
+    { seccion: "3. Herramientas y Área Inferior", items: [
+      "Herramientas aseguradas con cordón de retención (tool lanyard)",
+      "Área inferior delimitada y señalizada (peligro caída de objetos)",
+    ]},
+    { seccion: "4. Durante el Trabajo", items: [
+      "Conexión continua a un punto de anclaje (regla de 100% de enganche al ascender/descender)",
+      "Superficie/estructura de trabajo verificada como estable antes de apoyar el peso",
+      "Comunicación permanente con el vigía",
+    ]},
+  ],
   altura: [
     { seccion: "A. Sistemas de Protección Contra Caídas", items: [
       "Arneses de cuerpo completo en buen estado (sin desgarros ni corrosión)",

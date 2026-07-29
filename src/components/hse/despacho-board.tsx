@@ -15,8 +15,21 @@ const inp =
   "h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[2px] focus-visible:ring-ring/30";
 const BUCKET = "hse-evidence";
 
-type EmpOpt = { id: string; nombre: string };
-type ItemOpt = { id: string; nombre: string; stock_actual: number; vida_util_dias: number | null };
+type EmpOpt = {
+  id: string;
+  nombre: string;
+  talla_casco: string;
+  talla_camisa: string;
+  talla_pantalon: string;
+  talla_botas: string;
+};
+type ItemOpt = {
+  id: string;
+  nombre: string;
+  stock_actual: number;
+  vida_util_dias: number | null;
+  fecha_vencimiento: string | null;
+};
 
 export function DespachoBoard({
   orgId,
@@ -32,6 +45,7 @@ export function DespachoBoard({
   const [empId, setEmpId] = useState("");
   const [eppId, setEppId] = useState("");
   const [cantidad, setCantidad] = useState("1");
+  const [talla, setTalla] = useState("");
   const [notas, setNotas] = useState("");
   const [saving, setSaving] = useState(false);
   const [stock, setStock] = useState<Record<string, number>>(() =>
@@ -39,6 +53,31 @@ export function DespachoBoard({
   );
 
   const selItem = items.find((i) => i.id === eppId);
+  const selEmp = empleados.find((e) => e.id === empId);
+
+  // Vencimiento del artículo entregado: el más cercano entre la vida útil
+  // desde hoy y la fecha de vencimiento del producto en bodega.
+  function calcVencimiento(item: ItemOpt): string | null {
+    const fechas: string[] = [];
+    if (item.vida_util_dias) {
+      const d = new Date();
+      d.setDate(d.getDate() + item.vida_util_dias);
+      fechas.push(d.toISOString().split("T")[0]);
+    }
+    if (item.fecha_vencimiento) fechas.push(item.fecha_vencimiento);
+    return fechas.length ? fechas.sort()[0] : null;
+  }
+  const vencimiento = selItem ? calcVencimiento(selItem) : null;
+  const tallas = selEmp
+    ? [
+        selEmp.talla_casco && `casco ${selEmp.talla_casco}`,
+        selEmp.talla_camisa && `camisa ${selEmp.talla_camisa}`,
+        selEmp.talla_pantalon && `pantalón ${selEmp.talla_pantalon}`,
+        selEmp.talla_botas && `botas ${selEmp.talla_botas}`,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
 
   async function despachar() {
     if (saving) return;
@@ -62,18 +101,14 @@ export function DespachoBoard({
       return toast.error("No se pudo subir la firma.");
     }
 
-    let venc: string | null = null;
-    if (selItem?.vida_util_dias) {
-      const d = new Date();
-      d.setDate(d.getDate() + selItem.vida_util_dias);
-      venc = d.toISOString().split("T")[0];
-    }
+    const venc = selItem ? calcVencimiento(selItem) : null;
     const { data: userRes } = await sb.auth.getUser();
     const { error } = await sb.from("hse_epp_asignaciones").insert({
       organization_id: orgId,
       empleado_id: empId,
       epp_id: eppId,
       cantidad: qty,
+      talla: talla.trim() || null,
       firma_path: path,
       notas: notas.trim() || null,
       fecha_vencimiento: venc,
@@ -87,6 +122,7 @@ export function DespachoBoard({
     setEmpId("");
     setEppId("");
     setCantidad("1");
+    setTalla("");
     setNotas("");
     padRef.current?.clear();
   }
@@ -115,6 +151,11 @@ export function DespachoBoard({
                 <option key={e.id} value={e.id}>{e.nombre}</option>
               ))}
             </select>
+            {selEmp && (
+              <span className="mt-1 block text-xs text-muted-foreground">
+                {tallas ? `Tallas registradas: ${tallas}` : "Sin tallas registradas."}
+              </span>
+            )}
           </label>
 
           <label className="block">
@@ -134,13 +175,18 @@ export function DespachoBoard({
               <span className="mb-1 block text-xs text-muted-foreground">Cantidad</span>
               <input type="number" inputMode="numeric" className={inp} value={cantidad} onChange={(e) => setCantidad(e.target.value)} />
             </label>
-            {selItem && (
-              <div className="flex items-end pb-2 text-xs text-muted-foreground">
-                Disponible: {stock[eppId] ?? 0}
-                {selItem.vida_util_dias ? ` · vence en ${selItem.vida_util_dias} d` : ""}
-              </div>
-            )}
+            <label className="block">
+              <span className="mb-1 block text-xs text-muted-foreground">Talla entregada</span>
+              <input className={inp} value={talla} onChange={(e) => setTalla(e.target.value)} placeholder="Ej. M, 40, L…" />
+            </label>
           </div>
+
+          {selItem && (
+            <div className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+              Disponible: {stock[eppId] ?? 0}
+              {vencimiento ? ` · vence: ${vencimiento}` : " · sin vencimiento"}
+            </div>
+          )}
 
           <label className="block">
             <span className="mb-1 block text-xs text-muted-foreground">Notas (opcional)</span>

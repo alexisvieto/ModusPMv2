@@ -15,7 +15,7 @@ export default async function InventarioPage() {
     ? await supabase
         .from("hse_epp_items")
         .select(
-          "id, nombre, categoria, marca, modelo, descripcion, stock_actual, stock_minimo, vida_util_dias, imagen_path",
+          "id, nombre, categoria, marca, fabricante, modelo, descripcion, stock_actual, stock_minimo, vida_util_dias, fecha_vencimiento, imagen_path",
         )
         .eq("organization_id", orgId)
         .eq("activo", true)
@@ -50,11 +50,13 @@ export default async function InventarioPage() {
         nombre: it.nombre,
         categoria: it.categoria ?? "",
         marca: it.marca ?? "",
+        fabricante: it.fabricante ?? "",
         modelo: it.modelo ?? "",
         descripcion: it.descripcion ?? "",
         stock_actual: String(it.stock_actual ?? 0),
         stock_minimo: String(it.stock_minimo ?? 0),
         vida_util_dias: it.vida_util_dias == null ? "" : String(it.vida_util_dias),
+        fecha_vencimiento: it.fecha_vencimiento ?? "",
         imagen_path: it.imagen_path ?? "",
         imagen_url: it.imagen_path ? (urlByPath.get(it.imagen_path) ?? "") : "",
       }))}

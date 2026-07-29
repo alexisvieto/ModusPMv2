@@ -18,11 +18,13 @@ export type EppItem = {
   nombre: string;
   categoria: string;
   marca: string;
+  fabricante: string;
   modelo: string;
   descripcion: string;
   stock_actual: string;
   stock_minimo: string;
   vida_util_dias: string;
+  fecha_vencimiento: string;
   imagen_path: string;
   imagen_url: string;
 };
@@ -32,11 +34,13 @@ const EMPTY: EppItem = {
   nombre: "",
   categoria: "",
   marca: "",
+  fabricante: "",
   modelo: "",
   descripcion: "",
   stock_actual: "0",
   stock_minimo: "5",
   vida_util_dias: "",
+  fecha_vencimiento: "",
   imagen_path: "",
   imagen_url: "",
 };
@@ -83,6 +87,7 @@ export function EppInventory({ orgId, initial }: { orgId: string; initial: EppIt
       nombre: editing.nombre.trim(),
       categoria: editing.categoria.trim() || null,
       marca: editing.marca.trim() || null,
+      fabricante: editing.fabricante.trim() || null,
       modelo: editing.modelo.trim() || null,
       descripcion: editing.descripcion.trim() || null,
       stock_actual: parseInt(editing.stock_actual) || 0,
@@ -90,6 +95,7 @@ export function EppInventory({ orgId, initial }: { orgId: string; initial: EppIt
       vida_util_dias: editing.vida_util_dias.trim()
         ? parseInt(editing.vida_util_dias)
         : null,
+      fecha_vencimiento: editing.fecha_vencimiento || null,
     };
 
     let id = editing.id;
@@ -181,7 +187,7 @@ export function EppInventory({ orgId, initial }: { orgId: string; initial: EppIt
                     <div className="min-w-0">
                       <p className="font-semibold leading-tight text-[#0f2044]">{it.nombre}</p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {[it.categoria, it.marca, it.modelo].filter(Boolean).join(" · ") || "—"}
+                        {[it.categoria, it.fabricante, it.marca, it.modelo].filter(Boolean).join(" · ") || "—"}
                       </p>
                     </div>
                   </div>
@@ -212,6 +218,11 @@ export function EppInventory({ orgId, initial }: { orgId: string; initial: EppIt
                   {it.vida_util_dias && (
                     <span className="text-muted-foreground">
                       Vida útil: {it.vida_util_dias} d
+                    </span>
+                  )}
+                  {it.fecha_vencimiento && (
+                    <span className="text-muted-foreground">
+                      Vence: {it.fecha_vencimiento}
                     </span>
                   )}
                 </div>
@@ -253,12 +264,20 @@ export function EppInventory({ orgId, initial }: { orgId: string; initial: EppIt
                   <input className={inp} value={editing.marca} onChange={(e) => setE("marca", e.target.value)} />
                 </div>
                 <div>
+                  <Label>Fabricante</Label>
+                  <input className={inp} value={editing.fabricante} onChange={(e) => setE("fabricante", e.target.value)} />
+                </div>
+                <div>
                   <Label>Modelo</Label>
                   <input className={inp} value={editing.modelo} onChange={(e) => setE("modelo", e.target.value)} />
                 </div>
                 <div>
                   <Label>Vida útil (días)</Label>
                   <input type="number" inputMode="numeric" className={inp} value={editing.vida_util_dias} onChange={(e) => setE("vida_util_dias", e.target.value)} placeholder="Sin vencimiento" />
+                </div>
+                <div>
+                  <Label>Fecha de vencimiento</Label>
+                  <input type="date" className={inp} value={editing.fecha_vencimiento} onChange={(e) => setE("fecha_vencimiento", e.target.value)} />
                 </div>
                 <div>
                   <Label>Stock actual</Label>

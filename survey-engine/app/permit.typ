@@ -80,7 +80,7 @@
     column-gutter: 10pt,
     label[Empresa], [#p.empresa],
     label[Ciudad / Lugar], [#p.ciudad_lugar],
-    label[Área / Proceso], [#p.area_proceso],
+    label[Código del proyecto], [#p.area_proceso],
     label[Ubicación], [#p.ubicacion],
     ..(if p.es_altura {
       (label[Fecha inicio], [#p.fecha_inicio], label[Fecha fin], [#p.fecha_fin])

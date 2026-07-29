@@ -335,6 +335,7 @@ export function IncidentesBoard({
                           key={idx}
                           src={u}
                           alt=""
+                          loading="lazy"
                           className="size-12 rounded-md border object-cover"
                         />
                       ),

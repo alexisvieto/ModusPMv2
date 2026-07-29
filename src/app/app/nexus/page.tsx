@@ -90,6 +90,7 @@ export default async function NexusHome({
           <Link
             href="/app/nexus/gestion"
             title="Gestión: catálogo, categorías, perfiles"
+            aria-label="Gestión: catálogo, categorías, perfiles"
             className="inline-flex size-9 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <SlidersHorizontal className="size-4" />
@@ -97,6 +98,7 @@ export default async function NexusHome({
           <Link
             href="/app/nexus/config"
             title="Integración con Odoo"
+            aria-label="Integración con Odoo"
             className="inline-flex size-9 items-center justify-center rounded-md border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <Settings className="size-4" />
@@ -109,62 +111,97 @@ export default async function NexusHome({
 
       {/* Lista de cotizaciones (vacía al inicio) */}
       {estimates && estimates.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2 font-medium">Cotización</th>
-                <th className="px-4 py-2 font-medium">Cliente</th>
-                <th className="px-4 py-2 font-medium">Código Odoo</th>
-                <th className="px-4 py-2 font-medium">Fecha</th>
-                <th className="px-4 py-2 text-right font-medium">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {estimates.map((e) => (
-                <tr key={e.id} className="border-t">
-                  <td className="px-4 py-2">
-                    <Link
-                      href={`/app/nexus/${e.id}`}
-                      className="font-medium text-[#0f2044] hover:underline"
-                    >
-                      {e.name}
-                    </Link>
-                    {e.version_no > 1 && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        v{e.version_no}
-                      </span>
-                    )}
-                    <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      {NEXUS_STATUS_LABEL[e.status] ?? e.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2 text-muted-foreground">
-                    {e.client_name ?? "—"}
-                  </td>
-                  <td className="px-4 py-2">
-                    {e.odoo_code ? (
-                      <span className="rounded bg-[#0f2044]/8 px-1.5 py-0.5 font-mono text-xs text-[#0f2044]">
-                        {e.odoo_code}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2 text-muted-foreground">
-                    {e.estimate_date}
-                  </td>
-                  <td className="px-4 py-2 text-right tabular-nums">
-                    {Number(e.total).toLocaleString("es-PA", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </td>
+        <>
+          {/* Desktop / tablet: tabla */}
+          <div className="hidden overflow-x-auto rounded-lg border md:block">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Cotización</th>
+                  <th className="px-4 py-2 font-medium">Cliente</th>
+                  <th className="px-4 py-2 font-medium">Código Odoo</th>
+                  <th className="px-4 py-2 font-medium">Fecha</th>
+                  <th className="px-4 py-2 text-right font-medium">Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {estimates.map((e) => (
+                  <tr key={e.id} className="border-t">
+                    <td className="px-4 py-2">
+                      <Link
+                        href={`/app/nexus/${e.id}`}
+                        className="font-medium text-[#0f2044] hover:underline"
+                      >
+                        {e.name}
+                      </Link>
+                      {e.version_no > 1 && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          v{e.version_no}
+                        </span>
+                      )}
+                      <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                        {NEXUS_STATUS_LABEL[e.status] ?? e.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">
+                      {e.client_name ?? "—"}
+                    </td>
+                    <td className="px-4 py-2">
+                      {e.odoo_code ? (
+                        <span className="rounded bg-[#0f2044]/8 px-1.5 py-0.5 font-mono text-xs text-[#0f2044]">
+                          {e.odoo_code}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground">
+                      {e.estimate_date}
+                    </td>
+                    <td className="px-4 py-2 text-right tabular-nums">
+                      {Number(e.total).toLocaleString("es-PA", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Móvil: tarjetas */}
+          <div className="space-y-3 md:hidden">
+            {estimates.map((e) => (
+              <Link
+                key={e.id}
+                href={`/app/nexus/${e.id}`}
+                className="block rounded-xl border bg-card p-4 transition-colors hover:border-[#0f2044]/30"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span className="min-w-0 font-medium text-[#0f2044]">
+                    {e.name}
+                    {e.version_no > 1 && (
+                      <span className="ml-1 text-xs text-muted-foreground">v{e.version_no}</span>
+                    )}
+                  </span>
+                  <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    {NEXUS_STATUS_LABEL[e.status] ?? e.status}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {[e.client_name, e.odoo_code, e.estimate_date].filter(Boolean).join(" · ") || "—"}
+                </p>
+                <p className="mt-2 text-right text-sm font-semibold tabular-nums text-[#0f2044]">
+                  {Number(e.total).toLocaleString("es-PA", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </>
       ) : (
         <div className="rounded-lg border border-dashed p-10 text-center">
           <p className="text-sm text-muted-foreground">

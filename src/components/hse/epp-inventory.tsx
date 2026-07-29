@@ -313,7 +313,7 @@ export function EppInventory({ orgId, initial }: { orgId: string; initial: EppIt
 function Thumb({ url }: { url: string }) {
   if (url) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={url} alt="" className="size-11 shrink-0 rounded-lg border object-cover" />;
+    return <img src={url} alt="" loading="lazy" className="size-11 shrink-0 rounded-lg border object-cover" />;
   }
   return (
     <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-[#0f2044]/10">

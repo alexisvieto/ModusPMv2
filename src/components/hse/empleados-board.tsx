@@ -280,7 +280,7 @@ export function EmpleadosBoard({ orgId, initial }: { orgId: string; initial: Emp
 function Avatar({ url, nombre }: { url: string; nombre: string }) {
   if (url) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={url} alt="" className="size-11 shrink-0 rounded-full border object-cover" />;
+    return <img src={url} alt="" loading="lazy" className="size-11 shrink-0 rounded-full border object-cover" />;
   }
   const ini = nombre
     .split(" ")

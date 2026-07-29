@@ -14,6 +14,8 @@ function paramsFrom(raw: unknown): NexusParams {
     financiamiento: num(p.financiamiento, DEFAULT_PARAMS.financiamiento),
     utilidad: num(p.utilidad, DEFAULT_PARAMS.utilidad),
     itbms: num(p.itbms, DEFAULT_PARAMS.itbms),
+    // Existentes sin este campo → 0% (ya traen el 7% sumado a mano; no duplicar).
+    itbms_compra: num(p.itbms_compra, 0),
   };
 }
 

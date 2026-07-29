@@ -15,6 +15,7 @@ import {
   addBuckets,
   bucketsFrom,
   calcCascade,
+  carriesPurchaseTax,
   margin,
   type CostKind,
   type NexusParams,
@@ -72,6 +73,7 @@ const KINDS: { v: CostKind; l: string }[] = [
   { v: "ManoDeObra", l: "Mano de Obra" },
   { v: "Herramienta", l: "Herramienta" },
   { v: "Flete", l: "Flete" },
+  { v: "Hospedaje", l: "Hospedaje" },
 ];
 
 const STATUS_META: Record<string, { label: string; cls: string }> = {
@@ -140,6 +142,7 @@ export function EstimateEditor({
     financiamiento: pctStr(estimate.params.financiamiento),
     utilidad: pctStr(estimate.params.utilidad),
     itbms: pctStr(estimate.params.itbms),
+    itbms_compra: pctStr(estimate.params.itbms_compra ?? 0),
   });
   const paramsFrac: NexusParams = {
     ind_oficina: (Number(pct.ind_oficina) || 0) / 100,
@@ -147,6 +150,7 @@ export function EstimateEditor({
     financiamiento: (Number(pct.financiamiento) || 0) / 100,
     utilidad: (Number(pct.utilidad) || 0) / 100,
     itbms: (Number(pct.itbms) || 0) / 100,
+    itbms_compra: (Number(pct.itbms_compra) || 0) / 100,
   };
 
   // ---------- cálculo en vivo (cascada) ----------
@@ -162,6 +166,7 @@ export function EstimateEditor({
         dias: Number(l.dias) || 0,
         daily_rate: l.daily_rate,
       })),
+      paramsFrac.itbms_compra,
     ),
   );
   const grandBuckets = catBuckets.reduce(addBuckets, {
@@ -169,6 +174,7 @@ export function EstimateEditor({
     manoObra: 0,
     herramienta: 0,
     flete: 0,
+    hospedaje: 0,
   });
   const grand = calcCascade(grandBuckets, paramsFrac);
 
@@ -648,8 +654,16 @@ export function EstimateEditor({
           {pctField("ind_campo", "Ind. Campo")}
           {pctField("financiamiento", "Financiam.")}
           {pctField("utilidad", "Utilidad")}
-          {pctField("itbms", "ITBMS")}
+          {pctField("itbms", "ITBMS venta")}
+          <span className="h-5 shrink-0 border-l" aria-hidden />
+          {pctField("itbms_compra", "ITBMS compra")}
         </div>
+        <p className="text-xs text-muted-foreground">
+          El <span className="font-medium">ITBMS de compra</span> se suma al precio del proveedor
+          (Material, Herramienta, Flete y Hospedaje) → costo{" "}
+          <span className="font-medium">puesto en bodega</span>. La Mano de Obra no lo lleva. Es
+          independiente del ITBMS de venta y de los % indirectos.
+        </p>
       </div>
 
       {/* categorías */}
@@ -713,8 +727,18 @@ export function EstimateEditor({
                       <th className="w-32 px-3 py-1.5 font-medium">Fabricante</th>
                       <th className="w-32 px-3 py-1.5 font-medium">Tipo</th>
                       <th className="w-20 px-3 py-1.5 text-right font-medium">Cant.</th>
-                      <th className="w-28 px-3 py-1.5 text-right font-medium">P. Unit.</th>
-                      <th className="w-28 px-3 py-1.5 text-right font-medium">Costo</th>
+                      <th
+                        className="w-28 px-3 py-1.5 text-right font-medium"
+                        title="Precio del proveedor (sin ITBMS de compra)"
+                      >
+                        P. Unit.
+                      </th>
+                      <th
+                        className="w-28 px-3 py-1.5 text-right font-medium"
+                        title="Puesto en bodega — incluye el ITBMS de compra en los tipos comprados"
+                      >
+                        Costo
+                      </th>
                       <th className="w-8" />
                     </tr>
                   </thead>
@@ -785,9 +809,26 @@ export function EstimateEditor({
                             onChange={(e) => patchItem(c.uid, it.uid, { unit_price: e.target.value })}
                           />
                         </td>
-                        <td className="px-3 py-1 text-right tabular-nums text-muted-foreground">
-                          {money((Number(it.qty) || 0) * (Number(it.unit_price) || 0))}
-                        </td>
+                        {(() => {
+                          const raw =
+                            (Number(it.qty) || 0) * (Number(it.unit_price) || 0);
+                          const taxed =
+                            carriesPurchaseTax(it.kind) && paramsFrac.itbms_compra > 0;
+                          const landed = raw * (taxed ? 1 + paramsFrac.itbms_compra : 1);
+                          return (
+                            <td className="px-3 py-1 text-right tabular-nums text-muted-foreground">
+                              {money(landed)}
+                              {taxed && (
+                                <span
+                                  className="ml-1 text-[10px] text-primary/70"
+                                  title="Puesto en bodega (incluye ITBMS de compra)"
+                                >
+                                  +{(paramsFrac.itbms_compra * 100).toFixed(0)}%
+                                </span>
+                              )}
+                            </td>
+                          );
+                        })()}
                         <td className="px-2 py-1 text-center">
                           <button
                             onClick={() => removeItem(c.uid, it.uid)}
@@ -917,7 +958,7 @@ export function EstimateEditor({
           Resumen del proyecto
         </div>
         <div className="grid gap-x-8 gap-y-1.5 p-4 text-sm sm:grid-cols-2">
-          <Row label="Costo base (Mat. + M.O. + Herram. + Flete)" value={grand.base} />
+          <Row label="Costo base (Mat. + M.O. + Herram. + Flete + Hosp.)" value={grand.base} />
           <Row label={`Ind. Oficina (${pct.ind_oficina}%)`} value={grand.indOficina} />
           <Row label={`Ind. Campo (${pct.ind_campo}%)`} value={grand.indCampo} />
           <Row label={`Financiamiento (${pct.financiamiento}%)`} value={grand.financiamiento} />

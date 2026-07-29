@@ -9,6 +9,7 @@ import {
   addBuckets,
   bucketsFrom,
   calcCascade,
+  carriesPurchaseTax,
   type CostKind,
   type NexusParams,
 } from "@/lib/nexus/calc";
@@ -95,9 +96,10 @@ export function computeDonutSegments(data: ExcelData): DonutSegment[] {
             dias: l.dias,
             daily_rate: l.daily_rate,
           })),
+          data.params.itbms_compra,
         ),
       ),
-    { material: 0, manoObra: 0, herramienta: 0, flete: 0 },
+    { material: 0, manoObra: 0, herramienta: 0, flete: 0, hospedaje: 0 },
   );
   const bd = calcCascade(buckets, data.params);
   return [
@@ -188,13 +190,14 @@ export async function buildEstimateWorkbook(
     { width: 14 }, // E Mano de Obra
     { width: 12 }, // F Herramienta
     { width: 10 }, // G Flete
-    { width: 14 }, // H Ind. Oficina
-    { width: 13 }, // I Ind. Campo
-    { width: 15 }, // J Financiamiento
-    { width: 13 }, // K Utilidad
-    { width: 15 }, // L Subtotal
-    { width: 12 }, // M ITBMS
-    { width: 16 }, // N Total General
+    { width: 12 }, // H Hospedaje
+    { width: 14 }, // I Ind. Oficina
+    { width: 13 }, // J Ind. Campo
+    { width: 15 }, // K Financiamiento
+    { width: 13 }, // L Utilidad
+    { width: 15 }, // M Subtotal
+    { width: 12 }, // N ITBMS
+    { width: 16 }, // O Total General
   ];
 
   const fillOf = (argb: string) => ({
@@ -206,8 +209,8 @@ export async function buildEstimateWorkbook(
   // ── Fila 1: banner ──
   ws.mergeCells("A1:D1");
   ws.mergeCells("E1:H1");
-  ws.mergeCells("I1:K1");
-  ws.mergeCells("L1:N1");
+  ws.mergeCells("I1:L1");
+  ws.mergeCells("M1:O1");
   const banner = [
     { c: "A1", v: data.name || "Cotización", sz: 12 },
     {
@@ -222,7 +225,7 @@ export async function buildEstimateWorkbook(
       sz: 10,
     },
     { c: "I1", v: `Elaborado: ${data.elaborated_by || "—"}`, sz: 10 },
-    { c: "L1", v: `Fecha: ${data.date}`, sz: 10 },
+    { c: "M1", v: `Fecha: ${data.date}`, sz: 10 },
   ];
   for (const b of banner) {
     const cell = ws.getCell(b.c);
@@ -240,11 +243,11 @@ export async function buildEstimateWorkbook(
   hint.value = "↓ parámetros";
   hint.font = { name: FONT, size: 8, color: { argb: GRAY } };
   const paramCells: [string, number][] = [
-    ["H2", p.ind_oficina],
-    ["I2", p.ind_campo],
-    ["J2", p.financiamiento],
-    ["K2", p.utilidad],
-    ["M2", p.itbms],
+    ["I2", p.ind_oficina],
+    ["J2", p.ind_campo],
+    ["K2", p.financiamiento],
+    ["L2", p.utilidad],
+    ["N2", p.itbms],
   ];
   for (const [addr, val] of paramCells) {
     const c = ws.getCell(addr);
@@ -256,8 +259,8 @@ export async function buildEstimateWorkbook(
   // ── Fila 3: encabezados ──
   const heads = [
     "Cant.", "Descripción", "Fabricante", "Material", "Mano de Obra",
-    "Herramienta", "Flete", "Ind. Oficina", "Ind. Campo", "Financiamiento",
-    "Utilidad", "Subtotal", "ITBMS", "Total General",
+    "Herramienta", "Flete", "Hospedaje", "Ind. Oficina", "Ind. Campo",
+    "Financiamiento", "Utilidad", "Subtotal", "ITBMS", "Total General",
   ];
   const hr = ws.getRow(3);
   heads.forEach((h, i) => {
@@ -268,20 +271,28 @@ export async function buildEstimateWorkbook(
     c.alignment = { vertical: "middle", wrapText: true };
   });
 
-  // Fórmulas de cascada para una fila r (directos D:G ya presentes).
+  // Fórmulas de cascada para una fila r (directos D:H ya presentes).
   const cascade = (r: number) => ({
-    H: { formula: `SUM(D${r}:G${r})*H$2` },
-    I: { formula: `SUM(D${r}:G${r})*I$2` },
-    J: { formula: `SUM(D${r}:I${r})*J$2` },
+    I: { formula: `SUM(D${r}:H${r})*I$2` },
+    J: { formula: `SUM(D${r}:H${r})*J$2` },
     K: { formula: `SUM(D${r}:J${r})*K$2` },
-    L: { formula: `SUM(D${r}:K${r})` },
-    M: { formula: `L${r}*M$2` },
-    N: { formula: `L${r}+M${r}` },
+    L: { formula: `SUM(D${r}:K${r})*L$2` },
+    M: { formula: `SUM(D${r}:L${r})` },
+    N: { formula: `M${r}*N$2` },
+    O: { formula: `M${r}+N${r}` },
   });
-  const COLS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"];
-  const numCols = ["D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"];
+  const COLS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"];
+  const numCols = ["D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"];
   const bucketCol = (kind: CostKind) =>
-    kind === "Material" ? "D" : kind === "ManoDeObra" ? "E" : kind === "Herramienta" ? "F" : "G";
+    kind === "Material"
+      ? "D"
+      : kind === "ManoDeObra"
+        ? "E"
+        : kind === "Herramienta"
+          ? "F"
+          : kind === "Flete"
+            ? "G"
+            : "H"; // Hospedaje
 
   let r = 4;
   const catRows: number[] = [];
@@ -298,15 +309,18 @@ export async function buildEstimateWorkbook(
       row.getCell(1).value = it.qty;
       row.getCell(2).value = it.description;
       row.getCell(3).value = it.manufacturer || "";
-      row.getCell(COLS.indexOf(bucketCol(it.kind)) + 1).value = it.qty * it.unit_price;
+      // Costo puesto en bodega: precio proveedor + ITBMS de compra en los tipos comprados.
+      const factor = carriesPurchaseTax(it.kind) ? 1 + data.params.itbms_compra : 1;
+      row.getCell(COLS.indexOf(bucketCol(it.kind)) + 1).value =
+        it.qty * it.unit_price * factor;
       const f = cascade(r);
-      row.getCell(8).value = f.H;
       row.getCell(9).value = f.I;
       row.getCell(10).value = f.J;
       row.getCell(11).value = f.K;
       row.getCell(12).value = f.L;
       row.getCell(13).value = f.M;
       row.getCell(14).value = f.N;
+      row.getCell(15).value = f.O;
       r++;
     }
     // mano de obra
@@ -316,13 +330,13 @@ export async function buildEstimateWorkbook(
       row.getCell(2).value = `Mano de Obra — ${l.profile_name} (${l.personas}p × ${l.dias}d × $${l.daily_rate.toFixed(2)}/día)`;
       row.getCell(5).value = l.personas * l.dias * l.daily_rate; // E = Mano de Obra
       const f = cascade(r);
-      row.getCell(8).value = f.H;
       row.getCell(9).value = f.I;
       row.getCell(10).value = f.J;
       row.getCell(11).value = f.K;
       row.getCell(12).value = f.L;
       row.getCell(13).value = f.M;
       row.getCell(14).value = f.N;
+      row.getCell(15).value = f.O;
       r++;
     }
     const lastItem = r - 1;
@@ -331,26 +345,26 @@ export async function buildEstimateWorkbook(
     ws.mergeCells(`A${catRow}:C${catRow}`);
     const nameCell = ws.getCell(`A${catRow}`);
     nameCell.value = cat.name;
-    for (let ci = 1; ci <= 14; ci++) {
+    for (let ci = 1; ci <= 15; ci++) {
       const c = ws.getRow(catRow).getCell(ci);
       c.fill = fillOf(BLUE);
       c.font = { name: FONT, bold: true, size: 10, color: { argb: WHITE } };
     }
     if (lastItem >= firstItem) {
-      for (const col of ["D", "E", "F", "G"]) {
+      for (const col of ["D", "E", "F", "G", "H"]) {
         ws.getCell(`${col}${catRow}`).value = {
           formula: `SUM(${col}${firstItem}:${col}${lastItem})`,
         };
       }
     }
     const cf = cascade(catRow);
-    ws.getCell(`H${catRow}`).value = cf.H;
     ws.getCell(`I${catRow}`).value = cf.I;
     ws.getCell(`J${catRow}`).value = cf.J;
     ws.getCell(`K${catRow}`).value = cf.K;
     ws.getCell(`L${catRow}`).value = cf.L;
     ws.getCell(`M${catRow}`).value = cf.M;
     ws.getCell(`N${catRow}`).value = cf.N;
+    ws.getCell(`O${catRow}`).value = cf.O;
   }
 
   // Zebra + fuente + formato contable en las filas de ítems (entre 4 y r-1).
@@ -358,7 +372,7 @@ export async function buildEstimateWorkbook(
     if (catRows.includes(rr)) continue;
     const row = ws.getRow(rr);
     const isAlt = (rr - 4) % 2 === 1;
-    for (let ci = 1; ci <= 14; ci++) {
+    for (let ci = 1; ci <= 15; ci++) {
       const c = row.getCell(ci);
       if (!c.font) c.font = { name: FONT, size: 10 };
       if (isAlt) c.fill = fillOf(ALT);
@@ -375,7 +389,7 @@ export async function buildEstimateWorkbook(
   ws.mergeCells(`A${totalRow}:C${totalRow}`);
   const tc = ws.getCell(`A${totalRow}`);
   tc.value = "TOTAL GENERAL DEL PROYECTO";
-  for (let ci = 1; ci <= 14; ci++) {
+  for (let ci = 1; ci <= 15; ci++) {
     const c = ws.getRow(totalRow).getCell(ci);
     c.fill = fillOf(NAVY);
     c.font = { name: FONT, bold: true, size: 11, color: { argb: WHITE } };
@@ -387,6 +401,165 @@ export async function buildEstimateWorkbook(
       : 0;
     cell.numFmt = ACC;
   }
+
+  // ==================== HOJA "Costo del Proyecto" ====================
+  // Vista INTERNA (costo real): precio del proveedor + ITBMS de compra =
+  // puesto en bodega. La hoja "Análisis de Presupuesto" ya parte de ese costo.
+  const wsC: WS = wb.addWorksheet("Costo del Proyecto", {
+    views: [{ state: "frozen", ySplit: 4, showGridLines: false }],
+    pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+  });
+  wsC.columns = [
+    { width: 8 }, // A Cant
+    { width: 44 }, // B Descripción
+    { width: 20 }, // C Fabricante
+    { width: 14 }, // D Tipo
+    { width: 15 }, // E Precio proveedor
+    { width: 15 }, // F Subtotal proveedor
+    { width: 14 }, // G ITBMS compra
+    { width: 17 }, // H Puesto en bodega
+  ];
+
+  wsC.mergeCells("A1:H1");
+  const cBanner = wsC.getCell("A1");
+  cBanner.value = `COSTO REAL DEL PROYECTO  ·  ${data.name || "Cotización"}`;
+  cBanner.font = { name: FONT, bold: true, size: 13, color: { argb: WHITE } };
+  cBanner.fill = fillOf(NAVY);
+  cBanner.alignment = { vertical: "middle" };
+  wsC.getRow(1).height = 22;
+
+  wsC.mergeCells("A2:H2");
+  const cSub = wsC.getCell("A2");
+  cSub.value = `Cliente: ${data.client || "—"}${data.project_name ? `   |   Proyecto: ${data.project_name}` : ""}   |   Fecha: ${data.date}`;
+  cSub.font = { name: FONT, size: 10, color: { argb: "FF595959" } };
+  cSub.fill = fillOf(LGRAY);
+
+  // Nota + tasa de ITBMS de compra editable (amarillo).
+  wsC.mergeCells("A3:F3");
+  const cNote = wsC.getCell("A3");
+  cNote.value =
+    "Costo interno: precio del proveedor + ITBMS de compra = puesto en bodega. La Mano de Obra no lleva ITBMS.";
+  cNote.font = { name: FONT, size: 8, color: { argb: GRAY } };
+  const cRateLbl = wsC.getCell("G3");
+  cRateLbl.value = "ITBMS compra →";
+  cRateLbl.font = { name: FONT, bold: true, size: 9, color: { argb: "FF595959" } };
+  cRateLbl.alignment = { horizontal: "right" };
+  const cRate = wsC.getCell("H3");
+  cRate.value = data.params.itbms_compra;
+  cRate.numFmt = "0%";
+  cRate.font = { name: FONT, bold: true, size: 10, color: { argb: "FF0000FF" } };
+  cRate.fill = fillOf(YELL);
+  cRate.alignment = { horizontal: "center" };
+
+  const cHeads = [
+    "Cant.", "Descripción", "Fabricante", "Tipo", "Precio prov.",
+    "Subtotal prov.", "ITBMS compra", "Puesto en bodega",
+  ];
+  const cHr = wsC.getRow(4);
+  cHeads.forEach((h, i) => {
+    const c = cHr.getCell(i + 1);
+    c.value = h;
+    c.font = { name: FONT, bold: true, size: 9, color: { argb: WHITE } };
+    c.fill = fillOf(NAVY);
+    c.alignment = { vertical: "middle", wrapText: true };
+  });
+
+  const KIND_LABEL: Record<CostKind, string> = {
+    Material: "Material",
+    ManoDeObra: "Mano de Obra",
+    Herramienta: "Herramienta",
+    Flete: "Flete",
+    Hospedaje: "Hospedaje",
+  };
+
+  let cRow = 5;
+  const cCatRows: number[] = [];
+  for (const cat of data.categories) {
+    const catRow = cRow;
+    cCatRows.push(catRow);
+    cRow++;
+    const firstItem = cRow;
+
+    for (const it of cat.items) {
+      const row = wsC.getRow(cRow);
+      row.getCell(1).value = it.qty;
+      row.getCell(2).value = it.description;
+      row.getCell(3).value = it.manufacturer || "";
+      row.getCell(4).value = KIND_LABEL[it.kind] ?? it.kind;
+      row.getCell(5).value = it.unit_price;
+      row.getCell(6).value = { formula: `A${cRow}*E${cRow}` };
+      row.getCell(7).value = carriesPurchaseTax(it.kind)
+        ? { formula: `F${cRow}*$H$3` }
+        : 0;
+      row.getCell(8).value = { formula: `F${cRow}+G${cRow}` };
+      cRow++;
+    }
+    for (const l of cat.labor) {
+      const row = wsC.getRow(cRow);
+      row.getCell(1).value = "-";
+      row.getCell(2).value = `Mano de Obra — ${l.profile_name} (${l.personas}p × ${l.dias}d × $${l.daily_rate.toFixed(2)}/día)`;
+      row.getCell(4).value = "Mano de Obra";
+      row.getCell(5).value = l.daily_rate;
+      row.getCell(6).value = l.personas * l.dias * l.daily_rate;
+      row.getCell(7).value = 0;
+      row.getCell(8).value = { formula: `F${cRow}+G${cRow}` };
+      cRow++;
+    }
+    const lastItem = cRow - 1;
+
+    wsC.mergeCells(`A${catRow}:D${catRow}`);
+    wsC.getCell(`A${catRow}`).value = cat.name;
+    for (let ci = 1; ci <= 8; ci++) {
+      const c = wsC.getRow(catRow).getCell(ci);
+      c.fill = fillOf(BLUE);
+      c.font = { name: FONT, bold: true, size: 10, color: { argb: WHITE } };
+    }
+    if (lastItem >= firstItem) {
+      for (const col of ["F", "G", "H"]) {
+        wsC.getCell(`${col}${catRow}`).value = {
+          formula: `SUM(${col}${firstItem}:${col}${lastItem})`,
+        };
+      }
+    }
+  }
+
+  // Zebra + formato contable.
+  for (let rr = 5; rr < cRow; rr++) {
+    if (cCatRows.includes(rr)) continue;
+    const row = wsC.getRow(rr);
+    const isAlt = (rr - 5) % 2 === 1;
+    for (let ci = 1; ci <= 8; ci++) {
+      const c = row.getCell(ci);
+      if (!c.font) c.font = { name: FONT, size: 10 };
+      if (isAlt) c.fill = fillOf(ALT);
+    }
+  }
+  for (let rr = 5; rr < cRow; rr++) {
+    for (const col of ["E", "F", "G", "H"]) wsC.getCell(`${col}${rr}`).numFmt = ACC;
+  }
+
+  // Costo total real del proyecto.
+  const cTotalRow = cRow + 1;
+  wsC.mergeCells(`A${cTotalRow}:E${cTotalRow}`);
+  wsC.getCell(`A${cTotalRow}`).value = "COSTO TOTAL DEL PROYECTO (puesto en bodega)";
+  for (let ci = 1; ci <= 8; ci++) {
+    const c = wsC.getRow(cTotalRow).getCell(ci);
+    c.fill = fillOf(NAVY);
+    c.font = { name: FONT, bold: true, size: 11, color: { argb: WHITE } };
+  }
+  for (const col of ["F", "G", "H"]) {
+    const cell = wsC.getCell(`${col}${cTotalRow}`);
+    cell.value = cCatRows.length
+      ? { formula: cCatRows.map((c2) => `${col}${c2}`).join("+") }
+      : 0;
+    cell.numFmt = ACC;
+  }
+  wsC.getCell(`H${cTotalRow}`).font = {
+    name: FONT,
+    bold: true,
+    size: 11,
+    color: { argb: "FFE8A020" },
+  };
 
   // ==================== HOJA "Rentabilidad" ====================
   // Simulador what-if: los % (amarillo) recalculan los KPIs; el Costo Base se
@@ -442,7 +615,7 @@ export async function buildEstimateWorkbook(
   rab.fill = fillOf(BLUE);
 
   const kpis: [number, string, string, boolean, boolean][] = [
-    [9, "Costo Base (Material + M.O. + Herramienta + Flete)", `${AN}!D${totalRow}+${AN}!E${totalRow}+${AN}!F${totalRow}+${AN}!G${totalRow}`, false, false],
+    [9, "Costo Base (Material + M.O. + Herram. + Flete + Hospedaje)", `${AN}!D${totalRow}+${AN}!E${totalRow}+${AN}!F${totalRow}+${AN}!G${totalRow}+${AN}!H${totalRow}`, false, false],
     [10, "Indirectos de Oficina", "B9*B6", false, false],
     [11, "Indirectos de Campo", "B9*C6", false, false],
     [12, "Financiamiento", "(B9+B10+B11)*D6", false, false],

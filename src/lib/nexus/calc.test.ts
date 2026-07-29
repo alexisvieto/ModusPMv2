@@ -15,13 +15,14 @@ const ASSA: NexusParams = {
   financiamiento: 0.02,
   utilidad: 0.2,
   itbms: 0.07,
+  itbms_compra: 0, // reconciliación con el Excel original (precios ya puestos en bodega)
 };
 
 describe("calcCascade — reconciliación centavo a centavo con el Excel de ASSA", () => {
   // Hoja "Análisis de Presupuesto", categoría Control de Acceso:
   // Material=1267.30, Mano de Obra=440.46, Herramienta=0, Flete=0.
   const bd = calcCascade(
-    { material: 1267.3, manoObra: 440.46, herramienta: 0, flete: 0 },
+    { material: 1267.3, manoObra: 440.46, herramienta: 0, flete: 0, hospedaje: 0 },
     ASSA,
   );
 
@@ -80,5 +81,38 @@ describe("bucketsFrom — reparto por tipo + mano de obra por perfil", () => {
       .map((it) => calcCascade(bucketsFrom([it]), DEFAULT_PARAMS).total)
       .reduce((a, b) => a + b, 0);
     expect(agg).toBeCloseTo(perItem, 9);
+  });
+});
+
+describe("ITBMS de compra (puesto en bodega) + Hospedaje", () => {
+  it("suma el 7% al precio del proveedor en los tipos comprados", () => {
+    const b = bucketsFrom(
+      [
+        { kind: "Material", qty: 1, unit_price: 100 }, // 107
+        { kind: "Herramienta", qty: 1, unit_price: 50 }, // 53.50
+        { kind: "Flete", qty: 1, unit_price: 200 }, // 214
+        { kind: "Hospedaje", qty: 2, unit_price: 80 }, // 160 → 171.20
+      ],
+      [],
+      0.07,
+    );
+    expect(b.material).toBeCloseTo(107, 6);
+    expect(b.herramienta).toBeCloseTo(53.5, 6);
+    expect(b.flete).toBeCloseTo(214, 6);
+    expect(b.hospedaje).toBeCloseTo(171.2, 6);
+  });
+
+  it("la Mano de Obra NO lleva ITBMS de compra", () => {
+    const b = bucketsFrom(
+      [{ kind: "ManoDeObra", qty: 1, unit_price: 500 }],
+      [{ personas: 2, dias: 3, daily_rate: 100 }], // 600
+      0.07,
+    );
+    expect(b.manoObra).toBeCloseTo(1100, 6); // 500 + 600, sin recargo
+  });
+
+  it("con tasa 0 el costo queda igual al precio del proveedor (existentes)", () => {
+    const b = bucketsFrom([{ kind: "Hospedaje", qty: 1, unit_price: 80 }], [], 0);
+    expect(b.hospedaje).toBeCloseTo(80, 6);
   });
 });

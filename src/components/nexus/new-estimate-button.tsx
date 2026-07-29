@@ -66,6 +66,8 @@ export function NewEstimateButton({
           financiamiento: Number(s.financiamiento),
           utilidad: Number(s.utilidad),
           itbms: Number(s.itbms),
+          // Config de la org aún no guarda el ITBMS de compra → arranca en 7%.
+          itbms_compra: DEFAULT_PARAMS.itbms_compra,
         }
       : DEFAULT_PARAMS;
 

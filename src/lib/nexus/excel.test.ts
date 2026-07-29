@@ -19,6 +19,7 @@ const ASSA: ExcelData = {
     financiamiento: 0.02,
     utilidad: 0.2,
     itbms: 0.07,
+    itbms_compra: 0,
   },
   categories: [
     {
@@ -55,7 +56,8 @@ describe("buildEstimateWorkbook — hoja Análisis de Presupuesto", () => {
     expect(ws.getCell("B3").value).toBe("Descripción");
     expect(ws.getCell("C3").value).toBe("Fabricante");
     expect(ws.getCell("D3").value).toBe("Material");
-    expect(ws.getCell("N3").value).toBe("Total General");
+    expect(ws.getCell("H3").value).toBe("Hospedaje");
+    expect(ws.getCell("O3").value).toBe("Total General");
 
     // Branding: header navy + Calibri.
     expect(ws.getCell("C3").fill.fgColor.argb).toBe("FF0F2044");
@@ -64,9 +66,9 @@ describe("buildEstimateWorkbook — hoja Análisis de Presupuesto", () => {
     // Código Odoo en el banner (relaciona el cálculo con el proyecto Odoo).
     expect(String(ws.getCell("E1").value)).toContain("S00549");
 
-    // Parámetros en fila 2 (fracciones).
-    expect(ws.getCell("H2").value).toBeCloseTo(0.1, 9);
-    expect(ws.getCell("M2").value).toBeCloseTo(0.07, 9);
+    // Parámetros en fila 2 (fracciones) — corridos por la columna Hospedaje.
+    expect(ws.getCell("I2").value).toBeCloseTo(0.1, 9);
+    expect(ws.getCell("N2").value).toBeCloseTo(0.07, 9);
 
     // Fila 4 = categoría; fila 5 = ítem; fila 6 = mano de obra.
     expect(ws.getCell("A4").value).toBe("Control de Acceso");
@@ -79,18 +81,18 @@ describe("buildEstimateWorkbook — hoja Análisis de Presupuesto", () => {
     expect(String(ws.getCell("B6").value)).toContain("Especialista");
     expect(ws.getCell("E6").value).toBeCloseTo(440.46, 6);
 
-    // Fórmulas cascada vivas.
+    // Fórmulas cascada vivas (base ahora = D:H, con Hospedaje).
     expect(formula(ws.getCell("D4").value)).toBe("SUM(D5:D6)");
-    expect(formula(ws.getCell("H4").value)).toBe("SUM(D4:G4)*H$2");
-    expect(formula(ws.getCell("J4").value)).toBe("SUM(D4:I4)*J$2");
+    expect(formula(ws.getCell("I4").value)).toBe("SUM(D4:H4)*I$2");
     expect(formula(ws.getCell("K4").value)).toBe("SUM(D4:J4)*K$2");
-    expect(formula(ws.getCell("L4").value)).toBe("SUM(D4:K4)");
-    expect(formula(ws.getCell("M4").value)).toBe("L4*M$2");
-    expect(formula(ws.getCell("N4").value)).toBe("L4+M4");
+    expect(formula(ws.getCell("L4").value)).toBe("SUM(D4:K4)*L$2");
+    expect(formula(ws.getCell("M4").value)).toBe("SUM(D4:L4)");
+    expect(formula(ws.getCell("N4").value)).toBe("M4*N$2");
+    expect(formula(ws.getCell("O4").value)).toBe("M4+N4");
 
     // Total general (fila 8) suma las categorías.
     expect(ws.getCell("A8").value).toBe("TOTAL GENERAL DEL PROYECTO");
-    expect(formula(ws.getCell("N8").value)).toBe("N4");
+    expect(formula(ws.getCell("O8").value)).toBe("O4");
   });
 });
 
@@ -137,5 +139,54 @@ describe("buildEstimateWorkbook — hojas Rentabilidad y Gantt", () => {
     expect(wsG.getCell("D7").value).toBe(3); // días
     expect(wsG.getCell("E7").value).toBe(1); // inicio
     expect(wsG.getCell("F7").value).toBe(3); // fin = 1 + 3 - 1
+  });
+});
+
+describe("buildEstimateWorkbook — hoja Costo del Proyecto + ITBMS de compra", () => {
+  // Cotización con Hospedaje y 7% de compra activo.
+  const CON_COMPRA: ExcelData = {
+    ...ASSA,
+    params: { ...ASSA.params, itbms_compra: 0.07 },
+    categories: [
+      {
+        name: "Site Survey",
+        color: "#0F2044",
+        duracion: 2,
+        paralelo: false,
+        items: [
+          { description: "Hospedaje personal", manufacturer: "", kind: "Hospedaje", qty: 2, unit_price: 80 },
+        ],
+        labor: [{ profile_name: "Técnico", personas: 1, dias: 2, daily_rate: 100 }],
+      },
+    ],
+  };
+
+  it("hoja interna: precio proveedor + 7% = puesto en bodega", async () => {
+    const wb = await buildEstimateWorkbook(CON_COMPRA);
+    const wsC = wb.getWorksheet("Costo del Proyecto");
+    expect(wsC).toBeTruthy();
+    expect(wsC.getCell("A1").value).toContain("COSTO REAL DEL PROYECTO");
+    // Tasa editable (H3) = 7%.
+    expect(wsC.getCell("H3").value).toBeCloseTo(0.07, 9);
+    // Fila 5 = categoría; fila 6 = ítem Hospedaje.
+    expect(wsC.getCell("D6").value).toBe("Hospedaje");
+    expect(wsC.getCell("E6").value).toBeCloseTo(80, 6); // precio proveedor
+    expect(formula(wsC.getCell("F6").value)).toBe("A6*E6"); // subtotal prov.
+    expect(formula(wsC.getCell("G6").value)).toBe("F6*$H$3"); // ITBMS compra
+    expect(formula(wsC.getCell("H6").value)).toBe("F6+G6"); // puesto en bodega
+  });
+
+  it("hoja Análisis: el costo base ya viene puesto en bodega (Hospedaje 160 → 171.20)", async () => {
+    const wb = await buildEstimateWorkbook(CON_COMPRA);
+    const ws = wb.getWorksheet("Análisis de Presupuesto");
+    // Hospedaje va en la columna H (fila 5 = ítem); 2 × 80 × 1.07 = 171.20.
+    expect(ws.getCell("H5").value).toBeCloseTo(171.2, 6);
+  });
+
+  it("donut: el costo base incluye el 7% de compra del Hospedaje", () => {
+    const segs = computeDonutSegments(CON_COMPRA);
+    const base = segs.find((s) => s.label === "Costo Base")!.value;
+    // Hospedaje 171.20 + Mano de obra 200 = 371.20.
+    expect(base).toBeCloseTo(371.2, 6);
   });
 });

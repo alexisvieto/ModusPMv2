@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { bucketsFrom, calcCascade, DEFAULT_PARAMS, type NexusParams } from "@/lib/nexus/calc";
+import { bucketsFrom, calcCascade, DEFAULT_PARAMS, type CostKind, type NexusParams } from "@/lib/nexus/calc";
 import { pushToExistingOrder, testConnection } from "@/lib/nexus/odoo";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -18,6 +18,7 @@ function paramsFrom(raw: unknown): NexusParams {
     financiamiento: n(p.financiamiento, DEFAULT_PARAMS.financiamiento),
     utilidad: n(p.utilidad, DEFAULT_PARAMS.utilidad),
     itbms: n(p.itbms, DEFAULT_PARAMS.itbms),
+    itbms_compra: n(p.itbms_compra, 0),
   };
 }
 
@@ -175,10 +176,11 @@ export async function sendToOdoo(
       const b = bucketsFrom(
         (items ?? [])
           .filter((i) => i.estimate_category_id === c.id)
-          .map((i) => ({ kind: i.kind as "Material" | "ManoDeObra" | "Herramienta" | "Flete", qty: Number(i.qty), unit_price: Number(i.unit_price) })),
+          .map((i) => ({ kind: i.kind as CostKind, qty: Number(i.qty), unit_price: Number(i.unit_price) })),
         (labor ?? [])
           .filter((l) => l.estimate_category_id === c.id)
           .map((l) => ({ personas: Number(l.personas), dias: Number(l.dias), daily_rate: Number(l.daily_rate) })),
+        params.itbms_compra,
       );
       return { name: c.name, price: calcCascade(b, params).subtotal };
     })

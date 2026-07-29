@@ -2,6 +2,16 @@
 // Las plantillas se conservan TAL CUAL de la app original (IS Safety): son
 // conocimiento del dominio (Panamá / ISO 9001·14001) ya validado en campo.
 
+import {
+  ArrowUpFromLine,
+  Blocks,
+  Flame,
+  HardHat,
+  MoveVertical,
+  RadioTower,
+  type LucideIcon,
+} from "lucide-react";
+
 export type PermitTypeKey =
   | "altura_general"
   | "altura"
@@ -12,28 +22,28 @@ export type PermitTypeKey =
 
 export type PermitTypeMeta = {
   label: string;
-  icon: string;
+  icon: LucideIcon;
   titulo: string;
   grupo?: "altura";
 };
 
 export const TIPO_PERMISOS: Record<PermitTypeKey, PermitTypeMeta> = {
-  altura_general: { label: "Altura (General)", icon: "🪜", titulo: "PERMISO PARA TRABAJO EN ALTURA (GENERAL)", grupo: "altura" },
-  altura: { label: "Alturas (Andamios)", icon: "🪜", titulo: "PERMISO PARA TRABAJO EN ALTURAS (ANDAMIOS)", grupo: "altura" },
-  altura_torres: { label: "Alturas (Torres)", icon: "📡", titulo: "PERMISO PARA TRABAJO EN ALTURAS (TORRES)", grupo: "altura" },
-  altura_escalera: { label: "Alturas (Escalera)", icon: "🪜", titulo: "PERMISO PARA TRABAJO EN ALTURAS (ESCALERA)", grupo: "altura" },
-  izaje: { label: "Izaje de Cargas", icon: "🏗️", titulo: "PERMISO DE TRABAJO SEGURO PARA IZAJE DE CARGAS" },
-  caliente: { label: "Trabajo en Caliente", icon: "🔥", titulo: "PERMISO PARA TRABAJO SEGURO EN CALIENTE" },
+  altura_general: { label: "Altura (General)", icon: HardHat, titulo: "PERMISO PARA TRABAJO EN ALTURA (GENERAL)", grupo: "altura" },
+  altura: { label: "Alturas (Andamios)", icon: Blocks, titulo: "PERMISO PARA TRABAJO EN ALTURAS (ANDAMIOS)", grupo: "altura" },
+  altura_torres: { label: "Alturas (Torres)", icon: RadioTower, titulo: "PERMISO PARA TRABAJO EN ALTURAS (TORRES)", grupo: "altura" },
+  altura_escalera: { label: "Alturas (Escalera)", icon: MoveVertical, titulo: "PERMISO PARA TRABAJO EN ALTURAS (ESCALERA)", grupo: "altura" },
+  izaje: { label: "Izaje de Cargas", icon: ArrowUpFromLine, titulo: "PERMISO DE TRABAJO SEGURO PARA IZAJE DE CARGAS" },
+  caliente: { label: "Trabajo en Caliente", icon: Flame, titulo: "PERMISO PARA TRABAJO SEGURO EN CALIENTE" },
 };
 
 export type PermitGroupKey = "altura" | "izaje" | "caliente";
 export const GRUPOS_PERMISOS: Record<
   PermitGroupKey,
-  { label: string; icon: string; subtipos?: PermitTypeKey[] }
+  { label: string; icon: LucideIcon; subtipos?: PermitTypeKey[] }
 > = {
-  altura: { label: "Trabajo en Alturas", icon: "🪜", subtipos: ["altura_general", "altura", "altura_torres", "altura_escalera"] },
-  izaje: { label: "Izaje de Cargas", icon: "🏗️" },
-  caliente: { label: "Trabajo en Caliente", icon: "🔥" },
+  altura: { label: "Trabajo en Alturas", icon: HardHat, subtipos: ["altura_general", "altura", "altura_torres", "altura_escalera"] },
+  izaje: { label: "Izaje de Cargas", icon: ArrowUpFromLine },
+  caliente: { label: "Trabajo en Caliente", icon: Flame },
 };
 
 export const SUBTIPO_LABELS: Record<string, { label: string; desc: string }> = {

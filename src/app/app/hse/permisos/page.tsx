@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { HardHat, MapPin } from "lucide-react";
+import { ClipboardList, HardHat, MapPin } from "lucide-react";
 
 import { NewPermitButton } from "@/components/hse/new-permit-button";
 import { TIPO_PERMISOS, type PermitTypeKey } from "@/lib/hse/permits";
@@ -59,7 +59,11 @@ export default async function HSEHome() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="flex items-center gap-2 font-semibold leading-tight text-[#0f2044]">
-                    <span className="text-lg">{meta?.icon ?? "📋"}</span>
+                    {meta?.icon ? (
+                      <meta.icon className="size-4 shrink-0" />
+                    ) : (
+                      <ClipboardList className="size-4 shrink-0" />
+                    )}
                     {meta?.label ?? p.permit_type}
                   </span>
                   <span

@@ -91,47 +91,57 @@ export function NewPermitButton({ orgId }: { orgId: string }) {
 
             <div className="mt-4 space-y-2">
               {!grupo
-                ? grupos.map(([key, val]) => (
-                    <button
-                      key={key}
-                      disabled={saving}
-                      onClick={() =>
-                        val.subtipos ? setGrupo(key) : create(key as PermitTypeKey)
-                      }
-                      className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted disabled:opacity-50"
-                    >
-                      <span className="text-2xl">{val.icon}</span>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-[#0f2044]">{val.label}</div>
+                ? grupos.map(([key, val]) => {
+                    const GIcon = val.icon;
+                    return (
+                      <button
+                        key={key}
+                        disabled={saving}
+                        onClick={() =>
+                          val.subtipos ? setGrupo(key) : create(key as PermitTypeKey)
+                        }
+                        className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted disabled:opacity-50"
+                      >
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#0f2044]/8 text-[#0f2044]">
+                          <GIcon className="size-5" />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-[#0f2044]">{val.label}</div>
+                          {val.subtipos && (
+                            <div className="text-xs text-muted-foreground">
+                              {val.subtipos.map((k) => SUBTIPO_LABELS[k]?.label ?? k).join(" · ")}
+                            </div>
+                          )}
+                        </div>
                         {val.subtipos && (
-                          <div className="text-xs text-muted-foreground">
-                            Andamios · Torres · Escalera
-                          </div>
+                          <ChevronRight className="ml-auto size-4 text-muted-foreground" />
                         )}
-                      </div>
-                      {val.subtipos && (
-                        <ChevronRight className="ml-auto size-4 text-muted-foreground" />
-                      )}
-                    </button>
-                  ))
-                : (GRUPOS_PERMISOS[grupo].subtipos ?? []).map((key) => (
-                    <button
-                      key={key}
-                      disabled={saving}
-                      onClick={() => create(key)}
-                      className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted disabled:opacity-50"
-                    >
-                      <span className="text-2xl">{TIPO_PERMISOS[key].icon}</span>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-[#0f2044]">
-                          {SUBTIPO_LABELS[key].label}
+                      </button>
+                    );
+                  })
+                : (GRUPOS_PERMISOS[grupo].subtipos ?? []).map((key) => {
+                    const SIcon = TIPO_PERMISOS[key].icon;
+                    return (
+                      <button
+                        key={key}
+                        disabled={saving}
+                        onClick={() => create(key)}
+                        className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted disabled:opacity-50"
+                      >
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#0f2044]/8 text-[#0f2044]">
+                          <SIcon className="size-5" />
+                        </span>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-[#0f2044]">
+                            {SUBTIPO_LABELS[key].label}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {SUBTIPO_LABELS[key].desc}
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {SUBTIPO_LABELS[key].desc}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
             </div>
 
             <div className="mt-4 flex justify-between">

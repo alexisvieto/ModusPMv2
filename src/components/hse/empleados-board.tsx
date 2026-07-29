@@ -190,10 +190,18 @@ export function EmpleadosBoard({ orgId, initial }: { orgId: string; initial: Emp
                 </div>
               </div>
               <div className="flex shrink-0 gap-1">
-                <button onClick={() => open({ ...e })} className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                <button
+                  onClick={() => open({ ...e })}
+                  aria-label={`Editar ${e.nombre}`}
+                  className="flex size-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:size-8"
+                >
                   <Pencil className="size-4" />
                 </button>
-                <button onClick={() => remove(e)} className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive">
+                <button
+                  onClick={() => remove(e)}
+                  aria-label={`Quitar ${e.nombre}`}
+                  className="flex size-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive md:size-8"
+                >
                   <Trash2 className="size-4" />
                 </button>
               </div>

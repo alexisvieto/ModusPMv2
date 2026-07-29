@@ -194,13 +194,15 @@ export function EppInventory({ orgId, initial }: { orgId: string; initial: EppIt
                   <div className="flex shrink-0 gap-1">
                     <button
                       onClick={() => open({ ...it })}
-                      className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      aria-label={`Editar ${it.nombre}`}
+                      className="flex size-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:size-8"
                     >
                       <Pencil className="size-4" />
                     </button>
                     <button
                       onClick={() => remove(it)}
-                      className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive"
+                      aria-label={`Quitar ${it.nombre}`}
+                      className="flex size-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive md:size-8"
                     >
                       <Trash2 className="size-4" />
                     </button>

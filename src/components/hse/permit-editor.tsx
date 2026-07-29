@@ -71,6 +71,7 @@ export function PermitEditor({
   const sb = createClient();
   const org = permit.organization_id;
   const meta = TIPO_PERMISOS[permit.permit_type];
+  const MetaIcon = meta?.icon;
   const esAltura = meta?.grupo === "altura";
 
   const [f, setF] = useState({
@@ -261,7 +262,7 @@ export function PermitEditor({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="flex items-center gap-2 truncate text-xl font-semibold tracking-tight">
-            <span className="text-2xl">{meta?.icon}</span>
+            {MetaIcon && <MetaIcon className="size-6 shrink-0 text-[#0f2044]" />}
             {meta?.label}
           </h1>
           <p className="text-xs text-muted-foreground">{f.ubicacion || "Sin ubicación"}</p>

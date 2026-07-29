@@ -44,10 +44,14 @@ export default async function NexusLayout({
             Portal
           </Link>
           <span className="h-4 w-px bg-white/20" />
-          <div className="flex items-center gap-2">
+          {/* La marca lleva a la home del módulo = lista de Cotizaciones */}
+          <Link
+            href="/app/nexus"
+            className="flex items-center gap-2 transition-colors hover:text-white/80"
+          >
             <Calculator className="size-4 text-[#e8a020]" />
             <span className="text-sm font-semibold">Nexus Cálculo</span>
-          </div>
+          </Link>
         </div>
         {orgName && <span className="text-xs text-white/50">{orgName}</span>}
       </header>

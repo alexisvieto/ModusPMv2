@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Copy, Download, GitBranch, Plus, Ruler, Save, Send, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Copy, Download, GitBranch, Plus, Ruler, Save, Send, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { sendToOdoo } from "@/app/app/nexus/odoo-actions";
@@ -470,6 +470,15 @@ export function EstimateEditor({
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-6 md:p-8">
+      {/* volver a la lista de cotizaciones */}
+      <Link
+        href="/app/nexus"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" />
+        Cotizaciones
+      </Link>
+
       {/* barra superior */}
       <div className="space-y-3">
         <div className="flex min-w-0 flex-wrap items-center gap-3">

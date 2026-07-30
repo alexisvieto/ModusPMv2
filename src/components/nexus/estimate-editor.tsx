@@ -101,6 +101,7 @@ export function EstimateEditor({
   isAdmin,
   reviewTeamsEmail,
   versions,
+  brand,
 }: {
   estimate: EstimateProps;
   initialCategories: ECat[];
@@ -111,6 +112,7 @@ export function EstimateEditor({
   isAdmin: boolean;
   reviewTeamsEmail: string;
   versions: { id: string; version_no: number; status: string; is_current: boolean }[];
+  brand: { logoUrl: string | null; footer: string | null };
 }) {
   const router = useRouter();
 
@@ -509,6 +511,8 @@ export function EstimateEditor({
         elaborated_by: elaboratedBy,
         date,
         params: paramsFrac,
+        logoUrl: brand.logoUrl,
+        footer: brand.footer,
         categories: cats.map((c) => ({
           name: c.name,
           color: c.color,

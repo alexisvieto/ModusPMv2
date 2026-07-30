@@ -45,6 +45,17 @@ export type ExcelData = {
   date: string;
   params: NexusParams;
   categories: ExcelCategory[];
+  // Marca del tenant (por-organización, NO hardcodeada).
+  logoUrl?: string | null; // logo de la org (se incrusta en el header)
+  footer?: string | null; // crédito al pie (ej. "División Comercial …")
+};
+
+// Logo ya resuelto a base64 + dimensiones (se arma en el cliente antes de exportar).
+export type ExcelLogo = {
+  base64: string;
+  width: number;
+  height: number;
+  extension: "png" | "jpeg";
 };
 
 // Paleta del exportable (ARGB).
@@ -164,9 +175,24 @@ export function drawDonutPng(segments: DonutSegment[]): string {
 }
 
 // Construye el workbook (sin DOM) — separado para poder verificarlo en tests.
+// Crédito de marca al pie de una hoja (ej. "División Comercial … · web"). Por-tenant.
+function addCreditFooter(
+  ws: WS,
+  footer: string | null | undefined,
+  row: number,
+  lastCol: number,
+) {
+  if (!footer) return;
+  ws.mergeCells(row, 1, row, lastCol);
+  const c = ws.getCell(row, 1);
+  c.value = footer;
+  c.font = { name: FONT, italic: true, size: 8, color: { argb: GRAY } };
+  c.alignment = { horizontal: "center", vertical: "middle" };
+}
+
 export async function buildEstimateWorkbook(
   data: ExcelData,
-  opts: { donutBase64?: string } = {},
+  opts: { donutBase64?: string; logo?: ExcelLogo } = {},
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
   const excelMod: { default?: unknown } = await import("exceljs");
@@ -235,6 +261,22 @@ export async function buildEstimateWorkbook(
     cell.alignment = { vertical: "middle" };
   }
   ws.getRow(1).height = 22;
+
+  // Logo de la org: flota arriba-izquierda del banner; el nombre se alinea a la
+  // derecha para no encimarse. (Sin logo, todo queda como estaba.)
+  if (opts.logo) {
+    ws.getRow(1).height = 40;
+    ws.getCell("A1").alignment = { vertical: "middle", horizontal: "right" };
+    const imgId = wb.addImage({
+      base64: opts.logo.base64,
+      extension: opts.logo.extension,
+    });
+    ws.addImage(imgId, {
+      tl: { col: 0.15, row: 0.15 },
+      ext: { width: opts.logo.width, height: opts.logo.height },
+      editAs: "oneCell",
+    });
+  }
 
   // ── Fila 2: parámetros (fracciones, formato 0%) que referencian las fórmulas ──
   const p = data.params;
@@ -402,6 +444,8 @@ export async function buildEstimateWorkbook(
     cell.numFmt = ACC;
   }
 
+  addCreditFooter(ws, data.footer, totalRow + 2, 15);
+
   // ==================== HOJA "Costo del Proyecto" ====================
   // Vista INTERNA (costo real): precio del proveedor + ITBMS de compra =
   // puesto en bodega. La hoja "Análisis de Presupuesto" ya parte de ese costo.
@@ -561,6 +605,8 @@ export async function buildEstimateWorkbook(
     color: { argb: "FFE8A020" },
   };
 
+  addCreditFooter(wsC, data.footer, cTotalRow + 2, 8);
+
   // ==================== HOJA "Rentabilidad" ====================
   // Simulador what-if: los % (amarillo) recalculan los KPIs; el Costo Base se
   // vincula a los directos de la hoja Análisis.
@@ -655,6 +701,8 @@ export async function buildEstimateWorkbook(
     "💡  Los valores en amarillo son editables. Modificá los % de arriba para simular escenarios; el Costo Base se vincula a la hoja Análisis. (El donut es una foto al momento de exportar.)";
   rnote.font = { name: FONT, size: 8, color: { argb: GRAY } };
 
+  addCreditFooter(wsR, data.footer, 21, 6);
+
   // ==================== HOJA "Gantt" ====================
   const wsG: WS = wb.addWorksheet("Gantt", {
     views: [{ showGridLines: false }],
@@ -745,12 +793,54 @@ export async function buildEstimateWorkbook(
     "* Duración referencial en días hábiles (lunes a viernes). Las fechas exactas se confirman al adjudicarse el proyecto.";
   gnote.font = { name: FONT, size: 8, color: { argb: GRAY } };
 
+  addCreditFooter(wsG, data.footer, gtr + 4, 8);
+
   return wb;
+}
+
+// Descarga el logo de la org (URL pública) → base64 + dimensiones escaladas a
+// un alto fijo. Solo navegador. Si algo falla (CORS/404), devuelve undefined y
+// el Excel se genera sin logo (nunca rompe la exportación).
+async function loadLogo(url?: string | null): Promise<ExcelLogo | undefined> {
+  if (!url) return undefined;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return undefined;
+    const blob = await res.blob();
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result).split(",")[1] ?? "");
+      fr.onerror = () => reject(new Error("logo read"));
+      fr.readAsDataURL(blob);
+    });
+    if (!base64) return undefined;
+    const dims = await new Promise<{ w: number; h: number }>((resolve) => {
+      const img = new Image();
+      const objUrl = URL.createObjectURL(blob);
+      img.onload = () => {
+        resolve({ w: img.naturalWidth, h: img.naturalHeight });
+        URL.revokeObjectURL(objUrl);
+      };
+      img.onerror = () => {
+        resolve({ w: 0, h: 0 });
+        URL.revokeObjectURL(objUrl);
+      };
+      img.src = objUrl;
+    });
+    const H = 34; // alto fijo del logo en el header (px)
+    const width = dims.h > 0 ? Math.round((dims.w / dims.h) * H) : 120;
+    const extension =
+      blob.type.includes("jpeg") || blob.type.includes("jpg") ? "jpeg" : "png";
+    return { base64, width, height: H, extension };
+  } catch {
+    return undefined;
+  }
 }
 
 export async function exportEstimateExcel(data: ExcelData) {
   const donutBase64 = drawDonutPng(computeDonutSegments(data));
-  const wb = await buildEstimateWorkbook(data, { donutBase64 });
+  const logo = await loadLogo(data.logoUrl);
+  const wb = await buildEstimateWorkbook(data, { donutBase64, logo });
   const out = await wb.xlsx.writeBuffer();
   const blob = new Blob([out], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

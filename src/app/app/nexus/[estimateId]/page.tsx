@@ -87,6 +87,13 @@ export default async function EstimatePage({
     .eq("organization_id", est.organization_id)
     .maybeSingle();
 
+  // Marca de la org para el Excel (logo + crédito al pie), por-tenant.
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("logo_url, report_footer")
+    .eq("id", est.organization_id)
+    .maybeSingle();
+
   const catIds = (cats ?? []).map((c) => c.id);
   const [itemsRes, laborRes] = await Promise.all([
     catIds.length
@@ -187,6 +194,10 @@ export default async function EstimatePage({
         status: v.status,
         is_current: v.is_current,
       }))}
+      brand={{
+        logoUrl: org?.logo_url ?? null,
+        footer: org?.report_footer ?? null,
+      }}
     />
   );
 }

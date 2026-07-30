@@ -190,3 +190,22 @@ describe("buildEstimateWorkbook — hoja Costo del Proyecto + ITBMS de compra", 
     expect(base).toBeCloseTo(371.2, 6);
   });
 });
+
+describe("buildEstimateWorkbook — crédito de marca al pie (por-tenant)", () => {
+  it("agrega la fila de crédito al pie cuando la org tiene footer", async () => {
+    const wb = await buildEstimateWorkbook({
+      ...ASSA,
+      footer: "División Comercial X  ·  www.ejemplo.com",
+    });
+    const ws = wb.getWorksheet("Análisis de Presupuesto");
+    // Total en fila 8 → crédito en fila 10 (totalRow + 2).
+    expect(String(ws.getCell("A10").value)).toContain("División Comercial X");
+  });
+
+  it("sin footer no agrega ninguna fila de crédito", async () => {
+    const wb = await buildEstimateWorkbook(ASSA);
+    const ws = wb.getWorksheet("Análisis de Presupuesto");
+    const v = ws.getCell("A10").value;
+    expect(v == null || v === "").toBe(true);
+  });
+});

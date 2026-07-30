@@ -411,6 +411,116 @@ export type Database = {
           },
         ]
       }
+      doc_formats: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          department_key: string
+          id: string
+          name: string
+          organization_id: string
+          record_prefix: string
+          sort_order: number
+          version: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          department_key: string
+          id?: string
+          name: string
+          organization_id: string
+          record_prefix?: string
+          sort_order?: number
+          version?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          department_key?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          record_prefix?: string
+          sort_order?: number
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doc_formats_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doc_records: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_name: string
+          data: Json
+          department_key: string
+          format_id: string
+          id: string
+          organization_id: string
+          record_label: string
+          record_no: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string
+          data?: Json
+          department_key: string
+          format_id: string
+          id?: string
+          organization_id: string
+          record_label: string
+          record_no: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string
+          data?: Json
+          department_key?: string
+          format_id?: string
+          id?: string
+          organization_id?: string
+          record_label?: string
+          record_no?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doc_records_format_id_organization_id_fkey"
+            columns: ["format_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "doc_formats"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "doc_records_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fatsat_points: {
         Row: {
           actual_result: string | null
@@ -3240,6 +3350,19 @@ export type Database = {
           committed: number
           n: number
         }[]
+      }
+      doc_create_record: {
+        Args: { p_data: Json; p_format: string; p_title: string }
+        Returns: Json
+      }
+      doc_save_record: {
+        Args: {
+          p_data: Json
+          p_record: string
+          p_status: string
+          p_title: string
+        }
+        Returns: undefined
       }
       fatsat_clone_protocols: {
         Args: { p_source: string; p_target: string }

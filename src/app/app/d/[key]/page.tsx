@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft, ChevronRight, FileText } from "lucide-react";
 
 import { requireDepartment } from "@/lib/access";
 import {
@@ -10,15 +10,14 @@ import {
 } from "@/lib/divisions";
 import { createClient } from "@/lib/supabase/server";
 
-// Home de una división: sus módulos + (próximamente) sus procesos/documentos ISO.
+// Home de una división: espacio de trabajo integrado (sin tarjetas decorativas).
+// Herramientas (módulos) + Documentos y formatos (registros ISO de la división).
 export default async function DivisionHome({
   params,
 }: {
   params: Promise<{ key: string }>;
 }) {
   const { key } = await params;
-
-  // Guarda: exige pertenecer a esta división (bypass super-admin / dueño-admin).
   await requireDepartment(key);
 
   const supabase = await createClient();
@@ -31,30 +30,42 @@ export default async function DivisionHome({
     .eq("user_id", user?.id ?? "")
     .limit(1)
     .maybeSingle();
+  const org = membership?.organization_id ?? "";
 
   const { data: dept } = await supabase
     .from("departments")
     .select("name")
-    .eq("organization_id", membership?.organization_id ?? "")
+    .eq("organization_id", org)
     .eq("key", key)
     .maybeSingle();
   if (!dept) notFound();
+
+  const [{ data: formats }, { data: recRows }] = await Promise.all([
+    supabase
+      .from("doc_formats")
+      .select("id, code, name")
+      .eq("organization_id", org)
+      .eq("department_key", key)
+      .eq("active", true)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("doc_records")
+      .select("format_id")
+      .eq("organization_id", org)
+      .eq("department_key", key),
+  ]);
+
+  const countByFormat = new Map<string, number>();
+  for (const r of recRows ?? [])
+    countByFormat.set(r.format_id, (countByFormat.get(r.format_id) ?? 0) + 1);
 
   const Icon = DIVISION_ICON[key] ?? DEFAULT_DIVISION_ICON;
   const modules = DIVISION_MODULES[key] ?? [];
 
   return (
-    <div className="relative min-h-svh overflow-hidden bg-[#0f2044] text-white">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-70"
-        style={{
-          background:
-            "radial-gradient(900px 500px at 15% -10%, rgba(247,154,2,0.12), transparent 60%), radial-gradient(1000px 600px at 100% 0%, rgba(26,52,96,0.9), transparent 55%)",
-        }}
-      />
-
-      <header className="relative z-10 flex items-center justify-between px-6 py-5">
+    <div className="min-h-svh bg-muted/20">
+      {/* Barra navy: volver al portal + nombre de la división */}
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-[#0f2044] px-4 text-white md:px-6">
         <Link
           href="/app"
           className="flex items-center gap-1.5 text-sm text-white/70 transition-colors hover:text-white"
@@ -62,73 +73,83 @@ export default async function DivisionHome({
           <ArrowLeft className="size-4" />
           Portal
         </Link>
+        <span className="h-4 w-px bg-white/20" />
+        <div className="flex items-center gap-2">
+          <Icon className="size-4 text-[#e8a020]" />
+          <span className="text-sm font-semibold">{dept.name}</span>
+        </div>
       </header>
 
-      <div className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-16">
-        {/* Encabezado de la división */}
-        <div className="mb-10 flex items-center gap-4">
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
-            <Icon className="size-7" />
-          </div>
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-white/40">
-              División
-            </p>
-            <h1 className="text-2xl font-semibold tracking-tight">{dept.name}</h1>
-          </div>
-        </div>
-
-        {/* Módulos de la división */}
+      <main className="mx-auto max-w-4xl space-y-8 p-6 md:p-8">
+        {/* Herramientas (módulos) */}
         {modules.length > 0 && (
-          <>
-            <h2 className="mb-3 text-sm font-medium text-white/50">Módulos</h2>
-            <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <section>
+            <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Herramientas
+            </h2>
+            <div className="divide-y overflow-hidden rounded-lg border bg-card">
               {modules.map((m) => {
                 const MIcon = m.icon;
                 return (
                   <Link
                     key={m.href}
                     href={m.href}
-                    className="group flex flex-col rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left transition-all hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.07]"
+                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
                   >
-                    <div className="flex size-12 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
-                      <MIcon className="size-6" />
+                    <div className="flex size-9 items-center justify-center rounded-md bg-[#0f2044]/[0.06] text-[#0f2044]">
+                      <MIcon className="size-4.5" />
                     </div>
-                    <div className="mt-4">
-                      <h3 className="text-base font-semibold">{m.name}</h3>
-                      <p className="mt-0.5 text-xs text-white/50">{m.tagline}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{m.name}</p>
+                      <p className="text-xs text-muted-foreground">{m.tagline}</p>
                     </div>
+                    <ChevronRight className="size-4 text-muted-foreground" />
                   </Link>
                 );
               })}
             </div>
-          </>
+          </section>
         )}
 
-        {/* Procesos / Documentos ISO (siguiente fase) */}
-        <h2 className="mb-3 text-sm font-medium text-white/50">
-          Procesos y Documentos
-        </h2>
-        <div
-          aria-disabled
-          className="flex cursor-not-allowed items-center gap-4 rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-5"
-        >
-          <div className="flex size-12 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/10">
-            <FileText className="size-6 text-white/50" />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-white/70">
-              Formatos y procesos ISO
-              <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/50">
-                Próximamente
-              </span>
-            </h3>
-            <p className="mt-0.5 text-xs text-white/45">
-              Automatización del Listado Maestro y los formatos de esta división.
-            </p>
-          </div>
-        </div>
-      </div>
+        {/* Documentos y formatos (registros ISO) */}
+        <section>
+          <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Documentos y formatos
+          </h2>
+          {formats && formats.length > 0 ? (
+            <div className="divide-y overflow-hidden rounded-lg border bg-card">
+              {formats.map((f) => {
+                const n = countByFormat.get(f.id) ?? 0;
+                return (
+                  <Link
+                    key={f.id}
+                    href={`/app/d/${key}/doc/${f.code}`}
+                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+                  >
+                    <div className="flex size-9 items-center justify-center rounded-md bg-[#0f2044]/[0.06] text-[#0f2044]">
+                      <FileText className="size-4.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{f.name}</p>
+                      <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+                        {f.code}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {n} {n === 1 ? "registro" : "registros"}
+                    </span>
+                    <ChevronRight className="size-4 text-muted-foreground" />
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              Aún no hay formatos configurados en esta división.
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 }

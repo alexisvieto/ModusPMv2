@@ -45,6 +45,7 @@ INCIDENTE_TEMPLATE = Path(__file__).parent / "incidente.typ"
 INSPECCION_TEMPLATE = Path(__file__).parent / "inspeccion.typ"
 CHARLA_TEMPLATE = Path(__file__).parent / "charla.typ"
 MINUTA_TEMPLATE = Path(__file__).parent / "minuta.typ"
+VTF004_TEMPLATE = Path(__file__).parent / "vtf004.typ"
 EXT_BY_TYPE = {
     "image/png": ".png",
     "image/jpeg": ".jpg",
@@ -273,6 +274,43 @@ class RenderMinutaRequest(BaseModel):
     temas: list[str] = []
     acuerdos: list[MinutaAcuerdo] = []
     filename: str = "minuta-visita"
+
+
+# ---------- Comercial: visita técnica a cliente (VT-F-004) ----------
+class VtF004Persona(BaseModel):
+    nombre: str = ""
+    cargo: str = ""
+
+
+class VtF004Tema(BaseModel):
+    punto: str = ""
+    responsable: str = ""
+    fecha: str = ""
+
+
+class VtF004Info(BaseModel):
+    codigo: str = "VT-F-004"
+    version: str = "01"
+    record_label: str = ""
+    cliente: str = ""
+    fecha: str = ""
+    objetivos: str = ""
+    frecuencia_label: str = ""
+    obs_estructurales: str = ""
+    obs_tecnicas: str = ""
+    obs_condiciones: str = ""
+    obs_otras: str = ""
+    elaborado_por: str = ""
+    elaborado_fecha: str = ""
+
+
+class RenderVtF004Request(BaseModel):
+    brand: Brand
+    m: VtF004Info
+    personal_ingesoft: list[VtF004Persona] = []
+    personal_cliente: list[VtF004Persona] = []
+    temas: list[VtF004Tema] = []
+    filename: str = "visita-tecnica"
 
 
 async def require_secret(x_engine_secret: str = Header(default="")) -> None:
@@ -582,5 +620,26 @@ async def render_minuta(req: RenderMinutaRequest, _: None = Depends(require_secr
             "acuerdos": [a.model_dump() for a in req.acuerdos],
         }
         return await _compile(tmp, MINUTA_TEMPLATE, data, req.filename)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+@app.post("/render-vtf004")
+async def render_vtf004(req: RenderVtF004Request, _: None = Depends(require_secret)) -> Response:
+    tmp = Path(tempfile.mkdtemp(prefix="vtf004_"))
+    images = tmp / "images"
+    images.mkdir()
+    try:
+        brand = _brand_sanitized(req.brand)
+        async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT, follow_redirects=False) as client:
+            brand["logo"] = await _download(client, req.brand.logo_url, images, "logo") or ""
+        data = {
+            "brand": brand,
+            "m": req.m.model_dump(),
+            "personal_ingesoft": [p.model_dump() for p in req.personal_ingesoft],
+            "personal_cliente": [p.model_dump() for p in req.personal_cliente],
+            "temas": [t.model_dump() for t in req.temas],
+        }
+        return await _compile(tmp, VTF004_TEMPLATE, data, req.filename)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

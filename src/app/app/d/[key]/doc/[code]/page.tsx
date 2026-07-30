@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { DocRecordsList } from "@/components/comercial/doc-records-list";
 import { requireDepartment } from "@/lib/access";
+import { emptyDataForCode } from "@/lib/comercial/formats";
 import { createClient } from "@/lib/supabase/server";
 
 // Lista de registros de un formato (ej. todas las minutas de visita).
@@ -80,6 +81,7 @@ export default async function DocFormatPage({
         basePath={`/app/d/${key}/doc/${code}`}
         rows={rows}
         newLabel={`Nueva ${(format.record_prefix ?? "registro").toLowerCase()}`}
+        newData={emptyDataForCode(format.code)}
       />
     </div>
   );

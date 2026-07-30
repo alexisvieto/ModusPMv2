@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { MinutaVisitaForm } from "@/components/comercial/minuta-visita-form";
+import { VtF004Form } from "@/components/comercial/vtf004-form";
 import { requireDepartment } from "@/lib/access";
 import { toMinuta } from "@/lib/comercial/minuta";
+import { toVtF004 } from "@/lib/comercial/vtf004";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function DocRecordPage({
@@ -61,14 +63,25 @@ export default async function DocRecordPage({
         </span>
       </header>
 
-      <MinutaVisitaForm
-        recordId={rec.id}
-        recordLabel={rec.record_label}
-        formatCode={format.code}
-        status={rec.status}
-        elaboradoPor={rec.created_by_name}
-        initial={toMinuta(rec.data)}
-      />
+      {format.code === "VT-F-004" ? (
+        <VtF004Form
+          recordId={rec.id}
+          recordLabel={rec.record_label}
+          formatCode={format.code}
+          status={rec.status}
+          elaboradoPor={rec.created_by_name}
+          initial={toVtF004(rec.data)}
+        />
+      ) : (
+        <MinutaVisitaForm
+          recordId={rec.id}
+          recordLabel={rec.record_label}
+          formatCode={format.code}
+          status={rec.status}
+          elaboradoPor={rec.created_by_name}
+          initial={toMinuta(rec.data)}
+        />
+      )}
     </div>
   );
 }

@@ -6,7 +6,6 @@ import { FileText, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { emptyMinuta } from "@/lib/comercial/minuta";
 import { createClient } from "@/lib/supabase/client";
 
 type Row = {
@@ -24,12 +23,14 @@ export function DocRecordsList({
   basePath,
   rows,
   newLabel = "Nuevo registro",
+  newData,
 }: {
   formatId: string;
   formatName: string;
   basePath: string;
   rows: Row[];
   newLabel?: string;
+  newData: unknown; // plantilla vacía del formato (data inicial del registro)
 }) {
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -50,7 +51,7 @@ export function DocRecordsList({
     const { data, error } = await supabase.rpc("doc_create_record", {
       p_format: formatId,
       p_title: "",
-      p_data: emptyMinuta(),
+      p_data: newData as never,
     });
     setCreating(false);
     const res = data as { id?: string } | null;

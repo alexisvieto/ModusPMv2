@@ -6,6 +6,7 @@ import { FileText, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { SurveyGenerateButton } from "@/components/comercial/survey-generate-button";
 import { createClient } from "@/lib/supabase/client";
 
 type Row = {
@@ -24,6 +25,7 @@ export function DocRecordsList({
   rows,
   newLabel = "Nuevo registro",
   newData,
+  isSurvey = false,
 }: {
   formatId: string;
   formatName: string;
@@ -31,6 +33,7 @@ export function DocRecordsList({
   rows: Row[];
   newLabel?: string;
   newData: unknown; // plantilla vacía del formato (data inicial del registro)
+  isSurvey?: boolean;
 }) {
   const router = useRouter();
   const [q, setQ] = useState("");
@@ -74,10 +77,14 @@ export function DocRecordsList({
             className="h-9 w-full rounded-md border border-input bg-transparent pl-8 pr-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[2px] focus-visible:ring-ring/30"
           />
         </div>
-        <Button onClick={nuevo} disabled={creating}>
-          <Plus className="size-4" />
-          {creating ? "Creando…" : newLabel}
-        </Button>
+        {isSurvey ? (
+          <SurveyGenerateButton formatId={formatId} />
+        ) : (
+          <Button onClick={nuevo} disabled={creating}>
+            <Plus className="size-4" />
+            {creating ? "Creando…" : newLabel}
+          </Button>
+        )}
       </div>
 
       {filtered.length > 0 ? (
@@ -96,7 +103,11 @@ export function DocRecordsList({
                   <span className="font-medium">{r.label}</span>
                   {r.status === "completado" ? (
                     <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success">
-                      Completado
+                      {isSurvey ? "Respondida" : "Completado"}
+                    </span>
+                  ) : r.status === "enviada" ? (
+                    <span className="rounded-full bg-warning/10 px-1.5 py-0.5 text-[10px] font-medium text-warning">
+                      Esperando respuesta
                     </span>
                   ) : (
                     <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">

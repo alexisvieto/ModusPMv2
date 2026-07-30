@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { MinutaVisitaForm } from "@/components/comercial/minuta-visita-form";
+import { SurveyAdminView } from "@/components/comercial/survey-admin-view";
 import { VtF004Form } from "@/components/comercial/vtf004-form";
 import { requireDepartment } from "@/lib/access";
 import { toMinuta } from "@/lib/comercial/minuta";
@@ -31,7 +32,7 @@ export default async function DocRecordPage({
 
   const { data: format } = await supabase
     .from("doc_formats")
-    .select("id, code, name")
+    .select("id, code, name, kind")
     .eq("organization_id", org)
     .eq("code", code)
     .eq("department_key", key)
@@ -40,7 +41,9 @@ export default async function DocRecordPage({
 
   const { data: rec } = await supabase
     .from("doc_records")
-    .select("id, record_label, title, status, data, created_by_name, created_at")
+    .select(
+      "id, record_label, title, status, data, created_by_name, created_at, public_token, answered_at",
+    )
     .eq("id", recordId)
     .eq("format_id", format.id)
     .maybeSingle();
@@ -63,7 +66,16 @@ export default async function DocRecordPage({
         </span>
       </header>
 
-      {format.code === "VT-F-004" ? (
+      {format.kind === "public_survey" ? (
+        <SurveyAdminView
+          recordLabel={rec.record_label}
+          formatCode={format.code}
+          status={rec.status}
+          answeredAt={rec.answered_at}
+          publicToken={rec.public_token}
+          data={rec.data}
+        />
+      ) : format.code === "VT-F-004" ? (
         <VtF004Form
           recordId={rec.id}
           recordLabel={rec.record_label}

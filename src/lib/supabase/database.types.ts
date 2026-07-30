@@ -418,6 +418,7 @@ export type Database = {
           created_at: string
           department_key: string
           id: string
+          kind: string
           name: string
           organization_id: string
           record_prefix: string
@@ -430,6 +431,7 @@ export type Database = {
           created_at?: string
           department_key: string
           id?: string
+          kind?: string
           name: string
           organization_id: string
           record_prefix?: string
@@ -442,6 +444,7 @@ export type Database = {
           created_at?: string
           department_key?: string
           id?: string
+          kind?: string
           name?: string
           organization_id?: string
           record_prefix?: string
@@ -460,6 +463,7 @@ export type Database = {
       }
       doc_records: {
         Row: {
+          answered_at: string | null
           created_at: string
           created_by: string | null
           created_by_name: string
@@ -468,6 +472,8 @@ export type Database = {
           format_id: string
           id: string
           organization_id: string
+          public_expires_at: string | null
+          public_token: string | null
           record_label: string
           record_no: number
           status: string
@@ -475,6 +481,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          answered_at?: string | null
           created_at?: string
           created_by?: string | null
           created_by_name?: string
@@ -483,6 +490,8 @@ export type Database = {
           format_id: string
           id?: string
           organization_id: string
+          public_expires_at?: string | null
+          public_token?: string | null
           record_label: string
           record_no: number
           status?: string
@@ -490,6 +499,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          answered_at?: string | null
           created_at?: string
           created_by?: string | null
           created_by_name?: string
@@ -498,6 +508,8 @@ export type Database = {
           format_id?: string
           id?: string
           organization_id?: string
+          public_expires_at?: string | null
+          public_token?: string | null
           record_label?: string
           record_no?: number
           status?: string
@@ -3355,6 +3367,15 @@ export type Database = {
         Args: { p_data: Json; p_format: string; p_title: string }
         Returns: Json
       }
+      doc_create_survey: {
+        Args: {
+          p_cliente: string
+          p_format: string
+          p_referencia: string
+          p_tipo: string
+        }
+        Returns: Json
+      }
       doc_save_record: {
         Args: {
           p_data: Json
@@ -3430,6 +3451,11 @@ export type Database = {
       set_org_odoo_key: {
         Args: { p_key: string; p_org: string }
         Returns: undefined
+      }
+      survey_get_public: { Args: { p_token: string }; Returns: Json }
+      survey_submit_public: {
+        Args: { p_data: Json; p_token: string }
+        Returns: Json
       }
     }
     Enums: {

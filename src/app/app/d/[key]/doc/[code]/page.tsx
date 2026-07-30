@@ -30,7 +30,7 @@ export default async function DocFormatPage({
 
   const { data: format } = await supabase
     .from("doc_formats")
-    .select("id, code, name, record_prefix")
+    .select("id, code, name, record_prefix, kind")
     .eq("organization_id", org)
     .eq("code", code)
     .eq("department_key", key)
@@ -55,6 +55,8 @@ export default async function DocFormatPage({
       createdBy: r.created_by_name,
     };
   });
+
+  const isSurvey = format.kind === "public_survey";
 
   return (
     <div className="min-h-svh bg-muted/20">
@@ -82,6 +84,7 @@ export default async function DocFormatPage({
         rows={rows}
         newLabel={`Nueva ${(format.record_prefix ?? "registro").toLowerCase()}`}
         newData={emptyDataForCode(format.code)}
+        isSurvey={isSurvey}
       />
     </div>
   );

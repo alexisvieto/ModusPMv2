@@ -253,20 +253,34 @@ export async function buildEstimateWorkbook(
     { c: "I1", v: `Elaborado: ${data.elaborated_by || "—"}`, sz: 10 },
     { c: "M1", v: `Fecha: ${data.date}`, sz: 10 },
   ];
+  // Con logo, el banner va BLANCO (texto navy) para que el logo —una imagen de
+  // letras oscuras— se vea nítido. Sin logo, banner navy con texto blanco (como estaba).
+  const hasLogo = !!opts.logo;
   for (const b of banner) {
     const cell = ws.getCell(b.c);
     cell.value = b.v;
-    cell.font = { name: FONT, bold: true, size: b.sz, color: { argb: WHITE } };
-    cell.fill = fillOf(NAVY);
+    cell.font = {
+      name: FONT,
+      bold: true,
+      size: b.sz,
+      color: { argb: hasLogo ? NAVY : WHITE },
+    };
+    cell.fill = fillOf(hasLogo ? WHITE : NAVY);
     cell.alignment = { vertical: "middle" };
   }
   ws.getRow(1).height = 22;
 
-  // Logo de la org: flota arriba-izquierda del banner; el nombre se alinea a la
-  // derecha para no encimarse. (Sin logo, todo queda como estaba.)
+  // Logo de la org: flota arriba-izquierda del banner blanco; el nombre se alinea
+  // a la derecha para no encimarse. (Sin logo, todo queda navy como estaba.)
   if (opts.logo) {
     ws.getRow(1).height = 40;
     ws.getCell("A1").alignment = { vertical: "middle", horizontal: "right" };
+    // Línea navy inferior para separar el header blanco del resto.
+    for (const addr of ["A1", "E1", "I1", "M1"]) {
+      ws.getCell(addr).border = {
+        bottom: { style: "thin", color: { argb: NAVY } },
+      };
+    }
     const imgId = wb.addImage({
       base64: opts.logo.base64,
       extension: opts.logo.extension,

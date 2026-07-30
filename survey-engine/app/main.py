@@ -44,6 +44,7 @@ PERMIT_TEMPLATE = Path(__file__).parent / "permit.typ"
 INCIDENTE_TEMPLATE = Path(__file__).parent / "incidente.typ"
 INSPECCION_TEMPLATE = Path(__file__).parent / "inspeccion.typ"
 CHARLA_TEMPLATE = Path(__file__).parent / "charla.typ"
+MINUTA_TEMPLATE = Path(__file__).parent / "minuta.typ"
 EXT_BY_TYPE = {
     "image/png": ".png",
     "image/jpeg": ".jpg",
@@ -236,6 +237,42 @@ class RenderCharlaRequest(BaseModel):
     charla: CharlaInfo
     asistentes: list[Asistente] = []
     filename: str = "acta-charla"
+
+
+# ---------- Comercial: minuta de visita a clientes (VT-F-003) ----------
+class MinutaParticipante(BaseModel):
+    nombre: str = ""
+    cargo: str = ""
+    empresa: str = ""
+
+
+class MinutaAcuerdo(BaseModel):
+    descripcion: str = ""
+    responsable: str = ""
+
+
+class MinutaInfo(BaseModel):
+    codigo: str = "VT-F-003"
+    version: str = "1"
+    record_label: str = ""
+    cliente: str = ""
+    contacto: str = ""
+    cargo: str = ""
+    fecha_visita: str = ""
+    tema_reunion: str = ""
+    proxima_reunion: str = ""
+    observaciones: str = ""
+    elaborado_por: str = ""
+    elaborado_fecha: str = ""
+
+
+class RenderMinutaRequest(BaseModel):
+    brand: Brand
+    m: MinutaInfo
+    participantes: list[MinutaParticipante] = []
+    temas: list[str] = []
+    acuerdos: list[MinutaAcuerdo] = []
+    filename: str = "minuta-visita"
 
 
 async def require_secret(x_engine_secret: str = Header(default="")) -> None:
@@ -524,5 +561,26 @@ async def render_charla(req: RenderCharlaRequest, _: None = Depends(require_secr
                 asistentes.append({"nombre": a.nombre, "cargo": a.cargo, "firma": fp or ""})
         data = {"brand": brand, "charla": req.charla.model_dump(), "asistentes": asistentes}
         return await _compile(tmp, CHARLA_TEMPLATE, data, req.filename)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+@app.post("/render-minuta")
+async def render_minuta(req: RenderMinutaRequest, _: None = Depends(require_secret)) -> Response:
+    tmp = Path(tempfile.mkdtemp(prefix="minuta_"))
+    images = tmp / "images"
+    images.mkdir()
+    try:
+        brand = _brand_sanitized(req.brand)
+        async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT, follow_redirects=False) as client:
+            brand["logo"] = await _download(client, req.brand.logo_url, images, "logo") or ""
+        data = {
+            "brand": brand,
+            "m": req.m.model_dump(),
+            "participantes": [p.model_dump() for p in req.participantes],
+            "temas": req.temas,
+            "acuerdos": [a.model_dump() for a in req.acuerdos],
+        }
+        return await _compile(tmp, MINUTA_TEMPLATE, data, req.filename)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

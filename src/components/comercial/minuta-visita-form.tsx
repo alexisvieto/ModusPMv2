@@ -121,6 +121,15 @@ export function MinutaVisitaForm({
     }
   }
 
+  async function descargarPdf() {
+    if (saving) return;
+    setSaving(true);
+    const ok = await persist(); // el PDF sale de lo guardado
+    setSaving(false);
+    if (!ok) return;
+    window.open(`/api/comercial/minuta/${recordId}/pdf`, "_blank");
+  }
+
   async function completar() {
     if (saving) return;
     if (!d.cliente.trim()) {
@@ -154,9 +163,14 @@ export function MinutaVisitaForm({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" disabled title="Disponible en el siguiente paso">
+          <Button
+            variant="outline"
+            onClick={descargarPdf}
+            disabled={saving}
+            title="Guarda y descarga la minuta en PDF"
+          >
             <Download className="size-4" />
-            PDF (próximamente)
+            Descargar PDF
           </Button>
           {status !== "completado" && (
             <Button variant="outline" onClick={completar} disabled={saving}>

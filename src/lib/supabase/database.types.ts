@@ -14,633 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      hse_permits: {
-        Row: {
-          altura_estimada: string | null
-          area_proceso: string | null
-          checklist: Json
-          ciudad_lugar: string | null
-          created_at: string
-          created_by: string | null
-          descripcion_tarea: string | null
-          emisor_cedula: string | null
-          emisor_firma_path: string | null
-          emisor_nombre: string | null
-          empresa: string | null
-          equipo_a_usar: string | null
-          estado: string
-          fecha: string | null
-          fecha_fin: string | null
-          fecha_inicio: string | null
-          hora_fin: string | null
-          hora_inicio: string | null
-          id: string
-          observaciones: string | null
-          organization_id: string
-          permit_type: string
-          personal: Json
-          ubicacion: string | null
-          updated_at: string
-          vigia_cedula: string | null
-          vigia_firma_path: string | null
-          vigia_nombre: string | null
-        }
-        Insert: {
-          altura_estimada?: string | null
-          area_proceso?: string | null
-          checklist?: Json
-          ciudad_lugar?: string | null
-          created_at?: string
-          created_by?: string | null
-          descripcion_tarea?: string | null
-          emisor_cedula?: string | null
-          emisor_firma_path?: string | null
-          emisor_nombre?: string | null
-          empresa?: string | null
-          equipo_a_usar?: string | null
-          estado?: string
-          fecha?: string | null
-          fecha_fin?: string | null
-          fecha_inicio?: string | null
-          hora_fin?: string | null
-          hora_inicio?: string | null
-          id?: string
-          observaciones?: string | null
-          organization_id: string
-          permit_type: string
-          personal?: Json
-          ubicacion?: string | null
-          updated_at?: string
-          vigia_cedula?: string | null
-          vigia_firma_path?: string | null
-          vigia_nombre?: string | null
-        }
-        Update: {
-          altura_estimada?: string | null
-          area_proceso?: string | null
-          checklist?: Json
-          ciudad_lugar?: string | null
-          created_at?: string
-          created_by?: string | null
-          descripcion_tarea?: string | null
-          emisor_cedula?: string | null
-          emisor_firma_path?: string | null
-          emisor_nombre?: string | null
-          empresa?: string | null
-          equipo_a_usar?: string | null
-          estado?: string
-          fecha?: string | null
-          fecha_fin?: string | null
-          fecha_inicio?: string | null
-          hora_fin?: string | null
-          hora_inicio?: string | null
-          id?: string
-          observaciones?: string | null
-          organization_id?: string
-          permit_type?: string
-          personal?: Json
-          ubicacion?: string | null
-          updated_at?: string
-          vigia_cedula?: string | null
-          vigia_firma_path?: string | null
-          vigia_nombre?: string | null
-        }
-        Relationships: []
-      }
-      hse_charlas: {
-        Row: {
-          created_at: string
-          descripcion: string | null
-          duracion_min: number | null
-          facilitador: string | null
-          facilitador_id: string | null
-          fecha: string
-          hora_inicio: string | null
-          id: string
-          lugar: string | null
-          organization_id: string
-          titulo: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          descripcion?: string | null
-          duracion_min?: number | null
-          facilitador?: string | null
-          facilitador_id?: string | null
-          fecha?: string
-          hora_inicio?: string | null
-          id?: string
-          lugar?: string | null
-          organization_id: string
-          titulo: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          descripcion?: string | null
-          duracion_min?: number | null
-          facilitador?: string | null
-          facilitador_id?: string | null
-          fecha?: string
-          hora_inicio?: string | null
-          id?: string
-          lugar?: string | null
-          organization_id?: string
-          titulo?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      hse_charla_asistencias: {
-        Row: {
-          charla_id: string
-          created_at: string
-          empleado_id: string
-          firma_path: string | null
-          id: string
-          organization_id: string
-        }
-        Insert: {
-          charla_id: string
-          created_at?: string
-          empleado_id: string
-          firma_path?: string | null
-          id?: string
-          organization_id: string
-        }
-        Update: {
-          charla_id?: string
-          created_at?: string
-          empleado_id?: string
-          firma_path?: string | null
-          id?: string
-          organization_id?: string
-        }
-        Relationships: []
-      }
-      hse_empleados: {
-        Row: {
-          activo: boolean
-          cargo: string | null
-          cedula: string | null
-          created_at: string
-          division: string | null
-          foto_path: string | null
-          id: string
-          nombre: string
-          organization_id: string
-          talla_botas: string | null
-          talla_camisa: string | null
-          talla_casco: string | null
-          talla_pantalon: string | null
-          updated_at: string
-        }
-        Insert: {
-          activo?: boolean
-          cargo?: string | null
-          cedula?: string | null
-          created_at?: string
-          division?: string | null
-          foto_path?: string | null
-          id?: string
-          nombre: string
-          organization_id: string
-          talla_botas?: string | null
-          talla_camisa?: string | null
-          talla_casco?: string | null
-          talla_pantalon?: string | null
-          updated_at?: string
-        }
-        Update: {
-          activo?: boolean
-          cargo?: string | null
-          cedula?: string | null
-          created_at?: string
-          division?: string | null
-          foto_path?: string | null
-          id?: string
-          nombre?: string
-          organization_id?: string
-          talla_botas?: string | null
-          talla_camisa?: string | null
-          talla_casco?: string | null
-          talla_pantalon?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      hse_incidentes: {
-        Row: {
-          accion_correctiva: string | null
-          causa_raiz: string | null
-          created_at: string
-          descripcion: string
-          dias_perdidos: number
-          empleado_afectado: string | null
-          estado: string
-          fecha_evento: string
-          fotos: Json
-          hora_evento: string | null
-          id: string
-          organization_id: string
-          reportado_por: string | null
-          requirio_atencion_medica: boolean
-          severidad: string
-          tipo_evento: string
-          ubicacion: string | null
-          updated_at: string
-        }
-        Insert: {
-          accion_correctiva?: string | null
-          causa_raiz?: string | null
-          created_at?: string
-          descripcion: string
-          dias_perdidos?: number
-          empleado_afectado?: string | null
-          estado?: string
-          fecha_evento?: string
-          fotos?: Json
-          hora_evento?: string | null
-          id?: string
-          organization_id: string
-          reportado_por?: string | null
-          requirio_atencion_medica?: boolean
-          severidad?: string
-          tipo_evento?: string
-          ubicacion?: string | null
-          updated_at?: string
-        }
-        Update: {
-          accion_correctiva?: string | null
-          causa_raiz?: string | null
-          created_at?: string
-          descripcion?: string
-          dias_perdidos?: number
-          empleado_afectado?: string | null
-          estado?: string
-          fecha_evento?: string
-          fotos?: Json
-          hora_evento?: string | null
-          id?: string
-          organization_id?: string
-          reportado_por?: string | null
-          requirio_atencion_medica?: boolean
-          severidad?: string
-          tipo_evento?: string
-          ubicacion?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      hse_inspecciones: {
-        Row: {
-          accion_requerida: string | null
-          created_at: string
-          estado: string
-          fecha: string
-          fecha_limite: string | null
-          fotos: Json
-          hallazgo: string
-          id: string
-          inspector_id: string | null
-          organization_id: string
-          responsable: string | null
-          riesgo: string
-          tipo_inspeccion: string | null
-          ubicacion: string | null
-          updated_at: string
-        }
-        Insert: {
-          accion_requerida?: string | null
-          created_at?: string
-          estado?: string
-          fecha?: string
-          fecha_limite?: string | null
-          fotos?: Json
-          hallazgo: string
-          id?: string
-          inspector_id?: string | null
-          organization_id: string
-          responsable?: string | null
-          riesgo?: string
-          tipo_inspeccion?: string | null
-          ubicacion?: string | null
-          updated_at?: string
-        }
-        Update: {
-          accion_requerida?: string | null
-          created_at?: string
-          estado?: string
-          fecha?: string
-          fecha_limite?: string | null
-          fotos?: Json
-          hallazgo?: string
-          id?: string
-          inspector_id?: string | null
-          organization_id?: string
-          responsable?: string | null
-          riesgo?: string
-          tipo_inspeccion?: string | null
-          ubicacion?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      hse_epp_items: {
-        Row: {
-          activo: boolean
-          categoria: string | null
-          created_at: string
-          descripcion: string | null
-          fabricante: string | null
-          fecha_vencimiento: string | null
-          id: string
-          imagen_path: string | null
-          marca: string | null
-          modelo: string | null
-          nombre: string
-          organization_id: string
-          stock_actual: number
-          stock_minimo: number
-          updated_at: string
-          vida_util_dias: number | null
-        }
-        Insert: {
-          activo?: boolean
-          categoria?: string | null
-          created_at?: string
-          descripcion?: string | null
-          fabricante?: string | null
-          fecha_vencimiento?: string | null
-          id?: string
-          imagen_path?: string | null
-          marca?: string | null
-          modelo?: string | null
-          nombre: string
-          organization_id: string
-          stock_actual?: number
-          stock_minimo?: number
-          updated_at?: string
-          vida_util_dias?: number | null
-        }
-        Update: {
-          activo?: boolean
-          categoria?: string | null
-          created_at?: string
-          descripcion?: string | null
-          fabricante?: string | null
-          fecha_vencimiento?: string | null
-          id?: string
-          imagen_path?: string | null
-          marca?: string | null
-          modelo?: string | null
-          nombre?: string
-          organization_id?: string
-          stock_actual?: number
-          stock_minimo?: number
-          updated_at?: string
-          vida_util_dias?: number | null
-        }
-        Relationships: []
-      }
-      hse_epp_asignaciones: {
-        Row: {
-          activo: boolean
-          cantidad: number
-          created_at: string
-          empleado_id: string
-          entregado_por: string | null
-          epp_id: string
-          fecha_entrega: string
-          fecha_vencimiento: string | null
-          firma_path: string | null
-          id: string
-          notas: string | null
-          organization_id: string
-          talla: string | null
-        }
-        Insert: {
-          activo?: boolean
-          cantidad?: number
-          created_at?: string
-          empleado_id: string
-          entregado_por?: string | null
-          epp_id: string
-          fecha_entrega?: string
-          fecha_vencimiento?: string | null
-          firma_path?: string | null
-          id?: string
-          notas?: string | null
-          organization_id: string
-          talla?: string | null
-        }
-        Update: {
-          activo?: boolean
-          cantidad?: number
-          created_at?: string
-          empleado_id?: string
-          entregado_por?: string | null
-          epp_id?: string
-          fecha_entrega?: string
-          fecha_vencimiento?: string | null
-          firma_path?: string | null
-          id?: string
-          notas?: string | null
-          organization_id?: string
-          talla?: string | null
-        }
-        Relationships: []
-      }
-      survey_surveys: {
-        Row: {
-          client_name: string | null
-          created_at: string
-          engineer_name: string | null
-          engineer_user_id: string | null
-          field_days: number
-          id: string
-          notes: string | null
-          odoo_code: string | null
-          organization_id: string
-          personnel: number
-          project_name: string | null
-          site_location: string | null
-          status: string
-          survey_date: string
-          updated_at: string
-        }
-        Insert: {
-          client_name?: string | null
-          created_at?: string
-          engineer_name?: string | null
-          engineer_user_id?: string | null
-          field_days?: number
-          id?: string
-          notes?: string | null
-          odoo_code?: string | null
-          organization_id: string
-          personnel?: number
-          project_name?: string | null
-          site_location?: string | null
-          status?: string
-          survey_date?: string
-          updated_at?: string
-        }
-        Update: {
-          client_name?: string | null
-          created_at?: string
-          engineer_name?: string | null
-          engineer_user_id?: string | null
-          field_days?: number
-          id?: string
-          notes?: string | null
-          odoo_code?: string | null
-          organization_id?: string
-          personnel?: number
-          project_name?: string | null
-          site_location?: string | null
-          status?: string
-          survey_date?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      survey_contacts: {
-        Row: {
-          created_at: string
-          email: string | null
-          id: string
-          name: string
-          notes: string | null
-          organization_id: string
-          phone: string | null
-          role: string | null
-          sort_order: number
-          survey_id: string
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          id?: string
-          name: string
-          notes?: string | null
-          organization_id: string
-          phone?: string | null
-          role?: string | null
-          sort_order?: number
-          survey_id: string
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          id?: string
-          name?: string
-          notes?: string | null
-          organization_id?: string
-          phone?: string | null
-          role?: string | null
-          sort_order?: number
-          survey_id?: string
-        }
-        Relationships: []
-      }
-      survey_findings: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          organization_id: string
-          severity: string
-          sort_order: number
-          survey_id: string
-          title: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          organization_id: string
-          severity?: string
-          sort_order?: number
-          survey_id: string
-          title: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          organization_id?: string
-          severity?: string
-          sort_order?: number
-          survey_id?: string
-          title?: string
-        }
-        Relationships: []
-      }
-      survey_photos: {
-        Row: {
-          caption: string | null
-          created_at: string
-          finding_id: string | null
-          id: string
-          organization_id: string
-          sort_order: number
-          storage_path: string
-          survey_id: string
-        }
-        Insert: {
-          caption?: string | null
-          created_at?: string
-          finding_id?: string | null
-          id?: string
-          organization_id: string
-          sort_order?: number
-          storage_path: string
-          survey_id: string
-        }
-        Update: {
-          caption?: string | null
-          created_at?: string
-          finding_id?: string | null
-          id?: string
-          organization_id?: string
-          sort_order?: number
-          storage_path?: string
-          survey_id?: string
-        }
-        Relationships: []
-      }
-      survey_signatures: {
-        Row: {
-          id: string
-          organization_id: string
-          signed_at: string
-          signer_name: string
-          signer_role: string | null
-          storage_path: string
-          survey_id: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          signed_at?: string
-          signer_name: string
-          signer_role?: string | null
-          storage_path: string
-          survey_id: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          signed_at?: string
-          signer_name?: string
-          signer_role?: string | null
-          storage_path?: string
-          survey_id?: string
-        }
-        Relationships: []
-      }
       ai_provider_configs: {
         Row: {
           api_key_set: boolean
@@ -964,6 +337,80 @@ export type Database = {
           },
         ]
       }
+      department_members: {
+        Row: {
+          created_at: string
+          department_id: string
+          id: string
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          id?: string
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          id?: string
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_members_department_id_organization_id_fkey"
+            columns: ["department_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "department_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          name: string
+          organization_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          name: string
+          organization_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          name?: string
+          organization_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fatsat_points: {
         Row: {
           actual_result: string | null
@@ -1120,6 +567,543 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hse_charla_asistencias: {
+        Row: {
+          charla_id: string
+          created_at: string
+          empleado_id: string
+          firma_path: string | null
+          id: string
+          organization_id: string
+        }
+        Insert: {
+          charla_id: string
+          created_at?: string
+          empleado_id: string
+          firma_path?: string | null
+          id?: string
+          organization_id: string
+        }
+        Update: {
+          charla_id?: string
+          created_at?: string
+          empleado_id?: string
+          firma_path?: string | null
+          id?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hse_charla_asistencias_charla_id_organization_id_fkey"
+            columns: ["charla_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "hse_charlas"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "hse_charla_asistencias_empleado_id_organization_id_fkey"
+            columns: ["empleado_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "hse_empleados"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "hse_charla_asistencias_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hse_charlas: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          duracion_min: number | null
+          facilitador: string | null
+          facilitador_id: string | null
+          fecha: string
+          hora_inicio: string | null
+          id: string
+          lugar: string | null
+          organization_id: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          duracion_min?: number | null
+          facilitador?: string | null
+          facilitador_id?: string | null
+          fecha?: string
+          hora_inicio?: string | null
+          id?: string
+          lugar?: string | null
+          organization_id: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          duracion_min?: number | null
+          facilitador?: string | null
+          facilitador_id?: string | null
+          fecha?: string
+          hora_inicio?: string | null
+          id?: string
+          lugar?: string | null
+          organization_id?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hse_charlas_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hse_empleados: {
+        Row: {
+          activo: boolean
+          cargo: string | null
+          cedula: string | null
+          created_at: string
+          division: string | null
+          foto_path: string | null
+          id: string
+          nombre: string
+          organization_id: string
+          talla_botas: string | null
+          talla_camisa: string | null
+          talla_casco: string | null
+          talla_pantalon: string | null
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          cargo?: string | null
+          cedula?: string | null
+          created_at?: string
+          division?: string | null
+          foto_path?: string | null
+          id?: string
+          nombre: string
+          organization_id: string
+          talla_botas?: string | null
+          talla_camisa?: string | null
+          talla_casco?: string | null
+          talla_pantalon?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          cargo?: string | null
+          cedula?: string | null
+          created_at?: string
+          division?: string | null
+          foto_path?: string | null
+          id?: string
+          nombre?: string
+          organization_id?: string
+          talla_botas?: string | null
+          talla_camisa?: string | null
+          talla_casco?: string | null
+          talla_pantalon?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hse_empleados_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hse_epp_asignaciones: {
+        Row: {
+          activo: boolean
+          cantidad: number
+          created_at: string
+          empleado_id: string
+          entregado_por: string | null
+          epp_id: string
+          fecha_entrega: string
+          fecha_vencimiento: string | null
+          firma_path: string | null
+          id: string
+          notas: string | null
+          organization_id: string
+          talla: string | null
+        }
+        Insert: {
+          activo?: boolean
+          cantidad?: number
+          created_at?: string
+          empleado_id: string
+          entregado_por?: string | null
+          epp_id: string
+          fecha_entrega?: string
+          fecha_vencimiento?: string | null
+          firma_path?: string | null
+          id?: string
+          notas?: string | null
+          organization_id: string
+          talla?: string | null
+        }
+        Update: {
+          activo?: boolean
+          cantidad?: number
+          created_at?: string
+          empleado_id?: string
+          entregado_por?: string | null
+          epp_id?: string
+          fecha_entrega?: string
+          fecha_vencimiento?: string | null
+          firma_path?: string | null
+          id?: string
+          notas?: string | null
+          organization_id?: string
+          talla?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hse_epp_asignaciones_empleado_id_organization_id_fkey"
+            columns: ["empleado_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "hse_empleados"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "hse_epp_asignaciones_epp_id_organization_id_fkey"
+            columns: ["epp_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "hse_epp_items"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "hse_epp_asignaciones_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hse_epp_items: {
+        Row: {
+          activo: boolean
+          categoria: string | null
+          created_at: string
+          descripcion: string | null
+          fabricante: string | null
+          fecha_vencimiento: string | null
+          id: string
+          imagen_path: string | null
+          marca: string | null
+          modelo: string | null
+          nombre: string
+          organization_id: string
+          stock_actual: number
+          stock_minimo: number
+          updated_at: string
+          vida_util_dias: number | null
+        }
+        Insert: {
+          activo?: boolean
+          categoria?: string | null
+          created_at?: string
+          descripcion?: string | null
+          fabricante?: string | null
+          fecha_vencimiento?: string | null
+          id?: string
+          imagen_path?: string | null
+          marca?: string | null
+          modelo?: string | null
+          nombre: string
+          organization_id: string
+          stock_actual?: number
+          stock_minimo?: number
+          updated_at?: string
+          vida_util_dias?: number | null
+        }
+        Update: {
+          activo?: boolean
+          categoria?: string | null
+          created_at?: string
+          descripcion?: string | null
+          fabricante?: string | null
+          fecha_vencimiento?: string | null
+          id?: string
+          imagen_path?: string | null
+          marca?: string | null
+          modelo?: string | null
+          nombre?: string
+          organization_id?: string
+          stock_actual?: number
+          stock_minimo?: number
+          updated_at?: string
+          vida_util_dias?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hse_epp_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hse_incidentes: {
+        Row: {
+          accion_correctiva: string | null
+          causa_raiz: string | null
+          created_at: string
+          descripcion: string
+          dias_perdidos: number
+          empleado_afectado: string | null
+          estado: string
+          fecha_evento: string
+          fotos: Json
+          hora_evento: string | null
+          id: string
+          organization_id: string
+          reportado_por: string | null
+          requirio_atencion_medica: boolean
+          severidad: string
+          tipo_evento: string
+          ubicacion: string | null
+          updated_at: string
+        }
+        Insert: {
+          accion_correctiva?: string | null
+          causa_raiz?: string | null
+          created_at?: string
+          descripcion: string
+          dias_perdidos?: number
+          empleado_afectado?: string | null
+          estado?: string
+          fecha_evento?: string
+          fotos?: Json
+          hora_evento?: string | null
+          id?: string
+          organization_id: string
+          reportado_por?: string | null
+          requirio_atencion_medica?: boolean
+          severidad?: string
+          tipo_evento?: string
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accion_correctiva?: string | null
+          causa_raiz?: string | null
+          created_at?: string
+          descripcion?: string
+          dias_perdidos?: number
+          empleado_afectado?: string | null
+          estado?: string
+          fecha_evento?: string
+          fotos?: Json
+          hora_evento?: string | null
+          id?: string
+          organization_id?: string
+          reportado_por?: string | null
+          requirio_atencion_medica?: boolean
+          severidad?: string
+          tipo_evento?: string
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hse_incidentes_empleado_afectado_organization_id_fkey"
+            columns: ["empleado_afectado", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "hse_empleados"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "hse_incidentes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hse_inspecciones: {
+        Row: {
+          accion_requerida: string | null
+          created_at: string
+          estado: string
+          fecha: string
+          fecha_limite: string | null
+          fotos: Json
+          hallazgo: string
+          id: string
+          inspector_id: string | null
+          organization_id: string
+          responsable: string | null
+          riesgo: string
+          tipo_inspeccion: string | null
+          ubicacion: string | null
+          updated_at: string
+        }
+        Insert: {
+          accion_requerida?: string | null
+          created_at?: string
+          estado?: string
+          fecha?: string
+          fecha_limite?: string | null
+          fotos?: Json
+          hallazgo: string
+          id?: string
+          inspector_id?: string | null
+          organization_id: string
+          responsable?: string | null
+          riesgo?: string
+          tipo_inspeccion?: string | null
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accion_requerida?: string | null
+          created_at?: string
+          estado?: string
+          fecha?: string
+          fecha_limite?: string | null
+          fotos?: Json
+          hallazgo?: string
+          id?: string
+          inspector_id?: string | null
+          organization_id?: string
+          responsable?: string | null
+          riesgo?: string
+          tipo_inspeccion?: string | null
+          ubicacion?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hse_inspecciones_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hse_permits: {
+        Row: {
+          altura_estimada: string | null
+          area_proceso: string | null
+          checklist: Json
+          ciudad_lugar: string | null
+          created_at: string
+          created_by: string | null
+          descripcion_tarea: string | null
+          emisor_cedula: string | null
+          emisor_firma_path: string | null
+          emisor_nombre: string | null
+          empresa: string | null
+          equipo_a_usar: string | null
+          estado: string
+          fecha: string | null
+          fecha_fin: string | null
+          fecha_inicio: string | null
+          hora_fin: string | null
+          hora_inicio: string | null
+          id: string
+          observaciones: string | null
+          organization_id: string
+          permit_type: string
+          personal: Json
+          ubicacion: string | null
+          updated_at: string
+          vigia_cedula: string | null
+          vigia_firma_path: string | null
+          vigia_nombre: string | null
+        }
+        Insert: {
+          altura_estimada?: string | null
+          area_proceso?: string | null
+          checklist?: Json
+          ciudad_lugar?: string | null
+          created_at?: string
+          created_by?: string | null
+          descripcion_tarea?: string | null
+          emisor_cedula?: string | null
+          emisor_firma_path?: string | null
+          emisor_nombre?: string | null
+          empresa?: string | null
+          equipo_a_usar?: string | null
+          estado?: string
+          fecha?: string | null
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          hora_fin?: string | null
+          hora_inicio?: string | null
+          id?: string
+          observaciones?: string | null
+          organization_id: string
+          permit_type: string
+          personal?: Json
+          ubicacion?: string | null
+          updated_at?: string
+          vigia_cedula?: string | null
+          vigia_firma_path?: string | null
+          vigia_nombre?: string | null
+        }
+        Update: {
+          altura_estimada?: string | null
+          area_proceso?: string | null
+          checklist?: Json
+          ciudad_lugar?: string | null
+          created_at?: string
+          created_by?: string | null
+          descripcion_tarea?: string | null
+          emisor_cedula?: string | null
+          emisor_firma_path?: string | null
+          emisor_nombre?: string | null
+          empresa?: string | null
+          equipo_a_usar?: string | null
+          estado?: string
+          fecha?: string | null
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          hora_fin?: string | null
+          hora_inicio?: string | null
+          id?: string
+          observaciones?: string | null
+          organization_id?: string
+          permit_type?: string
+          personal?: Json
+          ubicacion?: string | null
+          updated_at?: string
+          vigia_cedula?: string | null
+          vigia_firma_path?: string | null
+          vigia_nombre?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hse_permits_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2072,6 +2056,270 @@ export type Database = {
           },
         ]
       }
+      survey_contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          role: string | null
+          sort_order: number
+          survey_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          role?: string | null
+          sort_order?: number
+          survey_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          role?: string | null
+          sort_order?: number
+          survey_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_contacts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_contacts_survey_id_organization_id_fkey"
+            columns: ["survey_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "survey_surveys"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      survey_findings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          organization_id: string
+          severity: string
+          sort_order: number
+          survey_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          organization_id: string
+          severity?: string
+          sort_order?: number
+          survey_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          organization_id?: string
+          severity?: string
+          sort_order?: number
+          survey_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_findings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_findings_survey_id_organization_id_fkey"
+            columns: ["survey_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "survey_surveys"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      survey_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          finding_id: string | null
+          id: string
+          organization_id: string
+          sort_order: number
+          storage_path: string
+          survey_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          finding_id?: string | null
+          id?: string
+          organization_id: string
+          sort_order?: number
+          storage_path: string
+          survey_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          finding_id?: string | null
+          id?: string
+          organization_id?: string
+          sort_order?: number
+          storage_path?: string
+          survey_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_photos_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "survey_findings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_photos_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_photos_survey_id_organization_id_fkey"
+            columns: ["survey_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "survey_surveys"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      survey_signatures: {
+        Row: {
+          id: string
+          organization_id: string
+          signed_at: string
+          signer_name: string
+          signer_role: string | null
+          storage_path: string
+          survey_id: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          signed_at?: string
+          signer_name: string
+          signer_role?: string | null
+          storage_path: string
+          survey_id: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          signed_at?: string
+          signer_name?: string
+          signer_role?: string | null
+          storage_path?: string
+          survey_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_signatures_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_signatures_survey_id_organization_id_fkey"
+            columns: ["survey_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "survey_surveys"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      survey_surveys: {
+        Row: {
+          client_name: string | null
+          created_at: string
+          engineer_name: string | null
+          engineer_user_id: string | null
+          field_days: number
+          id: string
+          notes: string | null
+          odoo_code: string | null
+          organization_id: string
+          personnel: number
+          project_name: string | null
+          site_location: string | null
+          status: string
+          survey_date: string
+          updated_at: string
+        }
+        Insert: {
+          client_name?: string | null
+          created_at?: string
+          engineer_name?: string | null
+          engineer_user_id?: string | null
+          field_days?: number
+          id?: string
+          notes?: string | null
+          odoo_code?: string | null
+          organization_id: string
+          personnel?: number
+          project_name?: string | null
+          site_location?: string | null
+          status?: string
+          survey_date?: string
+          updated_at?: string
+        }
+        Update: {
+          client_name?: string | null
+          created_at?: string
+          engineer_name?: string | null
+          engineer_user_id?: string | null
+          field_days?: number
+          id?: string
+          notes?: string | null
+          odoo_code?: string | null
+          organization_id?: string
+          personnel?: number
+          project_name?: string | null
+          site_location?: string | null
+          status?: string
+          survey_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_surveys_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       takeoff_analyses: {
         Row: {
           approved_at: string | null
@@ -2999,6 +3247,10 @@ export type Database = {
       }
       get_org_ai_key: { Args: { p_org: string }; Returns: string }
       get_org_odoo_key: { Args: { p_org: string }; Returns: string }
+      has_department_access: {
+        Args: { p_dept_key: string; p_org: string }
+        Returns: boolean
+      }
       has_org_role: {
         Args: { org: string; roles: Database["public"]["Enums"]["org_role"][] }
         Returns: boolean

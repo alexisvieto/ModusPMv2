@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, HardHat } from "lucide-react";
 
 import { HseNav } from "@/components/hse/hse-nav";
+import { requireDepartment } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 
 // Chrome propio de Nexus HSE: barra navy + volver al portal. Mobile-first.
@@ -10,6 +11,7 @@ export default async function HSELayout({
 }: {
   children: React.ReactNode;
 }) {
+  await requireDepartment("hse"); // división HSE
   const supabase = await createClient();
   const {
     data: { user },

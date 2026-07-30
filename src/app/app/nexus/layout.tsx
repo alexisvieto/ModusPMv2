@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Calculator } from "lucide-react";
 
+import { requireDepartment } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 
 // Chrome propio de Nexus (Cálculo de Proyectos): barra navy + volver al portal.
@@ -9,6 +10,7 @@ export default async function NexusLayout({
 }: {
   children: React.ReactNode;
 }) {
+  await requireDepartment("comercial"); // división Comercial
   const supabase = await createClient();
   const {
     data: { user },

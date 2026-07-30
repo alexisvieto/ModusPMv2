@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
+import { requireDepartment } from "@/lib/access";
 import { brandFromOrg, ORG_BRAND_COLUMNS, type OrgBranding } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,6 +19,8 @@ export default async function PmLayout({
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  await requireDepartment("operaciones"); // división Operaciones
 
   const { data: profile } = await supabase
     .from("profiles")

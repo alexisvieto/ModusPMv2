@@ -1,4 +1,5 @@
 import { Portal } from "@/components/portal/portal";
+import { getMyDepartments } from "@/lib/access";
 import { brandFromOrg, ORG_BRAND_COLUMNS } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
 
@@ -33,12 +34,15 @@ export default async function PortalPage() {
     accent = brand.primary;
   }
 
+  const departments = await getMyDepartments();
+
   return (
     <Portal
       brandName={brandName}
       logoUrl={logoUrl}
       accent={accent}
       userEmail={user.email ?? null}
+      divisions={departments.map((d) => ({ key: d.key, name: d.name }))}
     />
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ClipboardList } from "lucide-react";
 
+import { requireDepartment } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 
 // Chrome propio de Site Survey: barra navy + volver al portal. Mobile-first.
@@ -9,6 +10,7 @@ export default async function SurveyLayout({
 }: {
   children: React.ReactNode;
 }) {
+  await requireDepartment("operaciones"); // división Operaciones
   const supabase = await createClient();
   const {
     data: { user },

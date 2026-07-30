@@ -5,9 +5,11 @@ import { ArrowLeft } from "lucide-react";
 import { MinutaVisitaForm } from "@/components/comercial/minuta-visita-form";
 import { SurveyAdminView } from "@/components/comercial/survey-admin-view";
 import { VtF004Form } from "@/components/comercial/vtf004-form";
+import { SiteSurveyForm } from "@/components/operaciones/site-survey-form";
 import { requireDepartment } from "@/lib/access";
 import { toMinuta } from "@/lib/comercial/minuta";
 import { toVtF004 } from "@/lib/comercial/vtf004";
+import { toSiteSurvey, siteSurveyPhotoPaths } from "@/lib/operaciones/site-survey";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function DocRecordPage({
@@ -49,6 +51,19 @@ export default async function DocRecordPage({
     .maybeSingle();
   if (!rec) notFound();
 
+  // Site survey: firmar las URLs de las fotos existentes para mostrarlas.
+  const surveyPhotoUrls: Record<string, string> = {};
+  if (format.code === "PY-F-014") {
+    const paths = siteSurveyPhotoPaths(toSiteSurvey(rec.data));
+    if (paths.length) {
+      const { data: signed } = await supabase.storage
+        .from("survey-evidence")
+        .createSignedUrls(paths, 3600);
+      for (const s of signed ?? [])
+        if (s.signedUrl && s.path) surveyPhotoUrls[s.path] = s.signedUrl;
+    }
+  }
+
   return (
     <div className="min-h-svh bg-muted/20">
       <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-[#0f2044] px-4 text-white md:px-6">
@@ -74,6 +89,17 @@ export default async function DocRecordPage({
           answeredAt={rec.answered_at}
           publicToken={rec.public_token}
           data={rec.data}
+        />
+      ) : format.code === "PY-F-014" ? (
+        <SiteSurveyForm
+          recordId={rec.id}
+          recordLabel={rec.record_label}
+          formatCode={format.code}
+          status={rec.status}
+          elaboradoPor={rec.created_by_name}
+          org={org}
+          initial={toSiteSurvey(rec.data)}
+          photoUrls={surveyPhotoUrls}
         />
       ) : format.code === "VT-F-004" ? (
         <VtF004Form

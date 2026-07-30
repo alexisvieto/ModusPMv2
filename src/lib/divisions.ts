@@ -8,7 +8,6 @@
 import {
   Briefcase,
   Calculator,
-  ClipboardList,
   FolderKanban,
   HardHat,
   ShieldCheck,
@@ -50,13 +49,9 @@ export const DIVISION_MODULES: Record<string, ModuleCard[]> = {
       href: "/app/inicio",
       icon: FolderKanban,
     },
-    {
-      name: "Nexus Survey",
-      tagline: "Levantamiento en sitio",
-      href: "/app/survey",
-      icon: ClipboardList,
-    },
   ],
+  // El site survey ahora es el formato PY-F-014 (Documentos y formatos), no un
+  // módulo aparte. El módulo "Nexus Survey" genérico queda retirado del portal.
   hse: [
     {
       name: "Nexus HSE",

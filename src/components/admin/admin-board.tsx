@@ -8,6 +8,7 @@ import {
   Plus,
   Receipt,
   Settings2,
+  ShieldCheck,
   UserMinus,
   UserPlus,
   Users,
@@ -21,6 +22,10 @@ import {
   type BillingTarget,
 } from "@/components/admin/org-billing-sheet";
 import { ROLE_OPTIONS, UserCreateSheet } from "@/components/admin/user-create-sheet";
+import {
+  UserDivisionsSheet,
+  type DivisionsTarget,
+} from "@/components/admin/user-divisions-sheet";
 import { setMemberStatus } from "@/app/admin/actions";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Database } from "@/lib/supabase/database.types";
@@ -28,12 +33,14 @@ import type { Database } from "@/lib/supabase/database.types";
 type Role = Database["public"]["Enums"]["org_role"];
 type MemberStatus = "active" | "suspended";
 
+export type Division = { key: string; name: string };
 export type MemberRow = {
   userId: string;
   email: string;
   fullName: string;
   role: Role;
   status: MemberStatus;
+  departmentKeys: string[];
 };
 export type OrgRow = {
   id: string;
@@ -46,6 +53,7 @@ export type OrgRow = {
   pricePerSeat: number;
   billingCurrency: string;
   billable: boolean;
+  departments: Division[];
   members: MemberRow[];
 };
 
@@ -59,9 +67,24 @@ export function AdminBoard({ orgs }: { orgs: OrgRow[] }) {
   const [userOpen, setUserOpen] = useState(false);
   const [defaultOrgId, setDefaultOrgId] = useState<string | null>(null);
   const [billingTarget, setBillingTarget] = useState<BillingTarget | null>(null);
+  const [divTarget, setDivTarget] = useState<DivisionsTarget | null>(null);
   const [pending, setPending] = useState<string | null>(null);
 
   const orgOptions = orgs.map((o) => ({ id: o.id, name: o.name }));
+  const orgDepartments = Object.fromEntries(
+    orgs.map((o) => [o.id, o.departments]),
+  );
+
+  function editDivisions(o: OrgRow, m: MemberRow) {
+    setDivTarget({
+      organizationId: o.id,
+      orgName: o.name,
+      userId: m.userId,
+      userName: m.fullName || m.email,
+      departments: o.departments,
+      current: m.departmentKeys,
+    });
+  }
   const totalUsers = orgs.reduce((n, o) => n + o.members.length, 0);
 
   // Facturación del mes: solo orgs facturables, asientos activos × precio.
@@ -246,7 +269,19 @@ export function AdminBoard({ orgs }: { orgs: OrgRow[] }) {
                             className="border-b last:border-b-0"
                           >
                             <td className="px-4 py-2">
-                              {m.fullName || "—"}
+                              <div>{m.fullName || "—"}</div>
+                              {m.departmentKeys.length > 0 && (
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {m.departmentKeys.map((k) => (
+                                    <span
+                                      key={k}
+                                      className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                                    >
+                                      {o.departments.find((d) => d.key === k)?.name ?? k}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </td>
                             <td className="px-4 py-2 text-muted-foreground">
                               {m.email || "—"}
@@ -268,24 +303,35 @@ export function AdminBoard({ orgs }: { orgs: OrgRow[] }) {
                               )}
                             </td>
                             <td className="px-4 py-2 text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                disabled={pending === m.userId}
-                                onClick={() => toggleStatus(o, m)}
-                              >
-                                {suspended ? (
-                                  <>
-                                    <UserPlus className="size-4" />
-                                    Reactivar
-                                  </>
-                                ) : (
-                                  <>
-                                    <UserMinus className="size-4" />
-                                    Suspender
-                                  </>
-                                )}
-                              </Button>
+                              <div className="flex items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => editDivisions(o, m)}
+                                  title="Divisiones a las que tiene acceso"
+                                >
+                                  <ShieldCheck className="size-4" />
+                                  Accesos
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={pending === m.userId}
+                                  onClick={() => toggleStatus(o, m)}
+                                >
+                                  {suspended ? (
+                                    <>
+                                      <UserPlus className="size-4" />
+                                      Reactivar
+                                    </>
+                                  ) : (
+                                    <>
+                                      <UserMinus className="size-4" />
+                                      Suspender
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -321,8 +367,15 @@ export function AdminBoard({ orgs }: { orgs: OrgRow[] }) {
         open={userOpen}
         onOpenChange={setUserOpen}
         orgs={orgOptions}
+        orgDepartments={orgDepartments}
         defaultOrgId={defaultOrgId}
         onCreated={() => router.refresh()}
+      />
+      <UserDivisionsSheet
+        open={divTarget !== null}
+        onOpenChange={(o) => !o && setDivTarget(null)}
+        target={divTarget}
+        onSaved={() => router.refresh()}
       />
       <OrgBillingSheet
         open={billingTarget !== null}

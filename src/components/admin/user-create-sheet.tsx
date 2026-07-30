@@ -35,20 +35,29 @@ export function UserCreateSheet({
   open,
   onOpenChange,
   orgs,
+  orgDepartments,
   defaultOrgId,
   onCreated,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   orgs: { id: string; name: string }[];
+  orgDepartments: Record<string, { key: string; name: string }[]>;
   defaultOrgId?: string | null;
   onCreated: () => void;
 }) {
+  const keysOf = (orgId: string) =>
+    (orgDepartments[orgId] ?? []).map((d) => d.key);
+
   const [organizationId, setOrganizationId] = useState(defaultOrgId ?? "");
   const [fullName, setFullName] = useState("");
   const [title, setTitle] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("owner");
+  // Divisiones marcadas: por defecto TODAS las de la empresa (se desmarca para restringir).
+  const [deptKeys, setDeptKeys] = useState<string[]>(
+    defaultOrgId ? keysOf(defaultOrgId) : [],
+  );
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ email: string; tempPassword: string } | null>(
     null,
@@ -61,6 +70,7 @@ export function UserCreateSheet({
     setPrevOpen(open);
     if (open) {
       setOrganizationId(defaultOrgId ?? "");
+      setDeptKeys(defaultOrgId ? keysOf(defaultOrgId) : []);
       setFullName("");
       setTitle("");
       setEmail("");
@@ -87,6 +97,7 @@ export function UserCreateSheet({
       fullName,
       title,
       role,
+      departmentKeys: deptKeys,
     });
     setSaving(false);
     if (!res.ok || !res.tempPassword) {
@@ -158,7 +169,10 @@ export function UserCreateSheet({
                 id="u-org"
                 className={fieldCls}
                 value={organizationId}
-                onChange={(e) => setOrganizationId(e.target.value)}
+                onChange={(e) => {
+                  setOrganizationId(e.target.value);
+                  setDeptKeys(keysOf(e.target.value));
+                }}
               >
                 <option value="">Selecciona…</option>
                 {orgs.map((o) => (
@@ -214,6 +228,37 @@ export function UserCreateSheet({
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+
+            {organizationId && (orgDepartments[organizationId]?.length ?? 0) > 0 && (
+              <div className="space-y-1.5">
+                <Label>Divisiones (acceso)</Label>
+                <div className="space-y-2 rounded-md border p-3">
+                  {orgDepartments[organizationId].map((d) => (
+                    <label
+                      key={d.key}
+                      className="flex cursor-pointer items-center gap-2 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        className="size-4"
+                        checked={deptKeys.includes(d.key)}
+                        onChange={(e) =>
+                          setDeptKeys((prev) =>
+                            e.target.checked
+                              ? [...prev, d.key]
+                              : prev.filter((k) => k !== d.key),
+                          )
+                        }
+                      />
+                      {d.name}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Marca las divisiones a las que tendrá acceso. Por defecto, todas.
+                </p>
+              </div>
+            )}
           </div>
         )}
 

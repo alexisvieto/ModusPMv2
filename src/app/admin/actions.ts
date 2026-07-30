@@ -37,7 +37,38 @@ type UserInput = {
   fullName: string;
   title: string;
   role: Role;
+  departmentKeys?: string[];
 };
+
+// Divisiones estándar que trae toda empresa nueva.
+const DEFAULT_DEPARTMENTS: { key: string; name: string; sort_order: number }[] = [
+  { key: "comercial", name: "Comercial", sort_order: 1 },
+  { key: "operaciones", name: "Operaciones", sort_order: 2 },
+  { key: "hse", name: "HSE", sort_order: 3 },
+];
+
+/** Asigna un usuario a las divisiones (por key) de su empresa. Best-effort. */
+async function assignDepartments(
+  admin: ReturnType<typeof createAdminClient>,
+  organizationId: string,
+  userId: string,
+  keys: string[],
+) {
+  if (!keys.length) return;
+  const { data: depts } = await admin
+    .from("departments")
+    .select("id, key")
+    .eq("organization_id", organizationId)
+    .in("key", keys);
+  if (!depts?.length) return;
+  await admin.from("department_members").insert(
+    depts.map((d) => ({
+      organization_id: organizationId,
+      department_id: d.id,
+      user_id: userId,
+    })),
+  );
+}
 
 /** Verifica que quien llama sea super-admin de plataforma (gate real en servidor). */
 async function requirePlatformAdmin(): Promise<
@@ -111,6 +142,11 @@ export async function createOrganization(
     .select("id")
     .maybeSingle();
   if (error || !data) return { ok: false, error: "No se pudo crear la empresa." };
+
+  // Sembrar las divisiones estándar (para que el portal por división funcione).
+  await admin.from("departments").insert(
+    DEFAULT_DEPARTMENTS.map((d) => ({ organization_id: data.id, ...d })),
+  );
 
   revalidatePath("/admin");
   return { ok: true, orgId: data.id };
@@ -339,6 +375,39 @@ export async function createUserForOrg(
     return { ok: false, error: "No se pudo asignar el usuario a la empresa." };
   }
 
+  // Divisiones marcadas (no bloquea la creación si algo falla; se ajusta luego).
+  await assignDepartments(admin, input.organizationId, userId, input.departmentKeys ?? []);
+
   revalidatePath("/admin");
   return { ok: true, email, tempPassword };
+}
+
+/** Reemplaza las divisiones de un usuario en una empresa (edición de accesos). */
+export async function setUserDepartments(input: {
+  organizationId: string;
+  userId: string;
+  keys: string[];
+}): Promise<{ ok: boolean; error?: string }> {
+  const gate = await requirePlatformAdmin();
+  if (!gate.ok) return { ok: false, error: gate.error };
+
+  const admin = createAdminClient();
+
+  const { error: delErr } = await admin
+    .from("department_members")
+    .delete()
+    .eq("organization_id", input.organizationId)
+    .eq("user_id", input.userId);
+  if (delErr) return { ok: false, error: "No se pudieron actualizar los accesos." };
+
+  const err = await assignDepartments(
+    admin,
+    input.organizationId,
+    input.userId,
+    input.keys,
+  ).then(() => null).catch(() => "insert");
+  if (err) return { ok: false, error: "No se pudieron guardar las divisiones." };
+
+  revalidatePath("/admin");
+  return { ok: true };
 }

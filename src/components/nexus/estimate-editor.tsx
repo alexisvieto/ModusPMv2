@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Copy, Download, GitBranch, Plus, Ruler, Save, Send, Trash2, Users } from "lucide-react";
@@ -178,6 +178,61 @@ export function EstimateEditor({
   });
   const grand = calcCascade(grandBuckets, paramsFrac);
 
+  // ---------- rastreo de cambios sin guardar (evitar pérdida de trabajo) ----------
+  // Huella estable del estado editable; se compara contra lo último guardado.
+  const snapshot = JSON.stringify({
+    name,
+    client,
+    projectName,
+    odooCode,
+    elaboratedBy,
+    date,
+    divisionId,
+    params: paramsFrac,
+    cats: cats.map((c) => ({
+      category_id: c.category_id,
+      name: c.name,
+      duracion: Number(c.duracion) || 0,
+      paralelo: c.paralelo,
+      items: c.items.map((it) => ({
+        description: it.description,
+        manufacturer: it.manufacturer,
+        qty: Number(it.qty) || 0,
+        unit_price: Number(it.unit_price) || 0,
+        kind: it.kind,
+        unit: it.unit,
+      })),
+      labor: c.labor.map((l) => ({
+        profile_id: l.profile_id,
+        profile_name: l.profile_name,
+        daily_rate: l.daily_rate,
+        personas: Number(l.personas) || 0,
+        dias: Number(l.dias) || 0,
+      })),
+    })),
+  });
+  // Arranca igual al estado inicial → al abrir no hay cambios pendientes.
+  const [savedSnapshot, setSavedSnapshot] = useState(snapshot);
+  const dirty = !locked && savedSnapshot !== snapshot;
+
+  // Aviso del navegador al cerrar/recargar la pestaña con cambios sin guardar.
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
+  // Confirmación para navegación DENTRO de la app con cambios sin guardar.
+  const confirmLeave = () =>
+    !dirty ||
+    window.confirm(
+      "Tienes cambios sin guardar en esta cotización. Si sales ahora se perderán. ¿Salir de todas formas?",
+    );
+
   // ---------- updaters inmutables ----------
   const patchCat = (cu: string, patch: Partial<ECat>) =>
     setCats((cs) => cs.map((c) => (c.uid === cu ? { ...c, ...patch } : c)));
@@ -290,25 +345,43 @@ export function EstimateEditor({
         sort_order: li,
       })),
     }));
-    const { error } = await supabase.rpc("nexus_save_estimate", {
-      p_estimate: estimate.id,
-      p_header: header,
-      p_categories: payload,
+    try {
+      const { error } = await supabase.rpc("nexus_save_estimate", {
+        p_estimate: estimate.id,
+        p_header: header,
+        p_categories: payload,
+      });
+      if (error) return { ok: false, error: error.message };
+      return { ok: true };
+    } catch (e) {
+      // Fallo de red / sesión: no dejar que pase en silencio.
+      return { ok: false, error: e instanceof Error ? e.message : "Error de conexión." };
+    }
+  }
+
+  // Aviso GRANDE e ineludible cuando un guardado NO se completó (causa de pérdidas).
+  function saveFailed(err?: string) {
+    toast.error("⚠️ NO se guardó la cotización", {
+      description:
+        (err ?? "Error desconocido.") +
+        " Tus cambios siguen en pantalla — revisá tu conexión y volvé a Guardar. Si sigue, recargá con F5 e inicia sesión de nuevo (NO cierres esta pestaña).",
+      duration: 15000,
     });
-    if (error) return { ok: false, error: error.message };
-    return { ok: true };
   }
 
   async function save() {
     if (saving || sending) return;
     setSaving(true);
+    // Capturar la huella del estado que se está guardando.
+    const persisted = snapshot;
     const r = await persist();
     setSaving(false);
     if (r.ok) {
+      setSavedSnapshot(persisted);
       toast.success("Cotización guardada.");
       router.refresh();
     } else {
-      toast.error(r.error ?? "No se pudo guardar la cotización.");
+      saveFailed(r.error);
     }
   }
 
@@ -320,9 +393,10 @@ export function EstimateEditor({
       const p = await persist();
       if (!p.ok) {
         setSending(false);
-        toast.error(p.error ?? "No se pudo guardar antes de enviar.");
+        saveFailed(p.error);
         return;
       }
+      setSavedSnapshot(snapshot);
     }
     const r = await sendToOdoo(estimate.id);
     setSending(false);
@@ -358,9 +432,10 @@ export function EstimateEditor({
     if (!locked) {
       const p = await persist();
       if (!p.ok) {
-        toast.error(p.error ?? "No se pudo guardar.");
+        saveFailed(p.error);
         return;
       }
+      setSavedSnapshot(snapshot);
     }
     const link = `${window.location.origin}/app/nexus/${estimate.id}`;
     const msg = [
@@ -384,6 +459,7 @@ export function EstimateEditor({
   }
 
   async function clone() {
+    if (!confirmLeave()) return;
     const supabase = createClient();
     const { data, error } = await supabase.rpc("nexus_clone_estimate", {
       p_estimate: estimate.id,
@@ -397,6 +473,7 @@ export function EstimateEditor({
   }
 
   async function newVersion() {
+    if (!confirmLeave()) return;
     const supabase = createClient();
     const { data, error } = await supabase.rpc("nexus_new_version", {
       p_estimate: estimate.id,
@@ -479,6 +556,9 @@ export function EstimateEditor({
       {/* volver a la lista de cotizaciones */}
       <Link
         href="/app/nexus"
+        onClick={(e) => {
+          if (!confirmLeave()) e.preventDefault();
+        }}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="size-4" />
@@ -517,7 +597,9 @@ export function EstimateEditor({
             <select
               className="h-8 shrink-0 rounded-md border border-input bg-transparent px-2 text-xs outline-none"
               value={estimate.id}
-              onChange={(e) => router.push(`/app/nexus/${e.target.value}`)}
+              onChange={(e) => {
+                if (confirmLeave()) router.push(`/app/nexus/${e.target.value}`);
+              }}
               title="Versiones"
             >
               {versions.map((v) => (
@@ -568,6 +650,9 @@ export function EstimateEditor({
 
           <Link
             href={`/app/nexus/${estimate.id}/calculo`}
+            onClick={(e) => {
+              if (!confirmLeave()) e.preventDefault();
+            }}
             className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors hover:bg-muted"
           >
             <Ruler className="size-4" />
@@ -581,7 +666,11 @@ export function EstimateEditor({
             <Copy className="size-4" />
             Duplicar
           </Button>
-          <Button variant="outline" onClick={exportExcel}>
+          <Button
+            variant="outline"
+            onClick={exportExcel}
+            title="Exporta a Excel lo que ves en pantalla. NO guarda en la base — para eso usá Guardar."
+          >
             <Download className="size-4" />
             Excel
           </Button>
@@ -590,10 +679,31 @@ export function EstimateEditor({
             {sending ? "Enviando…" : "Enviar a Odoo"}
           </Button>
           {!locked && (
-            <Button onClick={save} disabled={saving}>
-              <Save className="size-4" />
-              {saving ? "Guardando…" : "Guardar"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium",
+                  dirty ? "text-warning" : "text-muted-foreground",
+                )}
+                title={
+                  dirty
+                    ? "Hay cambios que aún no se han guardado en la base."
+                    : "Todo lo que ves está guardado en la base."
+                }
+              >
+                <span
+                  className={cn(
+                    "size-2 rounded-full",
+                    dirty ? "bg-warning" : "bg-success",
+                  )}
+                />
+                {dirty ? "Sin guardar" : "Guardado"}
+              </span>
+              <Button onClick={save} disabled={saving || !dirty}>
+                <Save className="size-4" />
+                {saving ? "Guardando…" : "Guardar"}
+              </Button>
+            </div>
           )}
         </div>
       </div>

@@ -46,6 +46,8 @@ INSPECCION_TEMPLATE = Path(__file__).parent / "inspeccion.typ"
 CHARLA_TEMPLATE = Path(__file__).parent / "charla.typ"
 MINUTA_TEMPLATE = Path(__file__).parent / "minuta.typ"
 VTF004_TEMPLATE = Path(__file__).parent / "vtf004.typ"
+SITE_SURVEY_TEMPLATE = Path(__file__).parent / "site_survey.typ"
+ENCUESTA_TEMPLATE = Path(__file__).parent / "encuesta.typ"
 EXT_BY_TYPE = {
     "image/png": ".png",
     "image/jpeg": ".jpg",
@@ -311,6 +313,66 @@ class RenderVtF004Request(BaseModel):
     personal_cliente: list[VtF004Persona] = []
     temas: list[VtF004Tema] = []
     filename: str = "visita-tecnica"
+
+
+# ---------- Operaciones: site survey (PY-F-014) ----------
+class SsInfo(BaseModel):
+    codigo_formato: str = "PY-F-014"
+    version: str = "1"
+    record_label: str = ""
+    objeto_licitacion: str = ""
+    codigo: str = ""
+    cliente: str = ""
+    alcance: str = ""
+    precio_referencia: str = ""
+    coord_lat: str = ""
+    coord_lng: str = ""
+    encargado: str = ""
+    tipo_zona: str = ""
+    facilidades: str = ""
+    acceso: str = ""
+    relieve: str = ""
+    info_general: str = ""
+    elaborado_por: str = ""
+    elaborado_fecha: str = ""
+
+
+class RenderSiteSurveyRequest(BaseModel):
+    brand: Brand
+    s: SsInfo
+    fotos_sitio: list[ImageRef] = []
+    fotos_tecnicas: list[ImageRef] = []
+    filename: str = "site-survey"
+
+
+# ---------- Comercial: encuesta de satisfacción respondida (VT-F-002) ----------
+class EncQA(BaseModel):
+    pregunta: str = ""
+    respuesta: str = ""
+
+
+class EncSeccion(BaseModel):
+    titulo: str = ""
+    items: list[EncQA] = []
+
+
+class EncInfo(BaseModel):
+    codigo: str = "VT-F-002"
+    version: str = "1"
+    record_label: str = ""
+    tipo_label: str = ""
+    cliente: str = ""
+    referencia: str = ""
+    ref_label: str = ""
+    comentarios: str = ""
+    answered_fecha: str = ""
+
+
+class RenderEncuestaRequest(BaseModel):
+    brand: Brand
+    e: EncInfo
+    secciones: list[EncSeccion] = []
+    filename: str = "encuesta-satisfaccion"
 
 
 async def require_secret(x_engine_secret: str = Header(default="")) -> None:
@@ -641,5 +703,57 @@ async def render_vtf004(req: RenderVtF004Request, _: None = Depends(require_secr
             "temas": [t.model_dump() for t in req.temas],
         }
         return await _compile(tmp, VTF004_TEMPLATE, data, req.filename)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+@app.post("/render-sitesurvey")
+async def render_sitesurvey(req: RenderSiteSurveyRequest, _: None = Depends(require_secret)) -> Response:
+    tmp = Path(tempfile.mkdtemp(prefix="ss_"))
+    images = tmp / "images"
+    images.mkdir()
+    try:
+        total = len(req.fotos_sitio) + len(req.fotos_tecnicas) + (1 if req.brand.logo_url else 0)
+        if total > MAX_IMAGES:
+            raise HTTPException(status_code=413, detail="Demasiadas imágenes")
+        brand = _brand_sanitized(req.brand)
+        async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT, follow_redirects=False) as client:
+            brand["logo"] = await _download(client, req.brand.logo_url, images, "logo") or ""
+            sitio = []
+            for i, f in enumerate(req.fotos_sitio):
+                local = await _download(client, f.url, images, f"sitio_{i}")
+                if local:
+                    sitio.append({"path": local, "caption": f.caption})
+            tecn = []
+            for i, f in enumerate(req.fotos_tecnicas):
+                local = await _download(client, f.url, images, f"tecn_{i}")
+                if local:
+                    tecn.append({"path": local, "caption": f.caption})
+        data = {
+            "brand": brand,
+            "s": req.s.model_dump(),
+            "fotos_sitio": sitio,
+            "fotos_tecnicas": tecn,
+        }
+        return await _compile(tmp, SITE_SURVEY_TEMPLATE, data, req.filename)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+@app.post("/render-encuesta")
+async def render_encuesta(req: RenderEncuestaRequest, _: None = Depends(require_secret)) -> Response:
+    tmp = Path(tempfile.mkdtemp(prefix="enc_"))
+    images = tmp / "images"
+    images.mkdir()
+    try:
+        brand = _brand_sanitized(req.brand)
+        async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT, follow_redirects=False) as client:
+            brand["logo"] = await _download(client, req.brand.logo_url, images, "logo") or ""
+        data = {
+            "brand": brand,
+            "e": req.e.model_dump(),
+            "secciones": [s.model_dump() for s in req.secciones],
+        }
+        return await _compile(tmp, ENCUESTA_TEMPLATE, data, req.filename)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

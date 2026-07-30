@@ -83,6 +83,7 @@ export default async function DocRecordPage({
 
       {format.kind === "public_survey" ? (
         <SurveyAdminView
+          recordId={rec.id}
           recordLabel={rec.record_label}
           formatCode={format.code}
           status={rec.status}

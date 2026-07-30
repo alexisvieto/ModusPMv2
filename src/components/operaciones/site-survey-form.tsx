@@ -97,6 +97,15 @@ export function SiteSurveyForm({
     }
   }
 
+  async function descargarPdf() {
+    if (saving) return;
+    setSaving(true);
+    const ok = await persist();
+    setSaving(false);
+    if (!ok) return;
+    window.open(`/api/operaciones/site-survey/${recordId}/pdf`, "_blank");
+  }
+
   async function completar() {
     if (saving) return;
     if (!d.cliente.trim() && !d.objeto_licitacion.trim()) {
@@ -130,9 +139,14 @@ export function SiteSurveyForm({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" disabled title="Disponible en el siguiente paso">
+          <Button
+            variant="outline"
+            onClick={descargarPdf}
+            disabled={saving}
+            title="Guarda y descarga el site survey en PDF"
+          >
             <Download className="size-4" />
-            PDF (próximamente)
+            Descargar PDF
           </Button>
           {status !== "completado" && (
             <Button variant="outline" onClick={completar} disabled={saving}>

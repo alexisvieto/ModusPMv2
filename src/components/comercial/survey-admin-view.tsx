@@ -16,6 +16,7 @@ type Data = {
 };
 
 export function SurveyAdminView({
+  recordId,
   recordLabel,
   formatCode,
   status,
@@ -23,6 +24,7 @@ export function SurveyAdminView({
   publicToken,
   data,
 }: {
+  recordId: string;
   recordLabel: string;
   formatCode: string;
   status: string;
@@ -74,9 +76,13 @@ export function SurveyAdminView({
           )}
         </div>
         {answered && (
-          <Button variant="outline" disabled title="Disponible en el siguiente paso">
+          <Button
+            variant="outline"
+            onClick={() => window.open(`/api/comercial/encuesta/${recordId}/pdf`, "_blank")}
+            title="Descargar la encuesta respondida en PDF"
+          >
             <Download className="size-4" />
-            PDF (próximamente)
+            Descargar PDF
           </Button>
         )}
       </div>

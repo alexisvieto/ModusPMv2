@@ -16,13 +16,13 @@
 
 #set page(
   paper: "a4",
-  margin: (x: 1.6cm, top: 3.2cm, bottom: 2.4cm),
+  margin: (x: 1.6cm, top: 3.5cm, bottom: 2.4cm),
   header: context {
     set text(size: 8.5pt, fill: muted)
     grid(
       columns: (1fr, auto),
       align: (left + horizon, right + horizon),
-      [#if brand.logo != "" [#box(image(brand.logo, height: 1cm))] else [#text(weight: "bold", size: 12pt, fill: navy)[#brand.name]]],
+      [#if brand.logo != "" [#box(image(brand.logo, height: 1.4cm))] else [#text(weight: "bold", size: 12pt, fill: navy)[#brand.name]]],
       [
         #text(weight: "bold", fill: navy, size: 9pt)[VISITA TÉCNICA A CLIENTE] \
         #brand.legal_name — #m.codigo (v#m.version)

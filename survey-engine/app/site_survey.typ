@@ -61,7 +61,7 @@
   grid(
     columns: (1fr, 1fr),
     gutter: 8pt,
-    ..fotos.map(f => box(width: 100%, breakable: false)[
+    ..fotos.map(f => box(width: 100%)[
       #box(width: 100%, clip: true, radius: 4pt, stroke: 0.5pt + hair)[
         #image(f.path, width: 100%, height: 5cm, fit: "cover")
       ]

@@ -200,6 +200,7 @@ export function SiteSurveyForm({
               <MapPin className="size-4" />
               {geoBusy ? "Ubicando…" : "Capturar coordenadas (GPS)"}
             </Button>
+            <p className="mt-1 text-xs text-muted-foreground">Función solo desde Móvil</p>
           </div>
           <div className="sm:col-span-2">
             <Field label="Encargado o administrador del sitio">

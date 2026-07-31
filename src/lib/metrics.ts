@@ -122,6 +122,15 @@ function planFrac(t: CurveTask, d: Date): number {
   return Math.max(0, Math.min(1, elapsed / span));
 }
 
+/** % planificado de una tarea a la fecha (según su ventana planificada). */
+export function taskPlanPct(
+  t: { planned_start: string | null; planned_end: string | null },
+  now: Date = new Date(),
+): number {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round(planFrac({ ...t, progress: 0, weight: 1 }, today) * 1000) / 10;
+}
+
 /**
  * Curva S derivada del Gantt: línea PLAN (fechas planificadas) vs línea REAL
  * (cada tarea aporta su peso × su % de avance). Sin avance, la real queda en 0;

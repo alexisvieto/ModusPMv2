@@ -4,8 +4,19 @@ import { CalendarRange } from "lucide-react";
 
 import { SCurve } from "@/components/charts/s-curve";
 import { AvanceEditor, type AvanceTask } from "@/components/projects/avance-editor";
+import AvancePdfButton from "@/components/projects/avance-pdf-button";
+import type { AvancePdfData } from "@/components/projects/avance-pdf-document";
 import { Card, CardContent } from "@/components/ui/card";
-import { ganttCurve, type Snapshot } from "@/lib/metrics";
+import { brandFromOrg, ORG_BRAND_COLUMNS, type OrgBranding } from "@/lib/brand";
+import { formatDate } from "@/lib/format";
+import {
+  evm,
+  ganttCurve,
+  ganttSnapshot,
+  latestSnapshot,
+  taskPlanPct,
+  type Snapshot,
+} from "@/lib/metrics";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AvancePage({
@@ -18,12 +29,12 @@ export default async function AvancePage({
 
   const { data: project } = await supabase
     .from("projects")
-    .select("id, name, code, start_date, end_date")
+    .select("id, name, code, odoo_code, client_name, location, start_date, end_date, budget, organization_id")
     .eq("id", projectId)
     .maybeSingle();
   if (!project) notFound();
 
-  const [{ data: tasks }, { data: snapshots }] = await Promise.all([
+  const [{ data: tasks }, { data: snapshots }, { data: org }] = await Promise.all([
     supabase
       .from("tasks")
       .select("id, name, wbs, progress, weight, parent_id, planned_start, planned_end, sort_order")
@@ -34,6 +45,11 @@ export default async function AvancePage({
       .select("snapshot_date, planned_pct, actual_pct, planned_value, earned_value, actual_cost")
       .eq("project_id", projectId)
       .order("snapshot_date", { ascending: true }),
+    supabase
+      .from("organizations")
+      .select(ORG_BRAND_COLUMNS)
+      .eq("id", project.organization_id)
+      .maybeSingle(),
   ]);
 
   const all = tasks ?? [];
@@ -49,6 +65,37 @@ export default async function AvancePage({
         }))
       : ganttCurve(leaves, { start: project.start_date, end: project.end_date });
 
+  // KPIs de avance (sin costos) + datos del PDF PD-F-001 para el cliente.
+  const latest =
+    latestSnapshot(snaps) ??
+    ganttSnapshot(leaves, project.start_date, project.end_date, Number(project.budget) || 1, 0);
+  const actualPct = Number(latest?.actual_pct ?? 0);
+  const plannedPct = Number(latest?.planned_pct ?? 0);
+  const brand = brandFromOrg(org as OrgBranding | null);
+
+  const pdfData: AvancePdfData = {
+    brand,
+    project: {
+      name: project.name,
+      code: project.code,
+      odoo_code: project.odoo_code,
+      client_name: project.client_name,
+      location: project.location,
+      start_date: project.start_date,
+      end_date: project.end_date,
+    },
+    generatedAt: formatDate(new Date()),
+    kpis: { actualPct, plannedPct, gap: actualPct - plannedPct, spi: evm(latest).spi },
+    curve: chartData.map((d) => ({ date: d.date, plan: d.plan, real: d.real ?? null })),
+    tasks: all.map((t) => ({
+      wbs: t.wbs,
+      name: t.name,
+      isPhase: t.parent_id === null,
+      planPct: taskPlanPct(t),
+      realPct: Number(t.progress) || 0,
+    })),
+  };
+
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6 md:p-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -61,6 +108,12 @@ export default async function AvancePage({
           </div>
           <p className="text-sm text-muted-foreground">{project.name}</p>
         </div>
+        {all.length > 0 && (
+          <AvancePdfButton
+            data={pdfData}
+            fileName={`Avance_${project.odoo_code ?? project.code ?? "proyecto"}.pdf`}
+          />
+        )}
       </header>
 
       {all.length === 0 ? (

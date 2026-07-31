@@ -2069,6 +2069,7 @@ export type Database = {
           id: string
           location: string | null
           name: string
+          odoo_code: string | null
           organization_id: string
           pm_user_id: string | null
           start_date: string | null
@@ -2088,6 +2089,7 @@ export type Database = {
           id?: string
           location?: string | null
           name: string
+          odoo_code?: string | null
           organization_id: string
           pm_user_id?: string | null
           start_date?: string | null
@@ -2107,6 +2109,7 @@ export type Database = {
           id?: string
           location?: string | null
           name?: string
+          odoo_code?: string | null
           organization_id?: string
           pm_user_id?: string | null
           start_date?: string | null

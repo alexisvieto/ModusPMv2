@@ -36,6 +36,7 @@ export function ProjectCreateSheet({
   const router = useRouter();
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [odooCode, setOdooCode] = useState("");
   const [client, setClient] = useState("");
   const [location, setLocation] = useState("");
   const [status, setStatus] = useState<ProjectStatus>("active");
@@ -53,6 +54,7 @@ export function ProjectCreateSheet({
     if (open) {
       setName("");
       setCode("");
+      setOdooCode("");
       setClient("");
       setLocation("");
       setStatus("active");
@@ -80,6 +82,7 @@ export function ProjectCreateSheet({
         organization_id: orgId,
         name: name.trim(),
         code: code.trim() || null,
+        odoo_code: odooCode.trim() || null,
         client_name: client.trim() || null,
         location: location.trim() || null,
         status,
@@ -147,6 +150,16 @@ export function ProjectCreateSheet({
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="pr-odoo">Código Odoo (S00XXX)</Label>
+            <Input
+              id="pr-odoo"
+              placeholder="Ej. S00549 — para importar costos de Odoo"
+              value={odooCode}
+              onChange={(e) => setOdooCode(e.target.value)}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">

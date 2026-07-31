@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Activity,
   Building2,
   CalendarRange,
   Check,
@@ -106,6 +107,11 @@ export function AppShell({
           label: "Cronograma",
           href: `/app/proyectos/${activeProjectId}/cronograma`,
           icon: CalendarRange,
+        },
+        {
+          label: "Control de Avance",
+          href: `/app/proyectos/${activeProjectId}/avance`,
+          icon: Activity,
         },
         {
           label: "Inventario",

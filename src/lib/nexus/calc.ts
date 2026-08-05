@@ -15,7 +15,7 @@ export type NexusParams = {
 };
 
 export const DEFAULT_PARAMS: NexusParams = {
-  ind_oficina: 0.1,
+  ind_oficina: 0.15,
   ind_campo: 0.02,
   financiamiento: 0.02,
   utilidad: 0.2,

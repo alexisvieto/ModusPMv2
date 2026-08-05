@@ -296,6 +296,24 @@ export function EstimateEditor({
       ],
     });
   }
+  // Línea "M/O Editable": sin perfil (profile_id null) → monto global editable.
+  // El usuario pone Cantidad (personas) y Costo unitario (daily_rate); días queda
+  // en 1, así el total = Cantidad × Costo unitario. Sigue siendo Mano de Obra.
+  function addLaborEditable(cu: string) {
+    patchCat(cu, {
+      labor: [
+        ...(cats.find((c) => c.uid === cu)?.labor ?? []),
+        {
+          uid: uid(),
+          profile_id: null,
+          profile_name: "M/O Editable",
+          daily_rate: 0,
+          personas: "1",
+          dias: "1",
+        },
+      ],
+    });
+  }
   const removeLabor = (cu: string, lu: string) =>
     setCats((cs) =>
       cs.map((c) => (c.uid === cu ? { ...c, labor: c.labor.filter((l) => l.uid !== lu) } : c)),
@@ -953,29 +971,44 @@ export function EstimateEditor({
                         </td>
                       </tr>
                     ))}
-                    {c.labor.map((l) => (
+                    {c.labor.map((l) => {
+                      // profile_id null → "M/O Editable": nombre + costo unitario editables.
+                      const editable = l.profile_id === null;
+                      return (
                       <tr key={l.uid} className="border-b bg-muted/20 last:border-0">
                         <td className="px-3 py-1" colSpan={2}>
                           <div className="flex items-center gap-2">
                             <Users className="size-3.5 shrink-0 text-muted-foreground" />
-                            <select
-                              className={inp}
-                              value={l.profile_id ?? ""}
-                              onChange={(e) => {
-                                const p = laborProfiles.find((x) => x.id === e.target.value);
-                                patchLabor(c.uid, l.uid, {
-                                  profile_id: p?.id ?? null,
-                                  profile_name: p?.name ?? l.profile_name,
-                                  daily_rate: p?.daily_rate ?? l.daily_rate,
-                                });
-                              }}
-                            >
-                              {laborProfiles.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name} (${money(p.daily_rate)}/día)
-                                </option>
-                              ))}
-                            </select>
+                            {editable ? (
+                              <input
+                                className={inp}
+                                value={l.profile_name}
+                                placeholder="M/O Editable"
+                                title="Nombre de la línea (editable)"
+                                onChange={(e) =>
+                                  patchLabor(c.uid, l.uid, { profile_name: e.target.value })
+                                }
+                              />
+                            ) : (
+                              <select
+                                className={inp}
+                                value={l.profile_id ?? ""}
+                                onChange={(e) => {
+                                  const p = laborProfiles.find((x) => x.id === e.target.value);
+                                  patchLabor(c.uid, l.uid, {
+                                    profile_id: p?.id ?? null,
+                                    profile_name: p?.name ?? l.profile_name,
+                                    daily_rate: p?.daily_rate ?? l.daily_rate,
+                                  });
+                                }}
+                              >
+                                {laborProfiles.map((p) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name} (${money(p.daily_rate)}/día)
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                           </div>
                         </td>
                         <td className="px-3 py-1 text-xs text-muted-foreground">Mano de Obra</td>
@@ -984,18 +1017,30 @@ export function EstimateEditor({
                             type="number"
                             className={inpR}
                             value={l.personas}
-                            title="Personas"
+                            title={editable ? "Cantidad" : "Personas"}
                             onChange={(e) => patchLabor(c.uid, l.uid, { personas: e.target.value })}
                           />
                         </td>
                         <td className="px-3 py-1">
-                          <input
-                            type="number"
-                            className={inpR}
-                            value={l.dias}
-                            title="Días"
-                            onChange={(e) => patchLabor(c.uid, l.uid, { dias: e.target.value })}
-                          />
+                          {editable ? (
+                            <input
+                              type="number"
+                              className={inpR}
+                              value={l.daily_rate}
+                              title="Costo unitario"
+                              onChange={(e) =>
+                                patchLabor(c.uid, l.uid, { daily_rate: Number(e.target.value) || 0 })
+                              }
+                            />
+                          ) : (
+                            <input
+                              type="number"
+                              className={inpR}
+                              value={l.dias}
+                              title="Días"
+                              onChange={(e) => patchLabor(c.uid, l.uid, { dias: e.target.value })}
+                            />
+                          )}
                         </td>
                         <td className="px-3 py-1 text-right tabular-nums text-muted-foreground">
                           {money((Number(l.personas) || 0) * (Number(l.dias) || 0) * l.daily_rate)}
@@ -1009,7 +1054,8 @@ export function EstimateEditor({
                           </button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1026,6 +1072,12 @@ export function EstimateEditor({
                   className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <Users className="size-3.5" /> Mano de obra
+                </button>
+                <button
+                  onClick={() => addLaborEditable(c.uid)}
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <Plus className="size-3.5" /> M/O Editable
                 </button>
               </div>
             </div>
